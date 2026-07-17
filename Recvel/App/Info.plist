@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Recvel</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Recvel usa tus datos de Apple Health para calcular tendencias personales de recuperacion, actividad y sueno.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>Recvel puede importar analitos de laboratorio que tu selecciones para calcular PhenoAge localmente.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Recvel puede guardar datos nutricionales en Apple Health cuando tu lo autorices.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Recvel usa el microfono solo mientras dictas una comida para convertirla en texto en el dispositivo.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Recvel usa reconocimiento de voz para transcribir la descripcion de una comida antes de que la confirmes.</string>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>

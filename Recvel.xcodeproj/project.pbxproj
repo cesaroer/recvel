@@ -1,0 +1,647 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* RecvelApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* RecvelApp.swift */; };
+		A10000000000000000000002 /* HealthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* HealthModels.swift */; };
+		A10000000000000000000003 /* HealthDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* HealthDataProvider.swift */; };
+		A10000000000000000000004 /* BaselineEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000004 /* BaselineEngine.swift */; };
+		A10000000000000000000005 /* ScoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000005 /* ScoreEngine.swift */; };
+		A10000000000000000000006 /* NutritionEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* NutritionEstimator.swift */; };
+		A10000000000000000000007 /* InsightEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* InsightEngine.swift */; };
+		A10000000000000000000052 /* SleepCyclePlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000052 /* SleepCyclePlanner.swift */; };
+		A10000000000000000000053 /* SleepWindDownScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000053 /* SleepWindDownScheduler.swift */; };
+		A10000000000000000000054 /* JournalSleepEngines.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000054 /* JournalSleepEngines.swift */; };
+		A10000000000000000000008 /* LocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* LocalStore.swift */; };
+		A10000000000000000000009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* ContentView.swift */; };
+		A1000000000000000000000A /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* DashboardView.swift */; };
+		A1000000000000000000000B /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000B /* TrendsView.swift */; };
+		A1000000000000000000000C /* NutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000C /* NutritionView.swift */; };
+		A1000000000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* SettingsView.swift */; };
+		A1000000000000000000000E /* GlassComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* GlassComponents.swift */; };
+		A1000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* Assets.xcassets */; };
+		A10000000000000000000020 /* RecvelUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000020 /* RecvelUITests.swift */; };
+		A10000000000000000000021 /* DetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000022 /* DetailViews.swift */; };
+		A10000000000000000000023 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000023 /* OnboardingView.swift */; };
+		A10000000000000000000024 /* LocalNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000024 /* LocalNotificationManager.swift */; };
+		A10000000000000000000025 /* NutritionPlanEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000025 /* NutritionPlanEngine.swift */; };
+		A10000000000000000000026 /* NutritionSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000026 /* NutritionSetupView.swift */; };
+		A10000000000000000000027 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000027 /* KeychainStore.swift */; };
+		A10000000000000000000028 /* TabBarVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000028 /* TabBarVisibility.swift */; };
+		A10000000000000000000029 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000029 /* Haptics.swift */; };
+		A1000000000000000000002A /* TextInputPerformance.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002A /* TextInputPerformance.swift */; };
+		A10000000000000000000030 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000030 /* EngineTests.swift */; };
+		A10000000000000000000040 /* FastingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000040 /* FastingView.swift */; };
+		A10000000000000000000041 /* FitnessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000041 /* FitnessView.swift */; };
+		A10000000000000000000042 /* HealthIntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000042 /* HealthIntelligenceEngine.swift */; };
+		A10000000000000000000043 /* HealthIntelligenceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000043 /* HealthIntelligenceViews.swift */; };
+		A90000000000000000000001 /* LaboratoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000001 /* LaboratoryView.swift */; };
+		A10000000000000000000050 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000050 /* PlanView.swift */; };
+		A10000000000000000000055 /* TonightDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000055 /* TonightDetailView.swift */; };
+		A10000000000000000000051 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000051 /* JournalView.swift */; };
+		A10000000000000000000056 /* HomeDayRingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000056 /* HomeDayRingEngine.swift */; };
+		A10000000000000000000057 /* HomeCalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000057 /* HomeCalendarViews.swift */; };
+		A10000000000000000000058 /* ProductIntelligenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000058 /* ProductIntelligenceModels.swift */; };
+		A10000000000000000000059 /* JournalProEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000059 /* JournalProEngine.swift */; };
+		A1000000000000000000005A /* JournalProView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000005A /* JournalProView.swift */; };
+		A1000000000000000000005B /* BiomarkerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000005B /* BiomarkerEngine.swift */; };
+		A1000000000000000000005C /* BioAgeProViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000005C /* BioAgeProViews.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AA0000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E10000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E10000000000000000000001;
+			remoteInfo = Recvel;
+		};
+		AA0000000000000000000030 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E10000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E10000000000000000000001;
+			remoteInfo = Recvel;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		B10000000000000000000000 /* Recvel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Recvel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000001 /* RecvelApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecvelApp.swift; sourceTree = "<group>"; };
+		B10000000000000000000002 /* HealthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthModels.swift; sourceTree = "<group>"; };
+		B10000000000000000000003 /* HealthDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataProvider.swift; sourceTree = "<group>"; };
+		B10000000000000000000004 /* BaselineEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaselineEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000005 /* ScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000006 /* NutritionEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEstimator.swift; sourceTree = "<group>"; };
+		B10000000000000000000007 /* InsightEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000052 /* SleepCyclePlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCyclePlanner.swift; sourceTree = "<group>"; };
+		B10000000000000000000053 /* SleepWindDownScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindDownScheduler.swift; sourceTree = "<group>"; };
+		B10000000000000000000054 /* JournalSleepEngines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSleepEngines.swift; sourceTree = "<group>"; };
+		B10000000000000000000008 /* LocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStore.swift; sourceTree = "<group>"; };
+		B10000000000000000000009 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B1000000000000000000000A /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		B1000000000000000000000B /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		B1000000000000000000000C /* NutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionView.swift; sourceTree = "<group>"; };
+		B1000000000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B1000000000000000000000E /* GlassComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassComponents.swift; sourceTree = "<group>"; };
+		B1000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B10000000000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000000000000000000011 /* Recvel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Recvel.entitlements; sourceTree = "<group>"; };
+		B10000000000000000000020 /* RecvelUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecvelUITests.swift; sourceTree = "<group>"; };
+		B10000000000000000000021 /* RecvelUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecvelUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000022 /* DetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailViews.swift; sourceTree = "<group>"; };
+		B10000000000000000000023 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B10000000000000000000024 /* LocalNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNotificationManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000025 /* NutritionPlanEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000026 /* NutritionSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionSetupView.swift; sourceTree = "<group>"; };
+		B10000000000000000000027 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		B10000000000000000000028 /* TabBarVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarVisibility.swift; sourceTree = "<group>"; };
+		B10000000000000000000029 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		B1000000000000000000002A /* TextInputPerformance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputPerformance.swift; sourceTree = "<group>"; };
+		B10000000000000000000030 /* EngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000031 /* RecvelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecvelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000040 /* FastingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastingView.swift; sourceTree = "<group>"; };
+		B10000000000000000000041 /* FitnessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessView.swift; sourceTree = "<group>"; };
+		B10000000000000000000042 /* HealthIntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthIntelligenceEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000043 /* HealthIntelligenceViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthIntelligenceViews.swift; sourceTree = "<group>"; };
+		B90000000000000000000001 /* LaboratoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaboratoryView.swift; sourceTree = "<group>"; };
+		B10000000000000000000050 /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
+		B10000000000000000000055 /* TonightDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonightDetailView.swift; sourceTree = "<group>"; };
+		B10000000000000000000051 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		B10000000000000000000056 /* HomeDayRingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDayRingEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000057 /* HomeCalendarViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCalendarViews.swift; sourceTree = "<group>"; };
+		B10000000000000000000058 /* ProductIntelligenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductIntelligenceModels.swift; sourceTree = "<group>"; };
+		B10000000000000000000059 /* JournalProEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalProEngine.swift; sourceTree = "<group>"; };
+		B1000000000000000000005A /* JournalProView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalProView.swift; sourceTree = "<group>"; };
+		B1000000000000000000005B /* BiomarkerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiomarkerEngine.swift; sourceTree = "<group>"; };
+		B1000000000000000000005C /* BioAgeProViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BioAgeProViews.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C10000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000011 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000031 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D10000000000000000000000 = {
+			isa = PBXGroup;
+			children = (
+				D10000000000000000000001 /* Recvel */,
+				D10000000000000000000007 /* RecvelUITests */,
+				D10000000000000000000008 /* RecvelTests */,
+				D10000000000000000000006 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D10000000000000000000001 /* Recvel */ = {
+			isa = PBXGroup;
+			children = (
+				D10000000000000000000002 /* App */,
+				D10000000000000000000003 /* Models */,
+				D10000000000000000000004 /* Services */,
+				D10000000000000000000005 /* Views */,
+				B1000000000000000000000F /* Assets.xcassets */,
+				B10000000000000000000011 /* Recvel.entitlements */,
+			);
+			path = Recvel;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000001 /* RecvelApp.swift */,
+				B10000000000000000000010 /* Info.plist */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000003 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000002 /* HealthModels.swift */,
+				B10000000000000000000058 /* ProductIntelligenceModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000004 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000003 /* HealthDataProvider.swift */,
+				B10000000000000000000004 /* BaselineEngine.swift */,
+				B10000000000000000000005 /* ScoreEngine.swift */,
+				B10000000000000000000042 /* HealthIntelligenceEngine.swift */,
+				B10000000000000000000006 /* NutritionEstimator.swift */,
+				B10000000000000000000025 /* NutritionPlanEngine.swift */,
+				B10000000000000000000007 /* InsightEngine.swift */,
+				B10000000000000000000052 /* SleepCyclePlanner.swift */,
+				B10000000000000000000053 /* SleepWindDownScheduler.swift */,
+				B10000000000000000000054 /* JournalSleepEngines.swift */,
+				B10000000000000000000059 /* JournalProEngine.swift */,
+				B1000000000000000000005B /* BiomarkerEngine.swift */,
+				B10000000000000000000056 /* HomeDayRingEngine.swift */,
+				B10000000000000000000008 /* LocalStore.swift */,
+				B10000000000000000000027 /* KeychainStore.swift */,
+				B10000000000000000000024 /* LocalNotificationManager.swift */,
+				B10000000000000000000028 /* TabBarVisibility.swift */,
+				B10000000000000000000029 /* Haptics.swift */,
+				B1000000000000000000002A /* TextInputPerformance.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000005 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000009 /* ContentView.swift */,
+				B1000000000000000000000A /* DashboardView.swift */,
+				B10000000000000000000057 /* HomeCalendarViews.swift */,
+				B10000000000000000000041 /* FitnessView.swift */,
+				B1000000000000000000000B /* TrendsView.swift */,
+				B1000000000000000000000C /* NutritionView.swift */,
+				B10000000000000000000026 /* NutritionSetupView.swift */,
+				B1000000000000000000000D /* SettingsView.swift */,
+				B1000000000000000000000E /* GlassComponents.swift */,
+				B10000000000000000000043 /* HealthIntelligenceViews.swift */,
+				B10000000000000000000022 /* DetailViews.swift */,
+				B10000000000000000000023 /* OnboardingView.swift */,
+				B90000000000000000000001 /* LaboratoryView.swift */,
+				B10000000000000000000040 /* FastingView.swift */,
+				B10000000000000000000050 /* PlanView.swift */,
+				B10000000000000000000055 /* TonightDetailView.swift */,
+				B10000000000000000000051 /* JournalView.swift */,
+				B1000000000000000000005A /* JournalProView.swift */,
+				B1000000000000000000005C /* BioAgeProViews.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000000 /* Recvel.app */,
+				B10000000000000000000021 /* RecvelUITests.xctest */,
+				B10000000000000000000031 /* RecvelTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000007 /* RecvelUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000020 /* RecvelUITests.swift */,
+			);
+			path = RecvelUITests;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000008 /* RecvelTests */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000030 /* EngineTests.swift */,
+			);
+			path = RecvelTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E10000000000000000000001 /* Recvel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000002 /* Build configuration list for PBXNativeTarget "Recvel" */;
+			buildPhases = (
+				C10000000000000000000002 /* Sources */,
+				C10000000000000000000001 /* Frameworks */,
+				C10000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Recvel;
+			productName = Recvel;
+			productReference = B10000000000000000000000 /* Recvel.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E10000000000000000000002 /* RecvelUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000003 /* Build configuration list for PBXNativeTarget "RecvelUITests" */;
+			buildPhases = (
+				C10000000000000000000012 /* Sources */,
+				C10000000000000000000011 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EA0000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = RecvelUITests;
+			productName = RecvelUITests;
+			productReference = B10000000000000000000021 /* RecvelUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		E10000000000000000000003 /* RecvelTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000004 /* Build configuration list for PBXNativeTarget "RecvelTests" */;
+			buildPhases = (
+				C10000000000000000000032 /* Sources */,
+				C10000000000000000000031 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EA0000000000000000000030 /* PBXTargetDependency */,
+			);
+			name = RecvelTests;
+			productName = RecvelTests;
+			productReference = B10000000000000000000031 /* RecvelTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E10000000000000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					E10000000000000000000001 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					E10000000000000000000002 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = E10000000000000000000001;
+					};
+					E10000000000000000000003 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = E10000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = F10000000000000000000001 /* Build configuration list for PBXProject "Recvel" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D10000000000000000000000;
+			productRefGroup = D10000000000000000000006 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E10000000000000000000001 /* Recvel */,
+				E10000000000000000000002 /* RecvelUITests */,
+				E10000000000000000000003 /* RecvelTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C10000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000000000000000000000F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C10000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* RecvelApp.swift in Sources */,
+				A10000000000000000000002 /* HealthModels.swift in Sources */,
+				A10000000000000000000058 /* ProductIntelligenceModels.swift in Sources */,
+				A10000000000000000000003 /* HealthDataProvider.swift in Sources */,
+				A10000000000000000000004 /* BaselineEngine.swift in Sources */,
+				A10000000000000000000005 /* ScoreEngine.swift in Sources */,
+				A10000000000000000000042 /* HealthIntelligenceEngine.swift in Sources */,
+				A10000000000000000000006 /* NutritionEstimator.swift in Sources */,
+				A10000000000000000000025 /* NutritionPlanEngine.swift in Sources */,
+				A10000000000000000000007 /* InsightEngine.swift in Sources */,
+				A10000000000000000000052 /* SleepCyclePlanner.swift in Sources */,
+				A10000000000000000000053 /* SleepWindDownScheduler.swift in Sources */,
+				A10000000000000000000054 /* JournalSleepEngines.swift in Sources */,
+				A10000000000000000000059 /* JournalProEngine.swift in Sources */,
+				A1000000000000000000005B /* BiomarkerEngine.swift in Sources */,
+				A10000000000000000000056 /* HomeDayRingEngine.swift in Sources */,
+				A10000000000000000000008 /* LocalStore.swift in Sources */,
+				A10000000000000000000027 /* KeychainStore.swift in Sources */,
+				A10000000000000000000028 /* TabBarVisibility.swift in Sources */,
+				A10000000000000000000029 /* Haptics.swift in Sources */,
+				A1000000000000000000002A /* TextInputPerformance.swift in Sources */,
+				A10000000000000000000009 /* ContentView.swift in Sources */,
+				A1000000000000000000000A /* DashboardView.swift in Sources */,
+				A10000000000000000000057 /* HomeCalendarViews.swift in Sources */,
+				A10000000000000000000041 /* FitnessView.swift in Sources */,
+				A1000000000000000000000B /* TrendsView.swift in Sources */,
+				A1000000000000000000000C /* NutritionView.swift in Sources */,
+				A10000000000000000000026 /* NutritionSetupView.swift in Sources */,
+				A1000000000000000000000D /* SettingsView.swift in Sources */,
+				A1000000000000000000000E /* GlassComponents.swift in Sources */,
+				A10000000000000000000043 /* HealthIntelligenceViews.swift in Sources */,
+				A10000000000000000000021 /* DetailViews.swift in Sources */,
+				A10000000000000000000023 /* OnboardingView.swift in Sources */,
+				A10000000000000000000024 /* LocalNotificationManager.swift in Sources */,
+				A90000000000000000000001 /* LaboratoryView.swift in Sources */,
+				A10000000000000000000040 /* FastingView.swift in Sources */,
+				A10000000000000000000050 /* PlanView.swift in Sources */,
+				A10000000000000000000055 /* TonightDetailView.swift in Sources */,
+				A10000000000000000000051 /* JournalView.swift in Sources */,
+				A1000000000000000000005A /* JournalProView.swift in Sources */,
+				A1000000000000000000005C /* BioAgeProViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000020 /* RecvelUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000032 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000030 /* EngineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EA0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E10000000000000000000001 /* Recvel */;
+			targetProxy = AA0000000000000000000001 /* PBXContainerItemProxy */;
+		};
+		EA0000000000000000000030 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E10000000000000000000001 /* Recvel */;
+			targetProxy = AA0000000000000000000030 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		F10000000000000000000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F10000000000000000000011 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F10000000000000000000012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Recvel/Recvel.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8VUPJLK9PY;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Recvel/App/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.recvel.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F10000000000000000000013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Recvel/Recvel.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8VUPJLK9PY;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Recvel/App/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.recvel.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F10000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.recvel.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Recvel;
+			};
+			name = Debug;
+		};
+		F10000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.recvel.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Recvel;
+			};
+			name = Release;
+		};
+		F10000000000000000000016 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.recvel.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Recvel.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Recvel";
+			};
+			name = Debug;
+		};
+		F10000000000000000000017 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.recvel.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Recvel.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Recvel";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F10000000000000000000001 /* Build configuration list for PBXProject "Recvel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000010 /* Debug */,
+				F10000000000000000000011 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000002 /* Build configuration list for PBXNativeTarget "Recvel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000012 /* Debug */,
+				F10000000000000000000013 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000003 /* Build configuration list for PBXNativeTarget "RecvelUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000014 /* Debug */,
+				F10000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000004 /* Build configuration list for PBXNativeTarget "RecvelTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000016 /* Debug */,
+				F10000000000000000000017 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E10000000000000000000000 /* Project object */;
+}
