@@ -1,5 +1,7 @@
 # HANDOFF — instrucciones para la siguiente IA que continue este trabajo
 
+**Inventario:** [FEATURES.md](FEATURES.md) — inventario vivo Done / Partial / Missing (app actual, plan original, Sugerencias Grok).
+
 > Este archivo existe porque el asistente que investigo y documento todo lo de abajo llego a su limite de uso a mitad de sesion. Sirve para que **otra IA (u otra sesion del mismo asistente) continue exactamente donde se quedo, sin repetir investigacion ya hecha y sin inventar nada que no este ya verificado en este repo.**
 
 ## Regla de oro: no alucinar
@@ -20,6 +22,7 @@
 
 | Archivo | Que contiene | Cuando consultarlo |
 | --- | --- | --- |
+| `FEATURES.md` | **Inventario vivo** de features actuales, plan original vs codigo, checklist Sugerencias Grok y gaps | Antes de priorizar trabajo o preguntar "que falta" |
 | `README.md` | Vision de producto, modulos (Today/Recovery/Strain/Sleep/Energy/Nutricion), sistema de datos de Apple Health, estrategia de deteccion de comida por niveles de confianza, complementos de investigacion sobre volumen/LiDAR/bases de datos | Contexto general de producto y de la estrategia de nutricion "por niveles" |
 | `COMPETITORS.md` | Matriz detallada de Bevel/WHOOP/Garmin/Amazfit/Oura/Athlytic con citas, patron cross-app de nutricion por IA, notas de verificacion (2 afirmaciones marcadas como no confirmadas: WHOOP "hyperbaric/bone density", Oura "meQ") | Antes de proponer cualquier feature "inspirado en X competidor" |
 | `BEVEL_PRO_GAP_ANALYSIS.md` | Gap analysis Free vs Pro desde capturas `Bevel_references/bevelpro_features_*.PNG` vs codigo/docs Recvel (P0/P1/P2) | Antes de priorizar features "tipo Bevel Pro" |

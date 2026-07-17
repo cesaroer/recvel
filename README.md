@@ -1,5 +1,7 @@
 # Recvel
 
+**Inventario:** [FEATURES.md](FEATURES.md) — estado Done / Partial / Missing del app vs plan original y Sugerencias Grok.
+
 Recvel es una app de bienestar para iPhone y Apple Watch que convierte los datos de Apple Health en una lectura diaria clara de recuperacion, carga, sueno, estres, energia, actividad y nutricion. La experiencia visual es dark-first, moderna y glassy, inspirada conceptualmente en productos como Bevel, WHOOP y Garmin, sin copiar su marca, textos, algoritmos privados ni assets.
 
 ## Principios del producto
