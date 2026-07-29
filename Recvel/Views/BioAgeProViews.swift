@@ -53,7 +53,7 @@ struct BioAgeHomeCard: View {
                 .frame(width: miniDial, height: miniDial * 0.70)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("EDAD BIOLOGICA")
+                    Text(RecvelL10n.text("bioage.title").uppercased())
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(.secondary)
                     Text(estimate.estimatedYears.map { String(format: "%.1f", $0) } ?? "--")
@@ -65,7 +65,7 @@ struct BioAgeHomeCard: View {
                         .lineLimit(2)
                     HStack(spacing: 5) {
                         Circle().fill(confidenceColor).frame(width: 6, height: 6)
-                        Text("Confianza \(estimate.confidence.rawValue.lowercased())")
+                        Text("\(RecvelL10n.text("common.confidence")) \(estimate.confidence.displayName.lowercased())")
                         Text("·")
                         Text("FRIEND")
                     }
@@ -92,9 +92,9 @@ struct BioAgeHomeCard: View {
     private var miniDial: CGFloat { 104 }
 
     private var deltaText: String {
-        guard let delta = estimate.deltaYears else { return "Completa edad, sexo y VO2 max" }
-        if abs(delta) < 0.5 { return "Cerca de tu edad cronologica" }
-        return String(format: "%+.1f anos vs cronologica", delta)
+        guard let delta = estimate.deltaYears else { return RecvelL10n.text("bioage.completeProfile") }
+        if abs(delta) < 0.5 { return RecvelL10n.text("bioage.nearChronological") }
+        return RecvelL10n.text("bioage.delta", values: ["years": String(format: "%+.1f", delta)])
     }
 
     private var confidenceColor: Color {
@@ -102,8 +102,12 @@ struct BioAgeHomeCard: View {
     }
 
     private var accessibilityText: String {
-        guard let age = estimate.estimatedYears else { return "Edad biologica, faltan datos" }
-        return String(format: "Edad biologica %.1f anos, %@", age, deltaText.lowercased())
+        guard let age = estimate.estimatedYears else { return RecvelL10n.text("bioage.accessibility.missing") }
+        return RecvelL10n.text("bioage.accessibility.value", values: [
+            "age": String(format: "%.1f", age),
+            "delta": deltaText.lowercased(),
+            "confidence": estimate.confidence.displayName.lowercased()
+        ])
     }
 }
 
@@ -167,12 +171,12 @@ struct BioAgeDetailView: View {
                     Image(systemName: "chevron.left").font(.subheadline.weight(.bold)).foregroundStyle(.white).headerCircleChrome(size: 36)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Atras")
+                .accessibilityLabel("Atrás")
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button { sheet = .addLaboratory(nil) } label: { Label("Agregar laboratorio", systemImage: "plus") }
-                    Button { sheet = .catalog } label: { Label("Catalogo de biomarcadores", systemImage: "list.bullet.rectangle") }
+                    Button { sheet = .catalog } label: { Label("Catálogo de biomarcadores", systemImage: "list.bullet.rectangle") }
                     Button { Task { await importClinicalRecords() } } label: { Label("Importar Clinical Records", systemImage: "cross.case.fill") }
                 } label: {
                     Image(systemName: "ellipsis").font(.headline).foregroundStyle(.white).headerCircleChrome(size: 36)
@@ -202,13 +206,13 @@ struct BioAgeDetailView: View {
         Group {
             if report.availableLenses.count > 1 {
                 Picker("Lente", selection: Binding(get: { report.selectedLens }, set: { preferredLens = $0; Haptics.selection() })) {
-                    ForEach(report.availableLenses) { lens in Text("\(lens.rawValue) · \(lens.method)").tag(lens) }
+                    ForEach(report.availableLenses) { lens in Text("\(lens.displayName) · \(lens.method)").tag(lens) }
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("bioAge.lensPicker")
             } else {
                 HStack {
-                    Label("\(report.selectedLens.rawValue) · \(report.selectedLens.method)", systemImage: report.selectedLens == .blood ? "drop.fill" : "lungs.fill")
+                    Label("\(report.selectedLens.displayName) · \(report.selectedLens.method)", systemImage: report.selectedLens == .blood ? "drop.fill" : "lungs.fill")
                         .font(.caption.weight(.bold))
                     Spacer()
                     if report.phenoAge == nil {
@@ -225,9 +229,9 @@ struct BioAgeDetailView: View {
 
     private var traceabilityStrip: some View {
         HStack(spacing: 0) {
-            bioStat("Cronologica", report.chronologicalAge.map(String.init) ?? "--")
+            bioStat("Cronológica", report.chronologicalAge.map(String.init) ?? "--")
             divider
-            bioStat("Confianza", report.confidence.rawValue)
+            bioStat(RecvelL10n.text("common.confidence"), report.confidence.displayName)
             divider
             bioStat("Cobertura", "\(report.coverageDays)/28")
         }
@@ -282,7 +286,7 @@ struct BioAgeDetailView: View {
     private var methodSection: some View {
         VStack(spacing: 10) {
             BioAgeNote(icon: "function", title: "Metodo transparente", detail: "Cardio compara VO2 max con referencias FRIEND. Sangre usa la formula publicada PhenoAge solo con los nueve analitos recientes. Las dos lentes nunca se mezclan.", color: .secondary)
-            BioAgeNote(icon: "exclamationmark.shield.fill", title: "No es una edad biologica clinica", detail: "Es informacion de bienestar y tendencia. Los factores de actividad dan contexto, pero no suman ni restan anos al resultado.", color: BioAgeInk.warn)
+            BioAgeNote(icon: "exclamationmark.shield.fill", title: "No es una edad biológica clínica", detail: "Es información de bienestar basada en tendencias. Los factores de actividad aportan contexto, pero no suman ni restan años al resultado.", color: BioAgeInk.warn)
         }
     }
 
@@ -353,10 +357,11 @@ private struct BioAgeHero: View {
                     highLabel: rangeLabel(5)
                 )
 
-                Text("Edad biologica")
+                Text(RecvelL10n.text("bioage.title"))
                     .font(.system(size: 24, weight: .bold))
                     .frame(maxWidth: .infinity)
                     .offset(y: w * 0.071 - 15)
+                    .accessibilityIdentifier("bioAge.hero.title")
 
                 Text(asOfText)
                     .font(.system(size: 15))
@@ -406,7 +411,7 @@ private struct BioAgeHero: View {
                         Text("·")
                         Text(deltaText).foregroundStyle(.primary)
                         Text("·")
-                        Label(report.confidence.rawValue.uppercased(), systemImage: "checkmark.seal.fill")
+                        Label(report.confidence.displayName.uppercased(), systemImage: "checkmark.seal.fill")
                     }
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.secondary)
@@ -445,7 +450,7 @@ private struct BioAgeHero: View {
     }
 
     private var asOfText: String {
-        "Al \(report.updatedAt.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: "es_MX"))))"
+        "\(RecvelL10n.text("bioage.asOf")) \(report.updatedAt.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: RecvelLanguageStore.load().localeIdentifier))))"
     }
     private var numberOpacity: Double {
         guard !reduceMotion else { return 1 }
@@ -461,11 +466,15 @@ private struct BioAgeHero: View {
         if seconds < 60 { return "Actualizado ahora" }
         if seconds < 3_600 { return "Actualizado hace \(seconds / 60) min" }
         if seconds < 86_400 { return "Actualizado hace \(seconds / 3_600) h" }
-        return "Actualizado hace \(seconds / 86_400) dias"
+        return "Actualizado hace \(seconds / 86_400) días"
     }
     private var accessibilitySummary: String {
-        guard let age = report.displayedAge else { return "Edad biologica, sin datos suficientes" }
-        return String(format: "Edad biologica %.1f anos. %@. Confianza %@", age, deltaText.lowercased(), report.confidence.rawValue.lowercased())
+        guard let age = report.displayedAge else { return RecvelL10n.text("bioage.accessibility.missing") }
+        return RecvelL10n.text("bioage.accessibility.value", values: [
+            "age": String(format: "%.1f", age),
+            "delta": deltaText.lowercased(),
+            "confidence": report.confidence.displayName.lowercased()
+        ])
     }
     private func particleProgress(at date: Date) -> Double {
         if reduceMotion { return 1 }
@@ -708,7 +717,7 @@ private struct BioAgeDriverCard: View {
                     Image(systemName: statusSymbol)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(statusColor)
-                    Text(driver.status.rawValue).foregroundStyle(statusColor)
+                    Text(driver.status.displayName).foregroundStyle(statusColor)
                     Text("· \(driver.value)").foregroundStyle(.secondary)
                 }
                 .font(.system(size: 14))
@@ -840,7 +849,7 @@ private struct BiomarkerDetailView: View {
                             AreaMark(x: .value("Fecha", point.date), y: .value("Valor", point.value)).foregroundStyle(LinearGradient(colors: [Color.white.opacity(0.16), .clear], startPoint: .top, endPoint: .bottom))
                         }.chartYAxis { AxisMarks(position: .leading) }.frame(height: 190).padding(14).liquidGlass(cornerRadius: 16)
                     }
-                    BioAgeNote(icon: "book.closed.fill", title: "Que representa", detail: reading.descriptor.explanation, color: .secondary)
+                    BioAgeNote(icon: "book.closed.fill", title: "Qué representa", detail: reading.descriptor.explanation, color: .secondary)
                     BioAgeNote(icon: "scope", title: "Referencia", detail: reading.descriptor.benchmark, color: .secondary)
                     BioAgeNote(icon: "person.crop.circle.badge.exclamationmark", title: "Lectura prudente", detail: "Usa tendencias y la fuente original. Ante valores inesperados o sintomas, consulta a un profesional de salud.", color: BioAgeInk.warn)
                 }.padding(16).padding(.bottom, 28)

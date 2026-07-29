@@ -9,14 +9,24 @@ struct DashboardView: View {
     @AppStorage("wakeMinutes") private var wakeMinutes = 420
     @AppStorage("weeklyWorkoutGoal") private var workoutGoal = 4
     @AppStorage("weeklySleepGoal") private var sleepGoal = 5
+    /// Misma meta por noche que usa el detalle de Sueño (banco de sueño consistente).
+    @AppStorage("sleepGoalHours") private var sleepGoalHours = 8.0
     @AppStorage("weeklyBalancedGoal") private var balancedGoal = 4
     @AppStorage(HomeDayRingMetric.storageKey) private var ringMetricsRaw = HomeDayRingMetric.defaultStorageValue
     @Query private var nutritionProfiles: [NutritionProfile]
+    @Query private var workoutTemplates: [WorkoutTemplate]
+    // Contexto extra del reporte de la mañana (ayuno, nutricion, animo).
+    @Query(sort: \FastingSession.startDate, order: .reverse) private var fastingSessions: [FastingSession]
+    @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
+    @Query(sort: \EmotionLog.date, order: .reverse) private var emotionLogs: [EmotionLog]
     @StateObject private var health = HealthDataProvider()
     @State private var appeared = false
     @State private var showsSettings = false
     @State private var showsPlan = false
     @State private var showsMonthCalendar = false
+    @State private var showsMorningReport = false
+    /// Dia (yyyy-MM-dd) en que se mostro el reporte por ultima vez: solo se abre solo una vez.
+    @AppStorage("morningReportLastShownKey") private var morningReportLastShownKey = ""
     @State private var selectedDay = Calendar.current.startOfDay(for: .now)
     @Namespace private var daySelectionNamespace
 
@@ -147,7 +157,7 @@ struct DashboardView: View {
             }
             .navigationDestination(isPresented: $showsSettings) {
                 SettingsView()
-                    .navigationTitle("Ajustes")
+                    .navigationTitle("settings.title")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar(.visible, for: .navigationBar)
                     .toolbarBackground(.hidden, for: .navigationBar)
@@ -167,6 +177,21 @@ struct DashboardView: View {
                 showsPlan = true
                 tabBarVisibility.wantsPlan = false
             }
+            .onChange(of: tabBarVisibility.wantsMorningReport) { _, wants in
+                guard wants else { return }
+                openMorningReport()
+                tabBarVisibility.wantsMorningReport = false
+            }
+            .sheet(isPresented: $showsMorningReport) {
+                MorningReportView(report: morningReport) {
+                    selectedDay = Calendar.current.startOfDay(for: health.snapshot.date)
+                }
+                // "Visto hoy" se marca cuando la hoja aparece de verdad, no al
+                // intentar abrirla: si la presentacion falla, manana reintenta.
+                .onAppear { morningReportLastShownKey = MorningReportEngine.dayKey(for: .now) }
+                .presentationDetents([.large])
+                .presentationCornerRadius(30)
+            }
             .onAppear {
                 if tabBarVisibility.wantsSettings {
                     showsSettings = true
@@ -175,6 +200,10 @@ struct DashboardView: View {
                 if tabBarVisibility.wantsPlan {
                     showsPlan = true
                     tabBarVisibility.wantsPlan = false
+                }
+                if tabBarVisibility.wantsMorningReport {
+                    openMorningReport()
+                    tabBarVisibility.wantsMorningReport = false
                 }
             }
             .task {
@@ -190,10 +219,103 @@ struct DashboardView: View {
                 withAnimation(reduceMotion ? nil : .spring(response: 0.65, dampingFraction: 0.84)) {
                     appeared = true
                 }
+                autoPresentMorningReportIfNeeded()
             }
             .onChange(of: scores.map(\.value)) { _, _ in
                 if health.dataMode != .empty { LocalStore.saveDailyScores(scores, in: modelContext) }
             }
+        }
+    }
+
+    // MARK: - Reporte de la mañana
+
+    /// Sesion planeada para hoy en la agenda semanal (nil en descanso).
+    private var plannedSessionToday: String? {
+        let routine = WeeklyRoutineStore.load()
+        let weekday = Calendar.current.component(.weekday, from: .now)
+        guard let assignment = routine.days[weekday], assignment != .rest else { return nil }
+        if case .template(let id) = assignment {
+            let name = workoutTemplates.first { $0.id == id }?.name
+            return name ?? assignment.displayLabel
+        }
+        return assignment.displayLabel
+    }
+
+    /// Ayuno activo al abrir el reporte (nil si no hay ninguno).
+    private var fastingStatus: FastingStatus? {
+        guard let active = fastingSessions.first(where: { $0.endDate == nil }) else {
+            return FastingStatus(headline: "Sin ayuno activo", detail: "Empieza uno desde la pestaña Ayuno")
+        }
+        let hours = Date.now.timeIntervalSince(active.startDate) / 3600
+        return FastingStatus(
+            headline: String(format: "%.1f h en ayuno", max(hours, 0)),
+            detail: String(format: "Objetivo %.0f h · empezaste a las %@",
+                           active.targetHours,
+                           active.startDate.formatted(date: .omitted, time: .shortened))
+        )
+    }
+
+    /// Objetivo calorico del dia frente a lo ya registrado hoy.
+    private var nutritionStatus: NutritionStatus? {
+        guard let profile = completedNutritionProfile else { return nil }
+        let targets = NutritionPlanEngine().targets(for: profile, now: .now)
+        let today = meals.filter { calendar.isDateInToday($0.createdAt) }
+        let eaten = today.reduce(0) { $0 + $1.calories }
+        return NutritionStatus(
+            headline: "\(eaten) / \(targets.calories) kcal",
+            detail: today.isEmpty
+                ? "Sin comidas registradas hoy"
+                : "\(today.count) \(today.count == 1 ? "comida registrada" : "comidas registradas")"
+        )
+    }
+
+    /// Emociones registradas en las ultimas 24 h.
+    private var recentEmotions: [String] {
+        let cutoff = Date.now.addingTimeInterval(-24 * 3600)
+        return emotionLogs.filter { $0.date >= cutoff }.map(\.emotion)
+    }
+
+    /// Se compone con los motores existentes; nunca con datos precalculados.
+    private var morningReport: MorningReport {
+        MorningReportEngine.report(
+            snapshot: health.snapshot,
+            history: health.history,
+            scores: scoreEngine.scores(for: health.snapshot, history: health.history),
+            factors: scoreEngine.factors(for: health.snapshot, history: health.history),
+            brief: insightEngine.briefing(
+                snapshot: health.snapshot,
+                history: health.history,
+                scores: scoreEngine.scores(for: health.snapshot, history: health.history),
+                wakeMinutes: wakeMinutes
+            ),
+            sleepBank: SleepBankEngine().assess(history: health.history, goalHours: sleepGoalHours),
+            plannedSession: plannedSessionToday,
+            stress: stressEngine.assess(snapshot: health.snapshot, history: health.history),
+            emotions: recentEmotions,
+            fasting: fastingStatus,
+            nutrition: nutritionStatus
+        )
+    }
+
+    private func openMorningReport() {
+        showsMorningReport = true
+    }
+
+    private func autoPresentMorningReportIfNeeded() {
+        // Los UI tests entran a Home a cualquier hora: sin esto la hoja se
+        // abriria encima y los haria fallar segun la hora del dia.
+        guard !UserDefaults.standard.bool(forKey: "skipMorningReport") else { return }
+        guard MorningReportEngine.shouldAutoPresent(
+            now: .now,
+            wakeMinutes: wakeMinutes,
+            lastShownKey: morningReportLastShownKey,
+            hasData: health.dataMode != .empty
+        ) else { return }
+        // Presentar dentro del `task` inicial se pierde: la ventana aun no es
+        // key y SwiftUI descarta la hoja. Se espera a que Home este en pantalla.
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            showsMorningReport = true
         }
     }
 
@@ -213,11 +335,33 @@ struct DashboardView: View {
                 Text("RECVEL · \(isShowingToday ? "HOY" : "HISTORIAL")")
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(ScoreKind.recovery.color)
-                Text("Briefing diario")
+                Text("home.morningSummary")
                     .font(.system(size: 29, weight: .bold))
                 Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
+                // Un reporte que solo aparece solo es un reporte que no puedes consultar.
+                if health.dataMode != .empty {
+                    Button {
+                        Haptics.soft()
+                        openMorningReport()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sun.horizon.fill")
+                                .font(.caption2.weight(.bold))
+                            Text("Ver reporte de hoy")
+                                .font(.caption.weight(.semibold))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .foregroundStyle(ScoreKind.recovery.color)
+                        .padding(.top, 2)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("dashboard.openMorningReport")
+                }
             }
             Spacer()
             dataSourceButton
@@ -226,13 +370,13 @@ struct DashboardView: View {
                     Haptics.menuSelect()
                     showsSettings = true
                 } label: {
-                    Label("Datos y privacidad", systemImage: "gearshape")
+                    Label("settings.title", systemImage: "gearshape")
                 }
                 Button {
                     Haptics.menuSelect()
                     Task { await health.refresh() }
                 } label: {
-                    Label("Actualizar datos", systemImage: "arrow.clockwise")
+                    Label("home.refreshData", systemImage: "arrow.clockwise")
                 }
                 Button {
                     Haptics.menuSelect()
@@ -258,7 +402,7 @@ struct DashboardView: View {
     private var dayStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Ultimos dias")
+                Text("Últimos días")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("dashboard.dayStrip")
@@ -357,7 +501,7 @@ struct DashboardView: View {
                 Circle()
                     .fill(dataModeColor)
                     .frame(width: 7, height: 7)
-                Text(health.isLoading ? "Leyendo" : health.dataMode.rawValue)
+                Text(health.isLoading ? RecvelL10n.text("common.reading") : health.dataMode.displayName)
                     .font(.caption2.weight(.bold))
             }
             .padding(.horizontal, 10)
@@ -366,7 +510,7 @@ struct DashboardView: View {
         }
         .menuOrder(.fixed)
         .hapticMenuLabel()
-        .accessibilityLabel("Fuente de datos: \(health.dataMode.rawValue). Toca para conectar Apple Health")
+        .accessibilityLabel("\(RecvelL10n.text("dataSource.label")): \(health.dataMode.displayName). \(RecvelL10n.text("dataSource.connectHint"))")
     }
 
     private var dataModeColor: Color {
@@ -383,7 +527,7 @@ struct DashboardView: View {
         VStack(spacing: 16) {
             ProgressView().tint(ScoreKind.recovery.color).scaleEffect(1.2)
             Text("Leyendo Apple Health").font(.headline)
-            Text("Normalizando fuentes y preparando tus ultimos 14 dias.")
+            Text("Estamos organizando tus fuentes y preparando los últimos 14 días.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -397,9 +541,9 @@ struct DashboardView: View {
                 Image(systemName: "heart.text.square.fill")
                     .font(.system(size: 38))
                     .foregroundStyle(ScoreKind.recovery.color)
-                Text("Tu briefing necesita datos")
+                Text("home.summary.needsData")
                     .font(.system(size: 27, weight: .bold))
-                Text("Conecta Apple Health. Recvel mostrara solo las senales autorizadas y construira tu baseline sin inventar valores faltantes.")
+                Text("Conecta Apple Health. Recvel mostrará solo las señales autorizadas y construirá tu referencia personal sin completar datos faltantes.")
                     .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
 
@@ -413,9 +557,9 @@ struct DashboardView: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 12) {
-                emptySignal("1–2 dias", "Primer resumen con confianza baja")
-                emptySignal("7 dias", "Baseline inicial y regularidad")
-                emptySignal("21 dias", "Confianza alta y mejores comparaciones")
+                emptySignal("1–2 días", "Primer resumen con confianza baja")
+                emptySignal("7 días", "Referencia personal inicial y regularidad")
+                emptySignal("21 días", "Mayor confianza y comparaciones más útiles")
             }
         }
         .padding(20)
@@ -492,7 +636,7 @@ struct DashboardView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Tendencias").font(.title2.weight(.bold))
-                    Text("Tu ultima semana contra tu baseline")
+                    Text("Tu última semana frente a tu referencia personal")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -506,14 +650,14 @@ struct DashboardView: View {
                 VStack(spacing: 14) {
                     HStack(spacing: 0) {
                         trendSummary(
-                            title: "Recovery",
+                            title: ScoreKind.recovery.displayName,
                             value: "\(Int(recoveryTrend.last ?? 0))%",
                             color: ScoreKind.recovery.color,
                             values: recoveryTrend
                         )
                         Rectangle().fill(Color.white.opacity(0.07)).frame(width: 1, height: 76)
                         trendSummary(
-                            title: "Sueno",
+                            title: ScoreKind.sleep.displayName,
                             value: String(format: "%.1f h", sleepTrend.last ?? 0),
                             color: ScoreKind.sleep.color,
                             values: sleepTrend
@@ -528,7 +672,7 @@ struct DashboardView: View {
                     }
 
                     HStack {
-                        Text("Ver analisis de 7 dias")
+                        Text("Ver análisis de 7 días")
                             .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Spacer()
                         Image(systemName: "arrow.right")
@@ -600,7 +744,7 @@ struct DashboardView: View {
     private var prescription: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Tu plan para hoy")
+                Text("home.todayPlan")
                     .font(.headline)
                 Spacer()
                 Text("SE ACTUALIZA CON TU DIA")
@@ -684,7 +828,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Activacion fisiologica")
+                    Text("Activación fisiológica")
                         .font(.headline)
                     Text("Ultimas 24 h · FC relativa a tu reposo")
                         .font(.caption)
@@ -794,10 +938,10 @@ struct DashboardView: View {
     private var recoveryDrivers: some View {
         VStack(alignment: .leading, spacing: 13) {
             HStack {
-                Text("Que mueve tu Recovery")
+                Text(RecvelL10n.text("recovery.factors.title"))
                     .font(.headline)
                 Spacer()
-                Text("vs. tu baseline")
+                Text("vs. tu referencia personal")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -889,8 +1033,8 @@ struct DashboardView: View {
 
     private var disclaimer: some View {
         Text(health.dataMode == .demo
-             ? "Vista demo: los valores son ilustrativos. Conecta Apple Health para recibir un briefing personal."
-             : "Estimaciones de bienestar basadas en tendencias de Apple Health; no son diagnostico medico.")
+             ? RecvelL10n.text("home.demo.disclaimer")
+             : RecvelL10n.text("settings.wellness.disclaimer"))
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 3)
@@ -945,11 +1089,11 @@ private struct FluidRecoveryHero: View {
 
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Label("RECOVERY", systemImage: "waveform.path.ecg")
+                        Label(ScoreKind.recovery.displayName.uppercased(), systemImage: "waveform.path.ecg")
                             .font(.caption.weight(.bold))
                             .foregroundStyle(ScoreKind.recovery.color)
                         Spacer()
-                        Text(score.confidence.rawValue.uppercased())
+                        Text(score.confidence.displayName.uppercased())
                             .font(.system(size: 9, weight: .heavy))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
@@ -1014,7 +1158,7 @@ private struct FluidRecoveryHero: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Recovery \(score.value) por ciento, confianza \(score.confidence.rawValue). \(score.summary)")
+        .accessibilityLabel("\(ScoreKind.recovery.displayName) \(score.value) por ciento, \(RecvelL10n.text("common.confidence")) \(score.confidence.displayName). \(score.summary)")
     }
 }
 
@@ -1052,7 +1196,7 @@ private struct DashboardScoreInstrument: View {
             }
             .frame(width: 62, height: 62)
 
-            Label(score.kind.rawValue, systemImage: score.kind.icon)
+            Label(score.kind.displayName, systemImage: score.kind.icon)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -1068,6 +1212,6 @@ private struct DashboardScoreInstrument: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(score.kind.rawValue), \(displayValue)")
+        .accessibilityLabel("\(score.kind.displayName), \(displayValue)")
     }
 }

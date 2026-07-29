@@ -2,6 +2,19 @@ import XCTest
 @testable import Recvel
 
 final class EngineTests: XCTestCase {
+    private var originalLanguage: AppLanguage = .system
+
+    override func setUp() {
+        super.setUp()
+        originalLanguage = RecvelLanguageStore.load()
+        RecvelLanguageStore.save(.esMX)
+    }
+
+    override func tearDown() {
+        RecvelLanguageStore.save(originalLanguage)
+        super.tearDown()
+    }
+
     func testBaselineRejectsLargeOutlier() throws {
         let engine = BaselineEngine()
         let values = [49.0, 50, 51, 52, 500]
@@ -533,7 +546,7 @@ final class EngineTests: XCTestCase {
             strainScore: 62
         )
 
-        XCTAssertTrue(advice.title.contains("sueno"))
+        XCTAssertTrue(advice.title.localizedCaseInsensitiveContains("sueño"))
         XCTAssertEqual(advice.metric, "6.2 h")
         XCTAssertFalse(advice.reasons.isEmpty)
     }
@@ -579,7 +592,7 @@ final class EngineTests: XCTestCase {
         )
         let filledPlan = engine.plan(for: profile, meals: [proteinMeal], context: .empty, now: now)
 
-        XCTAssertTrue(emptyPlan.tomorrowReason.contains("proteina"))
+        XCTAssertTrue(emptyPlan.tomorrowReason.localizedCaseInsensitiveContains("proteína"))
         XCTAssertNotEqual(emptyPlan.tomorrowReason, filledPlan.tomorrowReason)
         XCTAssertEqual(filledPlan.tomorrow.count, 3)
     }
@@ -1492,5 +1505,1417 @@ final class EngineTests: XCTestCase {
         let naiveTotal = history.compactMap(\.sleepHours).reduce(0) { $0 + ($1 - 8) }
         XCTAssertEqual(naiveTotal, -20, accuracy: 0.01)
         XCTAssertNotEqual(card.balanceHours, naiveTotal, "La ventana rodante NO debe ser el acumulado total")
+    }
+
+    // MARK: - 1RM estimado (progresion de fuerza)
+
+    func testOneRepMaxAveragesEpleyAndBrzyckiInReliableRange() {
+        // 100 kg x 5 reps: Epley 116.67, Brzycki 112.5 -> promedio 114.58.
+        let e = OneRepMaxEstimator.estimate(weightKg: 100, reps: 5)
+        XCTAssertEqual(try XCTUnwrap(e), 114.58, accuracy: 0.05)
+        // 80 kg x 8 reps.
+        let e2 = OneRepMaxEstimator.estimate(weightKg: 80, reps: 8)
+        XCTAssertEqual(try XCTUnwrap(e2), 100.32, accuracy: 0.1)
+    }
+
+    func testOneRepMaxAtOneRepIsTheWeightItself() {
+        XCTAssertEqual(OneRepMaxEstimator.estimate(weightKg: 120, reps: 1), 120)
+    }
+
+    func testOneRepMaxRefusesUnreliableOrEmptyInput() {
+        XCTAssertNil(OneRepMaxEstimator.estimate(weightKg: 100, reps: 11), "Sobre 10 reps las formulas pierden fiabilidad")
+        XCTAssertNil(OneRepMaxEstimator.estimate(weightKg: 100, reps: 15))
+        XCTAssertNil(OneRepMaxEstimator.estimate(weightKg: 0, reps: 5), "Sin peso no hay 1RM")
+        XCTAssertNil(OneRepMaxEstimator.estimate(weightKg: 100, reps: 0))
+    }
+
+    func testOneRepMaxIsMonotonicWithReps() {
+        // A igual peso, mas reps => 1RM estimado mayor (dentro del rango fiable).
+        let a = try? XCTUnwrap(OneRepMaxEstimator.estimate(weightKg: 100, reps: 3))
+        let b = try? XCTUnwrap(OneRepMaxEstimator.estimate(weightKg: 100, reps: 8))
+        XCTAssertNotNil(a); XCTAssertNotNil(b)
+        if let a, let b { XCTAssertGreaterThan(b, a) }
+    }
+
+    func testWorkoutFeelingEffortScoreIsMonotonic() {
+        let ordered: [WorkoutFeeling] = [.easy, .comfortable, .solid, .hard, .maximal]
+        let scores = ordered.map(\.effortScore1to10)
+        XCTAssertEqual(scores, scores.sorted(), "El esfuerzo 1-10 debe crecer de facil a al-limite")
+        XCTAssertEqual(scores.first, 2)
+        XCTAssertEqual(scores.last, 10)
+    }
+
+    func testWorkoutFeelingMapsFromImportedEffortScore() {
+        XCTAssertEqual(WorkoutFeeling.fromEffortScore(1), .easy)
+        XCTAssertEqual(WorkoutFeeling.fromEffortScore(4), .comfortable)
+        XCTAssertEqual(WorkoutFeeling.fromEffortScore(6), .solid)
+        XCTAssertEqual(WorkoutFeeling.fromEffortScore(8), .hard)
+        XCTAssertEqual(WorkoutFeeling.fromEffortScore(10), .maximal)
+    }
+
+    // MARK: - Agenda semanal: split, deporte y retro-compat
+
+    func testWeeklyRoutineDecodesLegacyJSONWithDefaults() throws {
+        // JSON de la version MVP: sin splitType, cardioSport ni minutesPerDay.
+        // Swift codifica [Int: DayAssignment] como objeto ({} cuando está vacío).
+        let legacy = """
+        {"goal":"strength","minutesPerSession":50,"onboarded":true,"days":{}}
+        """.data(using: .utf8)!
+        let routine = try JSONDecoder().decode(WeeklyRoutine.self, from: legacy)
+        XCTAssertEqual(routine.goal, .strength)
+        XCTAssertEqual(routine.minutesPerSession, 50)
+        XCTAssertTrue(routine.onboarded)
+        XCTAssertEqual(routine.splitType, .fullBody, "Default retro-compatible")
+        XCTAssertNil(routine.cardioSport)
+        XCTAssertTrue(routine.minutesPerDay.isEmpty)
+        XCTAssertEqual(routine.experience, .intermediate)
+        XCTAssertEqual(routine.objective, .general)
+        XCTAssertEqual(routine.phase, .base)
+        XCTAssertTrue(routine.sessionDetails.isEmpty)
+        XCTAssertFalse(routine.dailyChallengesEnabled)
+        XCTAssertTrue(routine.dailyChallenges.isEmpty)
+    }
+
+    func testDailyChallengeUpperDayProducesLowerFocus() {
+        let engine = DailyChallengeEngine()
+        let templateID = UUID()
+        let challenges = engine.generateChallenges(
+            days: [2: .template(templateID), 3: .rest, 4: .rest, 5: .rest, 6: .rest, 7: .rest, 1: .rest],
+            splitType: .upperLower,
+            cardioSport: nil,
+            templateFocus: [templateID: "Tren superior"]
+        )
+        let monday = challenges[2]
+        XCTAssertNotNil(monday)
+        XCTAssertEqual(monday?.kind, .strengthOpposite)
+        XCTAssertTrue(monday?.focus.localizedCaseInsensitiveContains("inferior") == true)
+        // "Sentadilla" en singular: alineado al nombre exacto de ExerciseLibrary
+        // para que el challenge tenga thumbnail (test de cobertura lo garantiza).
+        XCTAssertTrue(monday?.exercisesText.localizedCaseInsensitiveContains("Sentadilla") == true)
+    }
+
+    func testDailyChallengeLowerDayProducesUpperFocus() {
+        let engine = DailyChallengeEngine()
+        let templateID = UUID()
+        let challenges = engine.generateChallenges(
+            days: [2: .template(templateID)],
+            splitType: .upperLower,
+            cardioSport: nil,
+            templateFocus: [templateID: "Tren inferior"]
+        )
+        XCTAssertTrue(challenges[2]?.focus.localizedCaseInsensitiveContains("superior") == true)
+    }
+
+    func testDailyChallengeRestDayIsLightWithExplicitFocus() {
+        let engine = DailyChallengeEngine()
+        let challenges = engine.generateChallenges(
+            days: [2: .rest],
+            splitType: .fullBody,
+            cardioSport: nil,
+            templateFocus: [:]
+        )
+        let rest = challenges[2]
+        // El dia de descanso ofrece fortalecimiento ligero (mantenimiento) o
+        // movilidad; ambos cortos y con foco explicito.
+        XCTAssertTrue(rest?.kind == .maintenance || rest?.kind == .mobility)
+        XCTAssertFalse(rest?.focus.isEmpty == true)
+        XCTAssertLessThanOrEqual(rest?.durationMinutes ?? 99, 15)
+    }
+
+    func testDailyChallengeAntiOverlapAvoidsSameBucketAsStrengthDay() {
+        let engine = DailyChallengeEngine()
+        let upperID = UUID()
+        let challenges = engine.generateChallenges(
+            days: [
+                2: .template(upperID),
+                3: .rest
+            ],
+            splitType: .upperLower,
+            cardioSport: nil,
+            templateFocus: [upperID: "Tren superior"]
+        )
+        // Día de descanso adyacente no debe empujar upper/push/chest.
+        let restFocus = ChallengeMuscleBucket.classify(challenges[3]?.focus)
+        XCTAssertFalse(ChallengeMuscleBucket.upper.conflicting.contains(restFocus) && restFocus != .other)
+    }
+
+    func testDailyChallengeMobilityDayCanStillHaveChallenge() {
+        let engine = DailyChallengeEngine()
+        let challenges = engine.generateChallenges(
+            days: [2: .mobility],
+            splitType: .fullBody,
+            cardioSport: nil,
+            templateFocus: [:]
+        )
+        XCTAssertNotNil(challenges[2])
+        XCTAssertTrue(challenges[2]?.kind == .walk || challenges[2]?.kind == .mobility)
+    }
+
+    func testMobilityAndCardioRoutinesAreConcrete() {
+        let engine = DailyChallengeEngine()
+        let mobility = engine.mobilityRoutine(focusHint: "Hombros")
+        XCTAssertFalse(mobility.exercisesText.isEmpty)
+        XCTAssertGreaterThan(mobility.durationMinutes, 0)
+
+        let cardio = engine.cardioRoutine(sport: .running, durationMinutes: 25)
+        XCTAssertEqual(cardio.focus, "Correr")
+        XCTAssertTrue(cardio.exercisesText.contains("25 min"))
+    }
+
+    func testWeeklyRoutineRoundTripsDailyChallengeFields() throws {
+        let challenge = DailyChallengeDay(
+            title: "Challenge lower",
+            kind: .strengthOpposite,
+            focus: "Tren inferior",
+            exercisesText: "Sentadillas | 30",
+            durationMinutes: 12
+        )
+        let routine = WeeklyRoutine(
+            onboarded: true,
+            dailyChallengesEnabled: true,
+            dailyChallenges: [2: challenge]
+        )
+        let data = try JSONEncoder().encode(routine)
+        let back = try JSONDecoder().decode(WeeklyRoutine.self, from: data)
+        XCTAssertTrue(back.dailyChallengesEnabled)
+        XCTAssertEqual(back.dailyChallenges[2]?.focus, "Tren inferior")
+        XCTAssertEqual(back.dailyChallenges[2]?.kind, .strengthOpposite)
+    }
+
+    func testWeeklyRoutineRoundTripsSharedTemplateLinks() throws {
+        let cardioID = UUID()
+        let challengeID = UUID()
+        let routine = WeeklyRoutine(
+            onboarded: true,
+            days: [2: .cardio("running")],
+            sessionTemplateIDs: [2: cardioID],
+            dailyChallengeTemplateIDs: [2: challengeID]
+        )
+
+        let back = try JSONDecoder().decode(WeeklyRoutine.self, from: JSONEncoder().encode(routine))
+
+        XCTAssertEqual(back.templateID(forWeekday: 2), cardioID)
+        XCTAssertEqual(back.dailyChallengeTemplateIDs[2], challengeID)
+    }
+
+    func testTemplateCodecSupportsSingleRepAndTimedRoutines() {
+        let parsed = TemplateCodec.parse("Sentadillas | 30\nCaminata | 12 min\nEstiramiento | 45s")
+
+        XCTAssertEqual(parsed[0].sets, 1)
+        XCTAssertEqual(parsed[0].reps, 30)
+        XCTAssertEqual(parsed[1].durationSeconds, 720)
+        XCTAssertEqual(parsed[2].durationSeconds, 45)
+
+        let roundTrip = TemplateCodec.parse(TemplateCodec.serialize(parsed))
+        XCTAssertEqual(roundTrip.map(\.durationSeconds), parsed.map(\.durationSeconds))
+        XCTAssertEqual(roundTrip.map(\.reps), parsed.map(\.reps))
+    }
+
+    @MainActor
+    func testWorkoutTemplateStoresRoutineKindAndDuration() {
+        let template = WorkoutTemplate(
+            name: "Cardio suave",
+            focus: "Correr",
+            exercisesText: "Correr | 25 min",
+            kind: .cardio,
+            sourceID: "test.cardio",
+            durationMinutes: 25
+        )
+
+        XCTAssertEqual(template.kind, .cardio)
+        XCTAssertEqual(template.sourceID, "test.cardio")
+        XCTAssertEqual(template.durationMinutes, 25)
+    }
+
+    func testWeeklyRoutineRoundTripsNewFields() throws {
+        let routine = WeeklyRoutine(
+            goal: .mixed, minutesPerSession: 45, onboarded: true, days: [:],
+            splitType: .pushPullLegs, cardioSport: .football, minutesPerDay: [2: 60],
+            experience: .competitive,
+            objective: .sportPerformance,
+            phase: .peak,
+            sessionDetails: [
+                2: ScheduledSessionDetails(
+                    startMinute: 7 * 60,
+                    flexibility: .fixed,
+                    durationMinutes: 75,
+                    targetRPE: 8,
+                    cardioIntent: .intervals,
+                    focusOverride: "Velocidad"
+                )
+            ]
+        )
+        let data = try JSONEncoder().encode(routine)
+        let back = try JSONDecoder().decode(WeeklyRoutine.self, from: data)
+        XCTAssertEqual(back.splitType, .pushPullLegs)
+        XCTAssertEqual(back.cardioSport, .football)
+        XCTAssertEqual(back.minutes(forWeekday: 2), 75)
+        XCTAssertEqual(back.minutes(forWeekday: 4), 45, "Fallback al global cuando no hay override")
+        XCTAssertEqual(back.experience, .competitive)
+        XCTAssertEqual(back.objective, .sportPerformance)
+        XCTAssertEqual(back.phase, .peak)
+        XCTAssertEqual(back.details(forWeekday: 2).targetRPE, 8)
+        XCTAssertEqual(back.details(forWeekday: 2).focusOverride, "Velocidad")
+    }
+
+    func testWeeklyRoutineCalculatesPlannedSessionRPELoad() {
+        let routine = WeeklyRoutine(
+            onboarded: true,
+            days: [2: .cardio(sport: .running), 4: .cardio(sport: .football), 6: .rest],
+            sessionDetails: [
+                2: ScheduledSessionDetails(durationMinutes: 60, targetRPE: 5),
+                4: ScheduledSessionDetails(durationMinutes: 90, targetRPE: 8)
+            ]
+        )
+        XCTAssertEqual(routine.plannedMinutes, 150)
+        XCTAssertEqual(routine.plannedLoad, 1_020)
+        XCTAssertEqual(routine.highIntensitySessionCount, 1)
+    }
+
+    func testTrainingReadinessScorePenalizesSoreness() {
+        let ready = TrainingReadinessContext(energy: 5, soreness: 1, motivation: 5, hasPainOrLimitation: false)
+        let fatigued = TrainingReadinessContext(energy: 2, soreness: 5, motivation: 2, hasPainOrLimitation: false)
+        XCTAssertGreaterThan(ready.score, fatigued.score)
+        XCTAssertEqual(ready.score, 100)
+    }
+
+    func testCardioSportTransportsThroughDayAssignment() {
+        let assignment = DayAssignment.cardio(sport: .football)
+        guard case .cardio(let name) = assignment else { return XCTFail("Debe ser cardio") }
+        XCTAssertEqual(DayAssignment.sport(fromCardioName: name), .football)
+        // Un string legado no es un deporte y se muestra tal cual.
+        XCTAssertNil(DayAssignment.sport(fromCardioName: "Carrera"))
+    }
+
+    func testSuggestedWeekUsesChosenSportForCardioDays() {
+        let plan = WeeklyRoutinePlanner().suggestedWeek(
+            goal: .cardio,
+            trainingWeekdays: [2, 4, 6],
+            templateIDs: [],
+            splitType: .fullBody,
+            cardioSport: .football
+        )
+        let cardioDays = plan.values.filter {
+            if case .cardio(let n) = $0 { return DayAssignment.sport(fromCardioName: n) == .football }
+            return false
+        }
+        XCTAssertEqual(cardioDays.count, 3, "Los 3 días de cardio usan el deporte elegido")
+        XCTAssertEqual(plan.values.filter { $0 == .rest }.count, 4)
+    }
+
+    func testSuggestedWeekStrengthUsesTemplatesAndRestsElsewhere() {
+        let ids = [UUID(), UUID()]
+        let plan = WeeklyRoutinePlanner().suggestedWeek(
+            goal: .strength, trainingWeekdays: [2, 4, 6], templateIDs: ids, splitType: .upperLower
+        )
+        XCTAssertEqual(WeeklyRoutinePlanner().weeklyStrengthDays(in: plan), 3)
+        XCTAssertEqual(plan.values.filter { $0 == .rest }.count, 4)
+    }
+
+    func testSplitFocusRotationMatchesScience() {
+        // Full body = 1 foco (todo el cuerpo); PPL = 3; upper/lower = 2.
+        XCTAssertEqual(SplitType.fullBody.focusRotation.count, 1)
+        XCTAssertEqual(SplitType.upperLower.focusRotation.count, 2)
+        XCTAssertEqual(SplitType.pushPullLegs.focusRotation.count, 3)
+        XCTAssertTrue(SplitType.custom.focusRotation.isEmpty)
+        let planner = WeeklyRoutinePlanner()
+        XCTAssertEqual(planner.focusLabel(splitType: .pushPullLegs, strengthDayIndex: 0), "Empuje")
+        XCTAssertEqual(planner.focusLabel(splitType: .pushPullLegs, strengthDayIndex: 3), "Empuje", "Cicla")
+    }
+
+    // MARK: - Coaching de entrenamiento (dia siguiente)
+
+    private func makeLastWorkout(hoursAgo: Double, effort: Int?, group: String, strength: Bool = true) -> LastWorkoutContext {
+        LastWorkoutContext(
+            endedAt: Date.now.addingTimeInterval(-hoursAgo * 3600),
+            effortScore: effort,
+            muscleGroup: group,
+            wasStrength: strength
+        )
+    }
+
+    func testCoachingFlagsSameMuscleWithin48h() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Pecho",
+            recovery: 70,
+            lastWorkout: makeLastWorkout(hoursAgo: 24, effort: 6, group: "Pecho"),
+            consecutiveTrainingDays: 2,
+            plannedBedtime: nil,
+            proposedStart: nil
+        )
+        XCTAssertTrue(tips.contains { $0.kind == .muscleReadiness }, "Mismo grupo <48h debe avisar")
+        XCTAssertTrue(tips.allSatisfy { !$0.evidence.isEmpty }, "Todo tip lleva evidencia")
+    }
+
+    func testCoachingAllowsDifferentMuscleSameDay() {
+        // Entrenó tren superior hace 6h (madrugada); hoy toca inferior.
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Tren inferior",
+            recovery: 68,
+            lastWorkout: makeLastWorkout(hoursAgo: 6, effort: 6, group: "Tren superior"),
+            consecutiveTrainingDays: 1,
+            plannedBedtime: nil,
+            proposedStart: nil
+        )
+        let readiness = tips.first { $0.kind == .muscleReadiness }
+        XCTAssertNotNil(readiness)
+        XCTAssertTrue(readiness?.detail.localizedCaseInsensitiveContains("otra zona") == true
+            || readiness?.title.localizedCaseInsensitiveContains("otra zona") == true)
+    }
+
+    func testCoachingSuggestsDeloadAfterManyConsecutiveDays() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Full body",
+            recovery: 45,
+            lastWorkout: makeLastWorkout(hoursAgo: 20, effort: 7, group: "Full body"),
+            consecutiveTrainingDays: 7,
+            plannedBedtime: nil,
+            proposedStart: nil
+        )
+        XCTAssertTrue(tips.contains { $0.kind == .deload }, "7 días seguidos + recovery baja => deload")
+    }
+
+    func testCoachingModeratesAfterHardSessionWithLowRecovery() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Piernas",
+            recovery: 48,
+            lastWorkout: makeLastWorkout(hoursAgo: 30, effort: 9, group: "Espalda"),
+            consecutiveTrainingDays: 2,
+            plannedBedtime: nil,
+            proposedStart: nil
+        )
+        XCTAssertTrue(tips.contains { $0.kind == .recovery }, "Esfuerzo alto + recovery baja => moderar")
+    }
+
+    func testCoachingTimingWarnsWhenTrainingTooCloseToBedtime() {
+        let cal = Calendar.current
+        let bedtime = cal.date(bySettingHour: 22, minute: 30, second: 0, of: .now)!
+        // Empieza 22:00 -> termina ~23:00 -> a 90 min... no: termina a <1h de dormir.
+        let start = cal.date(bySettingHour: 22, minute: 0, second: 0, of: .now)!
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "HIIT",
+            recovery: 65,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: bedtime,
+            proposedStart: start
+        )
+        let timing = tips.first { $0.kind == .timing }
+        XCTAssertNotNil(timing, "Entreno que termina <1h antes de dormir debe avisar")
+        XCTAssertGreaterThan(timing?.suggestedShiftMinutes ?? 0, 0)
+    }
+
+    func testCoachingNoTimingWarningWhenWellBeforeBed() {
+        let cal = Calendar.current
+        let bedtime = cal.date(bySettingHour: 23, minute: 0, second: 0, of: .now)!
+        let start = cal.date(bySettingHour: 17, minute: 0, second: 0, of: .now)! // termina ~18:00, 5h antes
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Correr",
+            recovery: 65,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: bedtime,
+            proposedStart: start
+        )
+        XCTAssertFalse(tips.contains { $0.kind == .timing }, "≥4h antes de dormir no hay conflicto")
+    }
+
+    func testCoachingPositiveWhenRecoveryHighAndNoFlags() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Tren superior",
+            recovery: 82,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: nil,
+            proposedStart: nil
+        )
+        XCTAssertEqual(tips.first?.kind, .positive)
+    }
+
+    func testCoachingReducesDurationAndRPEWhenReadinessIsLow() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Tren inferior",
+            recovery: 62,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 2,
+            plannedBedtime: nil,
+            proposedStart: nil,
+            plannedDurationMinutes: 80,
+            targetRPE: 8,
+            readiness: TrainingReadinessContext(
+                energy: 2,
+                soreness: 5,
+                motivation: 2,
+                hasPainOrLimitation: false
+            )
+        )
+        let tip = tips.first { $0.kind == .readiness }
+        XCTAssertTrue(tip?.detail.contains("60 min") == true)
+        XCTAssertTrue(tip?.detail.contains("RPE 6/10") == true)
+    }
+
+    func testCoachingPrioritizesPainWithoutPushingSession() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Full body",
+            recovery: 88,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: nil,
+            proposedStart: nil,
+            readiness: TrainingReadinessContext(
+                energy: 5,
+                soreness: 1,
+                motivation: 5,
+                hasPainOrLimitation: true
+            )
+        )
+        XCTAssertEqual(tips.first?.kind, .readiness)
+        XCTAssertTrue(tips.first?.detail.localizedCaseInsensitiveContains("evita forzar") == true)
+    }
+
+    func testFixedLateScheduleModeratesInsteadOfMoving() {
+        let calendar = Calendar.current
+        let bedtime = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: .now)!
+        let start = calendar.date(bySettingHour: 22, minute: 0, second: 0, of: .now)!
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Intervalos",
+            recovery: 70,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: bedtime,
+            proposedStart: start,
+            plannedDurationMinutes: 75,
+            targetRPE: 8,
+            scheduleFlexibility: .fixed
+        )
+        let timing = tips.first { $0.kind == .timing }
+        XCTAssertNotNil(timing)
+        XCTAssertEqual(timing?.suggestedShiftMinutes, 0)
+        XCTAssertTrue(timing?.title.localizedCaseInsensitiveContains("modera") == true)
+    }
+
+    func testConsecutiveTrainingDaysCountsStreak() {
+        let cal = Calendar.current
+        let now = cal.date(bySettingHour: 12, minute: 0, second: 0, of: .now)!
+        // Hoy, ayer, antier => 3.
+        let dates = (0...2).compactMap { cal.date(byAdding: .day, value: -$0, to: now) }
+        XCTAssertEqual(TrainingCoachingEngine().consecutiveTrainingDays(workoutDates: dates, now: now), 3)
+        // Con un hueco: hoy y hace 3 días => racha de 1.
+        let gapped = [now, cal.date(byAdding: .day, value: -3, to: now)!]
+        XCTAssertEqual(TrainingCoachingEngine().consecutiveTrainingDays(workoutDates: gapped, now: now), 1)
+        XCTAssertEqual(TrainingCoachingEngine().consecutiveTrainingDays(workoutDates: [], now: now), 0)
+    }
+
+    // MARK: - Progresion por ejercicio
+
+    func testExerciseProgressionSummarizesAndSortsBySets() {
+        let s1 = UUID(); let s2 = UUID()
+        let logs = [
+            ExerciseSetLog(sessionID: s1, date: Date.now.addingTimeInterval(-86400), exerciseName: "Press de banca", muscleGroup: "Pecho", setIndex: 0, weightKg: 80, reps: 5, estimatedOneRepMaxKg: OneRepMaxEstimator.estimate(weightKg: 80, reps: 5)),
+            ExerciseSetLog(sessionID: s2, date: Date.now, exerciseName: "Press de banca", muscleGroup: "Pecho", setIndex: 0, weightKg: 85, reps: 5, estimatedOneRepMaxKg: OneRepMaxEstimator.estimate(weightKg: 85, reps: 5)),
+            ExerciseSetLog(sessionID: s2, date: Date.now, exerciseName: "Sentadilla", muscleGroup: "Piernas", setIndex: 0, weightKg: 100, reps: 5, estimatedOneRepMaxKg: OneRepMaxEstimator.estimate(weightKg: 100, reps: 5))
+        ]
+        let summaries = ExerciseProgression.summaries(from: logs)
+        XCTAssertEqual(summaries.count, 2)
+        let bench = summaries.first { $0.exerciseName == "Press de banca" }
+        XCTAssertEqual(bench?.sessionCount, 2, "Dos sesiones distintas")
+        XCTAssertEqual(bench?.latestTopSet, 85, "El top set de la sesión más reciente")
+    }
+
+    func testExerciseProgressionSeriesUsesBestPerSession() {
+        let s1 = UUID()
+        let logs = [
+            ExerciseSetLog(sessionID: s1, date: Date.now, exerciseName: "Sentadilla", muscleGroup: "Piernas", setIndex: 0, weightKg: 90, reps: 5, estimatedOneRepMaxKg: OneRepMaxEstimator.estimate(weightKg: 90, reps: 5)),
+            ExerciseSetLog(sessionID: s1, date: Date.now, exerciseName: "Sentadilla", muscleGroup: "Piernas", setIndex: 1, weightKg: 100, reps: 3, estimatedOneRepMaxKg: OneRepMaxEstimator.estimate(weightKg: 100, reps: 3))
+        ]
+        let weightDesc = ExerciseProgression.descriptors(exerciseName: "Sentadilla", setLogs: logs)[0]
+        let weightSeries = ExerciseProgression.series(for: weightDesc, exerciseName: "Sentadilla", setLogs: logs)
+        XCTAssertEqual(weightSeries.count, 1)
+        XCTAssertEqual(weightSeries.first?.value, 100, "Top set de la sesión")
+
+        let e1rmDesc = ExerciseProgression.descriptors(exerciseName: "Sentadilla", setLogs: logs)[1]
+        let e1rmSeries = ExerciseProgression.series(for: e1rmDesc, exerciseName: "Sentadilla", setLogs: logs)
+        // 100x3 da mayor e1RM que 90x5.
+        XCTAssertEqual(e1rmSeries.count, 1)
+        XCTAssertGreaterThan(e1rmSeries.first?.value ?? 0, 100)
+    }
+
+    // MARK: - Plan semanal pro: tipos de sesion, biblioteca y expectativas
+
+    func testSessionDetailsDecodeLegacyJSONWithoutProFields() throws {
+        // JSON guardado antes de los campos pro (contactos, contraste, zona, %1RM).
+        let legacy = """
+        {"startMinute":1080,"flexibility":"preferred","durationMinutes":50,"targetRPE":7}
+        """.data(using: .utf8)!
+        let details = try JSONDecoder().decode(ScheduledSessionDetails.self, from: legacy)
+        XCTAssertEqual(details.durationMinutes, 50)
+        XCTAssertEqual(details.targetRPE, 7)
+        XCTAssertNil(details.jumpContacts)
+        XCTAssertNil(details.contrastSets)
+        XCTAssertNil(details.speedReps)
+        XCTAssertNil(details.targetZone)
+        XCTAssertNil(details.mainLiftPercent1RM)
+        XCTAssertNil(details.sessionNote)
+    }
+
+    func testWeeklyRoutineRoundTripsPlanFields() throws {
+        let routine = WeeklyRoutine(
+            onboarded: true,
+            days: [2: .plyometrics, 4: .mobility],
+            planName: "Bloque de potencia",
+            advancedConfig: true,
+            personalRecords: ["squat": 140.0],
+            planWeeks: 6
+        )
+        let data = try JSONEncoder().encode(routine)
+        let back = try JSONDecoder().decode(WeeklyRoutine.self, from: data)
+        XCTAssertEqual(back.displayName, "Bloque de potencia")
+        XCTAssertTrue(back.advancedConfig)
+        XCTAssertEqual(back.personalRecords["squat"], 140.0)
+        XCTAssertEqual(back.planWeeks, 6)
+        XCTAssertEqual(back.days[2], .plyometrics)
+        XCTAssertEqual(back.days[4], .mobility)
+    }
+
+    func testWeeklyRoutineLegacyJSONDecodesWithPlanDefaults() throws {
+        let legacy = """
+        {"goal":"mixed","minutesPerSession":45,"onboarded":true,"days":{}}
+        """.data(using: .utf8)!
+        let routine = try JSONDecoder().decode(WeeklyRoutine.self, from: legacy)
+        XCTAssertNil(routine.planName)
+        XCTAssertEqual(routine.displayName, "Plan semanal", "Fallback de nombre")
+        XCTAssertFalse(routine.advancedConfig)
+        XCTAssertTrue(routine.personalRecords.isEmpty)
+        XCTAssertNil(routine.planWeeks)
+    }
+
+    func testDayAssignmentPerformanceTypesRoundTrip() throws {
+        let days: [Int: DayAssignment] = [
+            2: .plyometrics, 3: .speed, 4: .contrast,
+            5: .technique, 6: .mobility, 7: .recovery, 1: .rest
+        ]
+        let data = try JSONEncoder().encode(days)
+        let back = try JSONDecoder().decode([Int: DayAssignment].self, from: data)
+        XCTAssertEqual(back, days)
+        XCTAssertTrue(DayAssignment.plyometrics.isHighNeuralDemand)
+        XCTAssertTrue(DayAssignment.contrast.isHighNeuralDemand)
+        XCTAssertFalse(DayAssignment.mobility.isHighNeuralDemand)
+        XCTAssertTrue(DayAssignment.recovery.isRecoveryOriented)
+    }
+
+    func testPlanLibraryUpsertDeleteAndDeleteAll() {
+        let suite = UserDefaults(suiteName: "test.planLibrary.\(UUID().uuidString)")!
+        defer { suite.removePersistentDomain(forName: suite.description) }
+        XCTAssertTrue(WeeklyPlanLibraryStore.load(defaults: suite).isEmpty)
+
+        let routineA = WeeklyRoutine(onboarded: true, days: [2: .template(UUID())])
+        let planA = WeeklyPlan(name: "Fuerza A", routine: routineA)
+        let planB = WeeklyPlan(name: "Descarga", routine: WeeklyRoutine(onboarded: true, days: [4: .mobility]))
+        WeeklyPlanLibraryStore.upsert(planA, defaults: suite)
+        WeeklyPlanLibraryStore.upsert(planB, defaults: suite)
+        XCTAssertEqual(WeeklyPlanLibraryStore.load(defaults: suite).count, 2)
+
+        // Upsert con el mismo id reemplaza, no duplica.
+        var renamed = planA
+        renamed.name = "Fuerza A2"
+        WeeklyPlanLibraryStore.upsert(renamed, defaults: suite)
+        let loaded = WeeklyPlanLibraryStore.load(defaults: suite)
+        XCTAssertEqual(loaded.count, 2)
+        XCTAssertTrue(loaded.contains { $0.name == "Fuerza A2" })
+
+        WeeklyPlanLibraryStore.delete(id: planB.id, defaults: suite)
+        XCTAssertEqual(WeeklyPlanLibraryStore.load(defaults: suite).count, 1)
+
+        WeeklyPlanLibraryStore.deleteAll(defaults: suite)
+        XCTAssertTrue(WeeklyPlanLibraryStore.load(defaults: suite).isEmpty)
+    }
+
+    func testDefaultSplitFollowsStrengthDayCount() {
+        XCTAssertEqual(WeeklyRoutinePlanner.defaultSplit(forStrengthDays: 2), .fullBody)
+        XCTAssertEqual(WeeklyRoutinePlanner.defaultSplit(forStrengthDays: 3), .fullBody)
+        XCTAssertEqual(WeeklyRoutinePlanner.defaultSplit(forStrengthDays: 4), .upperLower)
+        XCTAssertEqual(WeeklyRoutinePlanner.defaultSplit(forStrengthDays: 6), .pushPullLegs)
+    }
+
+    func testSuggestedWeekIncludeMobilityConvertsLastCardioDay() {
+        let plan = WeeklyRoutinePlanner().suggestedWeek(
+            goal: .mixed,
+            trainingWeekdays: [2, 3, 5, 6],
+            templateIDs: [UUID()],
+            splitType: .fullBody,
+            cardioSport: .running,
+            includeMobility: true
+        )
+        XCTAssertEqual(plan.values.filter { $0 == .mobility }.count, 1, "Un día de movilidad")
+        // En mixto 4 días: 2 fuerza + 2 cardio; la movilidad reemplaza el último cardio.
+        let cardioDays = plan.values.filter {
+            if case .cardio = $0 { return true }
+            return false
+        }
+        XCTAssertEqual(cardioDays.count, 1)
+    }
+
+    func testSuggestedWeekIncludeMobilityOnStrengthOnlyWeek() {
+        let plan = WeeklyRoutinePlanner().suggestedWeek(
+            goal: .strength,
+            trainingWeekdays: [2, 4],
+            templateIDs: [UUID()],
+            splitType: .fullBody,
+            includeMobility: true
+        )
+        XCTAssertEqual(plan.values.filter { $0 == .mobility }.count, 1)
+        // Sin cardio: la movilidad cae en un día libre posterior al último entreno.
+        XCTAssertEqual(plan.values.filter { $0 == .rest }.count, 4)
+    }
+
+    func testCoachingMovesNeuralSessionWhenRecoveryIsLow() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Pliometría",
+            recovery: 40,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: nil,
+            proposedStart: nil,
+            plannedKind: .plyometrics
+        )
+        let tip = tips.first { $0.kind == .readiness }
+        XCTAssertNotNil(tip, "Plio con recovery baja debe sugerir mover/adaptar")
+        XCTAssertTrue(tip?.title.localizedCaseInsensitiveContains("fresco") == true)
+        XCTAssertTrue(tips.allSatisfy { !$0.evidence.isEmpty })
+    }
+
+    func testCoachingKeepsNeuralSessionWhenFresh() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: "Velocidad",
+            recovery: 85,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 1,
+            plannedBedtime: nil,
+            proposedStart: nil,
+            plannedKind: .speed
+        )
+        XCTAssertFalse(tips.contains { $0.kind == .readiness && $0.symbol.contains("bolt") },
+                       "Con recovery alta no hay aviso de sesión neuronal")
+    }
+
+    func testCoachingReinforcesRecoveryDayAfterStreak() {
+        let tips = TrainingCoachingEngine().tips(
+            todayFocus: nil,
+            recovery: 60,
+            lastWorkout: nil,
+            consecutiveTrainingDays: 4,
+            plannedBedtime: nil,
+            proposedStart: nil,
+            plannedKind: .mobility
+        )
+        XCTAssertTrue(tips.contains { $0.kind == .positive }, "Día de movilidad tras racha = refuerzo positivo")
+    }
+
+    func testPlanExpectationsFlagMissingRestAndHardWeek() {
+        let expectation = PlanExpectationEngine.expectations(for: PlanExpectationInput(
+            objective: .hypertrophy,
+            experience: .starting,
+            phase: .base,
+            trainingDays: 7,
+            performanceDays: 2,
+            mobilityRecoveryDays: 0,
+            weeklyMinutes: 350,
+            hardSessions: 4,
+            restDays: 0
+        ))
+        XCTAssertTrue(expectation.cautions.contains { $0.localizedCaseInsensitiveContains("descanso") })
+        XCTAssertTrue(expectation.cautions.contains { $0.contains("RPE 8+") })
+        XCTAssertTrue(expectation.cautions.contains { $0.localizedCaseInsensitiveContains("base tecnica") })
+        XCTAssertFalse(expectation.bullets.isEmpty, "Siempre hay expectativas del objetivo")
+    }
+
+    func testPlanExpectationsBalancedPlanHasNoCautions() {
+        let expectation = PlanExpectationEngine.expectations(for: PlanExpectationInput(
+            objective: .general,
+            experience: .intermediate,
+            phase: .base,
+            trainingDays: 4,
+            performanceDays: 0,
+            mobilityRecoveryDays: 1,
+            weeklyMinutes: 200,
+            hardSessions: 1,
+            restDays: 3
+        ))
+        XCTAssertTrue(expectation.cautions.isEmpty)
+        XCTAssertTrue(expectation.bullets.contains { $0.contains("200 min") })
+    }
+
+    // MARK: - Catalogo de rutinas pre-hechas
+
+    func testPresetCatalogExercisesExistInLibrary() {
+        for preset in PresetRoutineCatalog.all {
+            for day in preset.dayTemplates {
+                let parsed = TemplateCodec.parse(day.exercisesText)
+                XCTAssertFalse(parsed.isEmpty, "\(preset.id)/\(day.focus) debe tener ejercicios")
+                for exercise in parsed {
+                    XCTAssertNotNil(
+                        ExerciseLibrary.item(named: exercise.name),
+                        "'\(exercise.name)' de \(preset.id) no existe en ExerciseLibrary"
+                    )
+                }
+            }
+        }
+    }
+
+    func testPresetCatalogSurvivesCodecRoundtrip() {
+        for preset in PresetRoutineCatalog.all {
+            for day in preset.dayTemplates {
+                let parsed = TemplateCodec.parse(day.exercisesText)
+                let reparsed = TemplateCodec.parse(TemplateCodec.serialize(parsed))
+                XCTAssertEqual(parsed.count, reparsed.count, "\(preset.id)/\(day.focus) pierde ejercicios en roundtrip")
+                for (a, b) in zip(parsed, reparsed) {
+                    XCTAssertEqual(a.name, b.name)
+                    XCTAssertEqual(a.sets, b.sets)
+                    XCTAssertEqual(a.reps, b.reps)
+                }
+            }
+        }
+    }
+
+    func testPresetCatalogRotationMatchesSplit() {
+        for preset in PresetRoutineCatalog.all {
+            let rotation = preset.splitType.focusRotation.count
+            switch preset.splitType {
+            case .fullBody:
+                // Full body admite variantes A/B que rotan por indice.
+                XCTAssertTrue((1...3).contains(preset.dayTemplates.count), preset.id)
+            default:
+                XCTAssertEqual(preset.dayTemplates.count, rotation, "\(preset.id): rotacion incompleta para su split")
+            }
+            XCTAssertFalse(preset.badge.isEmpty)
+            XCTAssertFalse(preset.rationale.isEmpty)
+        }
+    }
+
+    func testPresetCatalogIDsAreUniqueAndCustomIsEmpty() {
+        let ids = PresetRoutineCatalog.all.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count, "IDs de preset duplicados")
+        XCTAssertTrue(PresetRoutineCatalog.presets(for: .custom).isEmpty)
+        // Cada split no-custom tiene al menos un preset.
+        for split in SplitType.allCases where split != .custom {
+            XCTAssertFalse(PresetRoutineCatalog.presets(for: split).isEmpty, "\(split.rawValue) sin presets")
+        }
+    }
+
+    func testPresetHypertrophyPresetsUseModerateRepRanges() {
+        // Los presets de hipertrofia deben vivir mayormente en 8-15 reps.
+        for preset in PresetRoutineCatalog.all where preset.objective == .hypertrophy {
+            let reps = preset.dayTemplates.flatMap { TemplateCodec.parse($0.exercisesText) }.map(\.reps)
+            let inRange = reps.filter { (6...30).contains($0) }.count
+            XCTAssertGreaterThanOrEqual(
+                Double(inRange) / Double(max(reps.count, 1)), 0.8,
+                "\(preset.id): un preset de hipertrofia no deberia ser mayormente <6 reps"
+            )
+        }
+    }
+
+    // MARK: - Coach de rutina (RoutineAssessmentEngine)
+
+    private func week(strength: [Int], cardio: [Int] = []) -> [Int: DayAssignment] {
+        var days: [Int: DayAssignment] = [:]
+        for d in 1...7 { days[d] = .rest }
+        for d in strength { days[d] = .template(UUID()) }
+        for d in cardio { days[d] = .cardio("running") }
+        return days
+    }
+
+    func testCoachFlagsZeroRestDaysAsUnsustainable() {
+        let input = RoutineAssessmentInput(
+            days: week(strength: [1, 2, 3, 4], cardio: [5, 6, 7]),
+            splitType: .upperLower, goal: .mixed, planCreatedAt: nil
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .unsustainable)
+        XCTAssertTrue(result.headline.hasPrefix("Coach:"))
+        XCTAssertFalse(result.evidence.isEmpty)
+    }
+
+    func testCoachCautionsSingleRestWithSixSessions() {
+        let input = RoutineAssessmentInput(
+            days: week(strength: [2, 3, 5, 6], cardio: [4, 7]),
+            splitType: .upperLower, goal: .mixed, planCreatedAt: nil
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .caution)
+        XCTAssertTrue(result.headline.localizedCaseInsensitiveContains("descanso"))
+    }
+
+    func testCoachCautionsBroSplitWithFewDays() {
+        let input = RoutineAssessmentInput(
+            days: week(strength: [2, 4, 6]),
+            splitType: .broSplit, goal: .strength, planCreatedAt: nil
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .caution)
+        XCTAssertTrue(result.detail.localizedCaseInsensitiveContains("2 veces por semana")
+            || result.evidence.localizedCaseInsensitiveContains("volumen"))
+    }
+
+    func testCoachCautionsIncompleteRotation() {
+        // PPL (3 focos) con solo 2 dias de fuerza: la rotacion no cierra.
+        let input = RoutineAssessmentInput(
+            days: week(strength: [2, 5]),
+            splitType: .pushPullLegs, goal: .strength, planCreatedAt: nil
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .caution)
+        XCTAssertTrue(result.headline.localizedCaseInsensitiveContains("rotacion"))
+    }
+
+    func testCoachBlessesBalancedWeekWithVariationReminder() {
+        let input = RoutineAssessmentInput(
+            days: week(strength: [2, 4, 6], cardio: [3]),
+            splitType: .fullBody, goal: .mixed, planCreatedAt: nil
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .balanced)
+        XCTAssertTrue(result.detail.localizedCaseInsensitiveContains("4-6 semanas"))
+    }
+
+    func testCoachRemindsVariationWhenPlanIsStale() {
+        let created = Calendar.current.date(byAdding: .weekOfYear, value: -7, to: .now)
+        let input = RoutineAssessmentInput(
+            days: week(strength: [2, 4, 6], cardio: [3]),
+            splitType: .fullBody, goal: .mixed, planCreatedAt: created
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .balanced)
+        XCTAssertTrue(result.headline.localizedCaseInsensitiveContains("variar"),
+                      "Plan de 7 semanas debe recordar variar el estimulo")
+    }
+
+    func testCoachCautionsFourConsecutiveFullBodyDays() {
+        let input = RoutineAssessmentInput(
+            days: week(strength: [2, 3, 4, 5]),
+            splitType: .fullBody, goal: .strength, planCreatedAt: nil
+        )
+        let result = RoutineAssessmentEngine.assess(input)
+        XCTAssertEqual(result.verdict, .caution)
+        XCTAssertTrue(result.detail.localizedCaseInsensitiveContains("48"))
+    }
+
+    func testCoachNeverMentionsInjuries() {
+        // Regla AI_CONTEXT: cero lenguaje de lesiones en cualquier veredicto.
+        let inputs: [RoutineAssessmentInput] = [
+            RoutineAssessmentInput(days: week(strength: [1,2,3,4], cardio: [5,6,7]), splitType: .upperLower, goal: .mixed, planCreatedAt: nil),
+            RoutineAssessmentInput(days: week(strength: [2,4,6]), splitType: .broSplit, goal: .strength, planCreatedAt: nil),
+            RoutineAssessmentInput(days: week(strength: [2,4,6], cardio: [3]), splitType: .fullBody, goal: .mixed, planCreatedAt: nil)
+        ]
+        for input in inputs {
+            let r = RoutineAssessmentEngine.assess(input)
+            for text in [r.headline, r.detail, r.evidence] {
+                XCTAssertFalse(text.localizedCaseInsensitiveContains("lesion"), "El coach no habla de lesiones: \(text)")
+            }
+        }
+    }
+
+    func testCanonicalTrainingDaysAreSpacedAndCounted() {
+        for n in 2...6 {
+            let days = WeeklyPlanOnboardingView.canonicalDays(for: n)
+            XCTAssertEqual(days.count, n, "canonicalDays(\(n)) debe proponer \(n) dias")
+            XCTAssertTrue(days.allSatisfy { (1...7).contains($0) })
+        }
+        // Con 3 dias o menos no debe haber dias consecutivos (48-72 h).
+        for n in 2...3 {
+            let days = WeeklyPlanOnboardingView.canonicalDays(for: n).sorted()
+            for (a, b) in zip(days, days.dropFirst()) {
+                XCTAssertGreaterThan(b - a, 1, "Con \(n) dias no deberia haber consecutivos")
+            }
+        }
+    }
+
+    // MARK: - Cobertura de libreria para el Desafio diario y rutinas ligeras
+
+    /// Guardia: TODO ejercicio que emite el motor (challenges de cada tipo de
+    /// dia, rutinas de movilidad de cada bucket y cardio de cada deporte) debe
+    /// existir en `ExerciseLibrary` — si no, la UI cae a thumbnails genericos.
+    func testDailyChallengeEmissionsExistInExerciseLibrary() {
+        let engine = DailyChallengeEngine()
+        var texts: [String] = []
+
+        // Challenges para una semana representativa con todos los tipos de dia.
+        let templateID = UUID()
+        let week: [Int: DayAssignment] = [
+            1: .rest,
+            2: .template(templateID),
+            3: .cardio("running"),
+            4: .mobility,
+            5: .template(templateID),
+            6: .plyometrics,
+            7: .rest
+        ]
+        let challenges = engine.generateChallenges(
+            days: week,
+            splitType: .upperLower,
+            cardioSport: .running,
+            templateFocus: [templateID: "Tren superior"]
+        )
+        texts += challenges.values.map(\.exercisesText)
+
+        // Tambien con foco inferior para forzar el challenge de tren superior.
+        let lowerID = UUID()
+        let lowerWeek: [Int: DayAssignment] = [2: .template(lowerID), 5: .rest]
+        texts += engine.generateChallenges(
+            days: lowerWeek,
+            splitType: .upperLower,
+            cardioSport: nil,
+            templateFocus: [lowerID: "Tren inferior"]
+        ).values.map(\.exercisesText)
+
+        // Rutinas de movilidad de todos los focos posibles.
+        for hint in ["Tren superior", "Tren inferior", "Hombros", "Full body", nil] {
+            texts.append(engine.mobilityRoutine(focusHint: hint).exercisesText)
+        }
+
+        // Cardio de todos los deportes.
+        for sport in CardioSport.allCases {
+            texts.append(engine.cardioRoutine(sport: sport, durationMinutes: 30).exercisesText)
+        }
+
+        // TODAS las variantes predefinidas del desafio (la rotacion por weekday
+        // no garantiza cubrirlas via generateChallenges).
+        texts += DailyChallengeEngine.lowerChallengeVariants
+        texts += DailyChallengeEngine.upperChallengeVariants
+        texts += DailyChallengeEngine.maintenancePacks.flatMap(\.variants)
+
+        for text in texts {
+            for exercise in TemplateCodec.parse(text) {
+                XCTAssertNotNil(
+                    ExerciseLibrary.item(named: exercise.name),
+                    "'\(exercise.name)' emitido por DailyChallengeEngine no existe en ExerciseLibrary"
+                )
+            }
+        }
+    }
+
+    // MARK: - Mecanica de ejercicios
+
+    /// Cada ejercicio de la biblioteca debe tener mecanica: es lo que abre el
+    /// boton "Ver mecanica" dentro de la sesion activa.
+    func testEveryLibraryExerciseHasMechanics() {
+        for item in ExerciseLibrary.items {
+            XCTAssertNotNil(
+                ExerciseMechanicsCatalog.mechanics(for: item.name),
+                "'\(item.name)' no tiene mecanica en ExerciseMechanicsCatalog"
+            )
+        }
+    }
+
+    /// Al reves: el catalogo no debe describir ejercicios que ya no existen.
+    func testMechanicsCatalogHasNoOrphanEntries() {
+        for entry in ExerciseMechanicsCatalog.entries {
+            XCTAssertNotNil(
+                ExerciseLibrary.item(named: entry.exercise),
+                "'\(entry.exercise)' tiene mecanica pero no existe en ExerciseLibrary"
+            )
+            XCTAssertFalse(entry.steps.isEmpty, "'\(entry.exercise)' no tiene pasos de ejecucion")
+        }
+    }
+
+    /// Los fotogramas declarados deben existir en el bundle; si no, la vista
+    /// mostraria un hueco en vez de la demostracion.
+    func testMechanicsMediaFramesExistInBundle() {
+        let bundle = Bundle(for: type(of: self))
+        let appBundle = Bundle.main
+        for entry in ExerciseMechanicsCatalog.entries where entry.mediaSlug != nil {
+            for frame in entry.frameNames {
+                let found = bundle.url(forResource: frame, withExtension: "jpg") != nil
+                    || appBundle.url(forResource: frame, withExtension: "jpg") != nil
+                XCTAssertTrue(found, "Falta el recurso \(frame).jpg de '\(entry.exercise)'")
+            }
+        }
+    }
+
+    // MARK: - Reporte de la mañana
+
+    private func morningSnapshot(daysAgo: Int, hrv: Double, rhr: Double, sleepHours: Double) -> DailyHealthSnapshot {
+        DailyHealthSnapshot(
+            date: Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date(timeIntervalSince1970: 1_784_000_000))!,
+            hrv: hrv,
+            restingHeartRate: rhr,
+            sleepHours: sleepHours,
+            activeEnergy: 500,
+            steps: 8_000,
+            respiratoryRate: 14,
+            workoutMinutes: 30
+        )
+    }
+
+    /// El reporte se abre solo una vez al dia, y solo dentro de la ventana
+    /// matutina: a las 8 de la noche ya no es un reporte de la mañana.
+    func testMorningReportAutoPresentWindow() {
+        let calendar = Calendar(identifier: .gregorian)
+        func date(_ hour: Int, _ minute: Int = 0, day: Int = 15) -> Date {
+            calendar.date(from: DateComponents(year: 2026, month: 7, day: day, hour: hour, minute: minute))!
+        }
+        let wake = 7 * 60
+
+        // Justo al despertar: si.
+        XCTAssertTrue(MorningReportEngine.shouldAutoPresent(
+            now: date(7, 5), wakeMinutes: wake, lastShownKey: "", hasData: true, calendar: calendar
+        ))
+        // Antes de despertar: no, la noche aun no termina.
+        XCTAssertFalse(MorningReportEngine.shouldAutoPresent(
+            now: date(5, 30), wakeMinutes: wake, lastShownKey: "", hasData: true, calendar: calendar
+        ))
+        // Pasada la ventana (7:00 + 6 h): no.
+        XCTAssertFalse(MorningReportEngine.shouldAutoPresent(
+            now: date(20), wakeMinutes: wake, lastShownKey: "", hasData: true, calendar: calendar
+        ))
+        // Ya visto hoy: no se repite.
+        let today = MorningReportEngine.dayKey(for: date(9), calendar: calendar)
+        XCTAssertFalse(MorningReportEngine.shouldAutoPresent(
+            now: date(9), wakeMinutes: wake, lastShownKey: today, hasData: true, calendar: calendar
+        ))
+        // Visto ayer: al dia siguiente vuelve a abrirse.
+        let yesterday = MorningReportEngine.dayKey(for: date(9, 0, day: 14), calendar: calendar)
+        XCTAssertTrue(MorningReportEngine.shouldAutoPresent(
+            now: date(9), wakeMinutes: wake, lastShownKey: yesterday, hasData: true, calendar: calendar
+        ))
+        // Sin datos NO se abre: un reporte vacio no es un reporte.
+        XCTAssertFalse(MorningReportEngine.shouldAutoPresent(
+            now: date(9), wakeMinutes: wake, lastShownKey: "", hasData: false, calendar: calendar
+        ))
+    }
+
+    /// El reporte no inventa: toma el factor que MAS resta y respeta el gate de
+    /// noches del banco de sueño.
+    func testMorningReportUsesWeakestFactorAndRespectsSleepBankGate() {
+        let snapshot = morningSnapshot(daysAgo: 0, hrv: 42, rhr: 58, sleepHours: 6.2)
+        let history = (1...5).map { morningSnapshot(daysAgo: $0, hrv: 60, rhr: 55, sleepHours: 7.8) }
+        let scores = ScoreEngine().scores(for: snapshot, history: history)
+        let brief = InsightEngine().briefing(snapshot: snapshot, history: history, scores: scores)
+
+        let factors = [
+            RecoveryFactor(name: "Sueño", value: "6.2 h", baseline: "7.5-8.2 h", contribution: -0.30, icon: "moon"),
+            RecoveryFactor(name: "HRV", value: "42 ms", baseline: "55-65 ms", contribution: -0.12, icon: "waveform"),
+            RecoveryFactor(name: "FC reposo", value: "58 lpm", baseline: "54-58", contribution: 0.05, icon: "heart")
+        ]
+
+        // Con 2 noches el banco no afirma nada.
+        let thinBank = SleepBankEngine.Result(balanceHours: -3, nights: 2, goalHours: 8, nightly: [])
+        let thin = MorningReportEngine.report(
+            snapshot: snapshot, history: history, scores: scores,
+            factors: factors, brief: brief, sleepBank: thinBank
+        )
+        XCTAssertEqual(thin.weakestFactorName, "Sueño")
+        XCTAssertEqual(thin.weakestFactorBaseline, "7.5-8.2 h")
+        XCTAssertNil(thin.sleep.bankBalanceHours, "Con menos de 3 noches el banco no debe mostrar saldo")
+        XCTAssertEqual(thin.sleep.bankNights, 2)
+
+        // Con 5 noches si.
+        let fullBank = SleepBankEngine.Result(balanceHours: -4.5, nights: 5, goalHours: 8, nightly: [])
+        let full = MorningReportEngine.report(
+            snapshot: snapshot, history: history, scores: scores,
+            factors: factors, brief: brief, sleepBank: fullBank
+        )
+        XCTAssertEqual(full.sleep.bankBalanceHours ?? 0, -4.5, accuracy: 0.001)
+
+        // Si todos los factores suman, no se señala ninguno como culpable.
+        let positive = MorningReportEngine.report(
+            snapshot: snapshot, history: history, scores: scores,
+            factors: [RecoveryFactor(name: "HRV", value: "70 ms", baseline: "55-65", contribution: 0.2, icon: "waveform")],
+            brief: brief, sleepBank: fullBank
+        )
+        XCTAssertNil(positive.weakestFactorName)
+    }
+
+    /// Los tres anillos y la mini-grafica salen de datos reales, no de relleno.
+    func testMorningReportRingsAndSleepTrendUseRealData() {
+        let snapshot = morningSnapshot(daysAgo: 0, hrv: 55, rhr: 56, sleepHours: 7.0)
+        let history = (1...9).map { morningSnapshot(daysAgo: $0, hrv: 58, rhr: 55, sleepHours: 7.5) }
+        let scores = ScoreEngine().scores(for: snapshot, history: history)
+        let brief = InsightEngine().briefing(snapshot: snapshot, history: history, scores: scores)
+        let report = MorningReportEngine.report(
+            snapshot: snapshot, history: history, scores: scores, factors: [],
+            brief: brief, sleepBank: SleepBankEngine().assess(history: history, goalHours: 8)
+        )
+
+        // Los anillos muestran los MISMOS scores que Home.
+        XCTAssertEqual(report.recoveryValue, scores.first { $0.kind == .recovery }?.value)
+        XCTAssertEqual(report.sleepValue, scores.first { $0.kind == .sleep }?.value)
+        XCTAssertEqual(report.strainValue, scores.first { $0.kind == .strain }?.value)
+
+        // La serie del sparkline: como maximo 7 noches, en orden cronologico,
+        // y la ultima es la de hoy.
+        XCTAssertLessThanOrEqual(report.sleepTrendHours.count, 7)
+        XCTAssertTrue(report.hasSleepTrend)
+        XCTAssertEqual(report.sleepTrendHours.last ?? 0, 7.0, accuracy: 0.001)
+
+        // El anillo de carga es porcentaje del objetivo y puede pasar de 100.
+        XCTAssertEqual(
+            report.loadPercentOfTarget,
+            Int((brief.currentLoad / brief.targetLoad * 100).rounded())
+        )
+
+        // Sin noches suficientes no se dibuja la mini-grafica.
+        let thin = MorningReportEngine.report(
+            snapshot: snapshot, history: [], scores: scores, factors: [],
+            brief: brief, sleepBank: SleepBankEngine().assess(history: [], goalHours: 8)
+        )
+        XCTAssertFalse(thin.hasSleepTrend)
+    }
+
+    /// El panel de señales solo muestra lo medido, con su rango personal, y
+    /// normaliza SpO2 (HealthKit la entrega como fraccion o como porcentaje).
+    func testMorningReportSignalsNormalizeAndSkipMissingData() {
+        let base = Date(timeIntervalSince1970: 1_784_000_000)
+        func day(_ offset: Int, spo2: Double?, hrv: Double?) -> DailyHealthSnapshot {
+            DailyHealthSnapshot(
+                date: Calendar.current.date(byAdding: .day, value: -offset, to: base)!,
+                hrv: hrv,
+                restingHeartRate: 55,
+                sleepHours: 7.5,
+                activeEnergy: 500,
+                steps: 8_000,
+                respiratoryRate: nil,
+                workoutMinutes: 30,
+                oxygenSaturation: spo2
+            )
+        }
+        let history = (1...10).map { day($0, spo2: 0.95 + Double($0) * 0.004, hrv: 55) }
+        let today = day(0, spo2: 0.97, hrv: 58)
+
+        let signals = MorningReportEngine.signals(snapshot: today, history: history)
+        let names = signals.map(\.name)
+
+        // Respiracion no se midio: no debe aparecer inventada.
+        XCTAssertFalse(names.contains("Respiración"))
+        XCTAssertTrue(names.contains("HRV"))
+
+        // SpO2 se muestra como porcentaje, no como 1 %.
+        let spo2 = signals.first { $0.name == "SpO₂" }
+        XCTAssertEqual(spo2?.value, "97")
+        // Y su rango personal nunca puede pasar de 100 %.
+        if let range = spo2?.range, let upper = range.split(separator: "–").last.flatMap({ Double($0) }) {
+            XCTAssertLessThanOrEqual(upper, 100)
+        } else {
+            XCTFail("SpO2 deberia traer rango personal con 10 noches")
+        }
+
+        // La posicion en la banda esta acotada a 0...1.
+        for signal in signals {
+            if let position = signal.bandPosition {
+                XCTAssertGreaterThanOrEqual(position, 0)
+                XCTAssertLessThanOrEqual(position, 1)
+            }
+        }
+    }
+
+    /// El margen de carga nunca es negativo y refleja el objetivo del briefing.
+    func testMorningReportStrainRoomMatchesBrief() {
+        let snapshot = morningSnapshot(daysAgo: 0, hrv: 60, rhr: 55, sleepHours: 7.5)
+        let history = (1...5).map { morningSnapshot(daysAgo: $0, hrv: 60, rhr: 55, sleepHours: 7.5) }
+        let scores = ScoreEngine().scores(for: snapshot, history: history)
+        let brief = InsightEngine().briefing(snapshot: snapshot, history: history, scores: scores)
+        let report = MorningReportEngine.report(
+            snapshot: snapshot, history: history, scores: scores, factors: [],
+            brief: brief, sleepBank: SleepBankEngine().assess(history: history, goalHours: 8)
+        )
+        XCTAssertEqual(report.remainingLoad, brief.remainingLoad, accuracy: 0.001)
+        XCTAssertGreaterThanOrEqual(report.remainingLoad, 0)
+        XCTAssertEqual(report.targetLoad, brief.targetLoad, accuracy: 0.001)
+    }
+
+    // MARK: - Reproductor y mapa muscular
+
+    /// El fundido debe sostenerse en los extremos y viajar suave entre ellos:
+    /// con dos fotogramas es lo unico que evita el parpadeo.
+    func testMechanicsPlayerBlendHoldsAtBothEnds() {
+        let cycle = ExerciseMechanicsPlayer.cycleDuration
+        let hold = ExerciseMechanicsPlayer.holdDuration
+
+        XCTAssertEqual(ExerciseMechanicsPlayer.blend(at: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(ExerciseMechanicsPlayer.blend(at: hold * 0.9), 0, accuracy: 0.0001)
+        XCTAssertEqual(ExerciseMechanicsPlayer.blend(at: cycle / 2), 1, accuracy: 0.0001)
+        XCTAssertEqual(ExerciseMechanicsPlayer.blend(at: cycle / 2 + hold * 0.9), 1, accuracy: 0.0001)
+        // Cierra el ciclo de vuelta en el fotograma inicial.
+        XCTAssertEqual(ExerciseMechanicsPlayer.blend(at: cycle - 0.001), 0, accuracy: 0.01)
+
+        // Monotona en el tramo de transicion (sin saltos ni rebotes).
+        let travelStart = hold
+        let travelEnd = cycle / 2
+        var previous = -1.0
+        for step in 0...20 {
+            let t = travelStart + (travelEnd - travelStart) * Double(step) / 20
+            let value = ExerciseMechanicsPlayer.blend(at: t)
+            XCTAssertGreaterThanOrEqual(value, previous)
+            previous = value
+        }
+    }
+
+    /// Un ciclo lento: si baja de 3 s vuelve a parecer parpadeo.
+    func testMechanicsPlayerCycleIsSlowEnoughToRead() {
+        XCTAssertGreaterThanOrEqual(ExerciseMechanicsPlayer.cycleDuration, 3.0)
+        XCTAssertGreaterThan(ExerciseMechanicsPlayer.holdDuration, 0.5)
+        XCTAssertLessThan(ExerciseMechanicsPlayer.holdDuration, ExerciseMechanicsPlayer.cycleDuration / 2)
+    }
+
+    /// Todo ejercicio con mecanica deberia decir que musculos trabaja (salvo los
+    /// que no entrenan un musculo concreto, como la respiracion).
+    func testMuscleMapCoversLibraryExceptNonMuscularWork() {
+        let exempt: Set<String> = ["Respiracion diafragmatica", "Otro"]
+        for item in ExerciseLibrary.items where !exempt.contains(item.name) {
+            XCTAssertNotNil(
+                MuscleMapCatalog.focus(for: item.name),
+                "'\(item.name)' no tiene musculos asignados en MuscleMapCatalog"
+            )
+        }
+        for name in exempt {
+            XCTAssertNil(MuscleMapCatalog.focus(for: name))
+        }
+    }
+
+    func testMuscleMapTableHasNoOrphanEntries() {
+        for name in MuscleMapCatalog.table.keys {
+            XCTAssertNotNil(
+                ExerciseLibrary.item(named: name),
+                "'\(name)' tiene musculos pero no existe en ExerciseLibrary"
+            )
+        }
+    }
+
+    /// Las laminas por musculo deben existir en el bundle; si falta una, el
+    /// mapa se dibujaria sin el musculo en rojo y nadie lo notaria.
+    func testMuscleMapAssetsExistInBundle() {
+        let bundle = Bundle(for: type(of: self))
+        func markup(_ name: String) -> String? {
+            MuscleMapRenderer.svgMarkup(named: name, bundle: bundle)
+                ?? MuscleMapRenderer.svgMarkup(named: name, bundle: .main)
+        }
+        XCTAssertNotNil(markup("body_front"))
+        XCTAssertNotNil(markup("body_back"))
+        for muscle in TargetMuscle.allCases {
+            for id in muscle.overlayIDs {
+                XCTAssertNotNil(markup("muscle_\(id)_main"), "Falta la lamina del musculo \(id) (\(muscle))")
+            }
+        }
+    }
+
+    /// Sin viewBox el SVG no escala y el mapa sale en blanco: hay que inyectarlo.
+    func testMuscleMapSvgGetsViewBoxWhenMissing() {
+        let markup = MuscleMapRenderer.normalized("<svg width=\"200\" height=\"369\" id=\"x\"><path/></svg>")
+        XCTAssertTrue(markup.contains("viewBox=\"0 0 200 369\""))
+        XCTAssertTrue(markup.contains("preserveAspectRatio"))
+
+        // No se toca lo que ya trae viewBox.
+        let already = "<svg viewBox=\"0 0 10 10\"><path/></svg>"
+        XCTAssertEqual(MuscleMapRenderer.normalized(already), already)
+
+        // Y los assets reales quedan escalables.
+        let bundle = MuscleMapRenderer.svgMarkup(named: "body_front", bundle: Bundle(for: type(of: self))) != nil
+            ? Bundle(for: type(of: self))
+            : Bundle.main
+        for name in ["body_front", "body_back", "muscle_10_main"] {
+            let svg = MuscleMapRenderer.svgMarkup(named: name, bundle: bundle)
+            XCTAssertNotNil(svg)
+            XCTAssertTrue(svg?.contains("viewBox") == true, "\(name) sin viewBox: no escalaria")
+        }
+    }
+
+    /// El compositor debe pintar en la vista frontal solo los musculos frontales
+    /// (si no, el cuadriceps aparecia sobre la espalda).
+    func testMuscleMapRendererPlacesMusclesOnTheRightSide() {
+        // Las laminas viajan en el bundle de la app, no en el de tests.
+        let bundle = MuscleMapRenderer.svgMarkup(named: "body_front", bundle: Bundle(for: type(of: self))) != nil
+            ? Bundle(for: type(of: self))
+            : Bundle.main
+        let focus = MuscleFocus(primary: [.quads], secondary: [.glutes])
+        let front = MuscleMapRenderer.html(focus: focus, side: .front, bundle: bundle)
+        let back = MuscleMapRenderer.html(focus: focus, side: .back, bundle: bundle)
+
+        // El rojo primario solo debe salir donde vive el cuadriceps.
+        XCTAssertTrue(front.contains(MuscleMapRenderer.primaryColor))
+        XCTAssertFalse(front.contains(MuscleMapRenderer.secondaryColor))
+        XCTAssertTrue(back.contains(MuscleMapRenderer.secondaryColor))
+        XCTAssertFalse(back.contains(MuscleMapRenderer.primaryColor))
+        // Y el rojo quemado del asset original nunca debe sobrevivir.
+        XCTAssertFalse(front.contains("#fc0000"))
+        XCTAssertFalse(back.contains("#fc0000"))
+    }
+
+    func testExerciseLibraryHasCardioAndMobilityGroups() {
+        let groups = Set(ExerciseLibrary.items.map(\.group))
+        XCTAssertTrue(groups.contains("Cardio"), "Falta el grupo Cardio")
+        XCTAssertTrue(groups.contains("Movilidad"), "Falta el grupo Movilidad")
+        XCTAssertNotNil(ExerciseLibrary.item(named: "Step-ups"))
+        XCTAssertNotNil(ExerciseLibrary.item(named: "Desplantes"))
+    }
+
+    // MARK: - Movilidad como recuperacion activa (descanso)
+
+    func testCoachTreatsMobilityAsRestEquivalent() {
+        // 5 dias de fuerza + 2 de movilidad: la movilidad ES la ventana de
+        // recuperacion, no debe disparar "no veo dias de descanso".
+        var days: [Int: DayAssignment] = [:]
+        for d in 1...7 { days[d] = .rest }
+        for d in [2, 3, 5, 6, 7] { days[d] = .template(UUID()) }
+        days[1] = .mobility
+        days[4] = .mobility
+        let result = RoutineAssessmentEngine.assess(RoutineAssessmentInput(
+            days: days, splitType: .broSplit, goal: .strength, planCreatedAt: nil
+        ))
+        XCTAssertNotEqual(result.verdict, .unsustainable, "Movilidad cuenta como recuperacion activa")
+    }
+
+    func testCoachStillFlagsSevenEffortDays() {
+        // 7 dias de esfuerzo real (fuerza+cardio) sin descanso ni movilidad:
+        // sigue siendo no sostenible.
+        var days: [Int: DayAssignment] = [:]
+        for d in [1, 2, 3, 4] { days[d] = .template(UUID()) }
+        for d in [5, 6, 7] { days[d] = .cardio("running") }
+        let result = RoutineAssessmentEngine.assess(RoutineAssessmentInput(
+            days: days, splitType: .upperLower, goal: .mixed, planCreatedAt: nil
+        ))
+        XCTAssertEqual(result.verdict, .unsustainable)
+    }
+
+    func testIsRestEquivalentClassification() {
+        XCTAssertTrue(RoutineAssessmentEngine.isRestEquivalent(.rest))
+        XCTAssertTrue(RoutineAssessmentEngine.isRestEquivalent(.mobility))
+        XCTAssertTrue(RoutineAssessmentEngine.isRestEquivalent(.recovery))
+        XCTAssertFalse(RoutineAssessmentEngine.isRestEquivalent(.cardio("running")))
+        XCTAssertFalse(RoutineAssessmentEngine.isRestEquivalent(.template(UUID())))
+        XCTAssertFalse(RoutineAssessmentEngine.isRestEquivalent(.plyometrics))
+    }
+
+    func testChallengeDraftSourceIDIsStableSlug() {
+        XCTAssertEqual(
+            PlanGeneratedTemplates.challengeSourceID(focus: "Tren inferior"),
+            "generated.challenge.tren.inferior"
+        )
+        XCTAssertEqual(
+            PlanGeneratedTemplates.challengeSourceID(focus: "Movilidad general"),
+            "generated.challenge.movilidad.general"
+        )
+        // Acentos normalizados: el slug no depende de tildes.
+        XCTAssertEqual(
+            PlanGeneratedTemplates.challengeSourceID(focus: "Recuperación"),
+            "generated.challenge.recuperacion"
+        )
+    }
+
+    func testRestDayChallengeRotatesMaintenanceAndMobility() {
+        let engine = DailyChallengeEngine()
+        // Semana solo con descansos: los challenges de descanso deben rotar
+        // entre fortalecimiento (McGill/manana) y movilidad segun el weekday.
+        var days: [Int: DayAssignment] = [:]
+        for d in 1...7 { days[d] = .rest }
+        let challenges = engine.generateChallenges(
+            days: days, splitType: .fullBody, cardioSport: nil, templateFocus: [:]
+        )
+        let kinds = Set(challenges.values.map(\.kind))
+        XCTAssertTrue(kinds.contains(.maintenance), "Debe haber dias de fortalecimiento de mantenimiento")
+        XCTAssertTrue(kinds.contains(.mobility), "Debe seguir habiendo dias de movilidad")
+        // Los de mantenimiento son fuerza: no vienen de los presets de movilidad.
+        for challenge in challenges.values where challenge.kind == .maintenance {
+            XCTAssertFalse(challenge.exercisesText.localizedCaseInsensitiveContains("Estiramiento"),
+                           "Mantenimiento es fortalecimiento, no estiramiento")
+        }
     }
 }

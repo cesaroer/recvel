@@ -8,7 +8,12 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     private func launchApp() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-hasCompletedOnboarding", "YES", "-useDemoData", "YES"]
+        app.launchArguments = [
+            "-hasCompletedOnboarding", "YES",
+            "-skipMorningReport", "YES",
+            "-useDemoData", "YES",
+            "-recvel.appLanguage", "es-MX"
+        ]
         app.terminate()
         app.launch()
         return app
@@ -39,7 +44,11 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testOnboardingStartsAndAdvances() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-hasCompletedOnboarding", "NO", "-useDemoData", "YES"]
+        app.launchArguments = [
+            "-hasCompletedOnboarding", "NO",
+            "-useDemoData", "YES",
+            "-recvel.appLanguage", "es-MX"
+        ]
         app.launch()
 
         XCTAssertTrue(app.otherElements["onboarding.root"].waitForExistence(timeout: 8))
@@ -47,15 +56,15 @@ final class RecvelUITests: XCTestCase {
         let start = app.buttons["Comenzar"]
         XCTAssertTrue(start.exists)
         start.tap()
-        XCTAssertTrue(app.staticTexts["¿Que quieres mejorar primero?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["¿Qué quieres mejorar primero?"].waitForExistence(timeout: 5))
 
         app.staticTexts["Rendir mejor"].tap()
         app.buttons["Continuar"].tap()
-        XCTAssertTrue(app.staticTexts["¿Que senales importan para ti?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["¿Qué señales son importantes para ti?"].waitForExistence(timeout: 5))
 
-        app.staticTexts["Recovery"].tap()
+        app.staticTexts["Recuperación"].tap()
         app.buttons["Continuar"].tap()
-        XCTAssertTrue(app.staticTexts["Construyamos tu noche"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Construyamos tu horario de sueño"].waitForExistence(timeout: 5))
 
         app.buttons["Continuar"].tap()
         XCTAssertTrue(app.staticTexts["Conecta Apple Health"].waitForExistence(timeout: 5))
@@ -65,8 +74,8 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testDailyBriefingAndRecoveryDetail() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["RECOVERY"].exists)
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["RECUPERACIÓN"].exists)
         XCTAssertTrue(app.staticTexts["Tu plan para hoy"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["dashboard.dayStrip"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["dashboard.workouts"].exists)
@@ -82,7 +91,7 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["dashboard.monthCalendar.today"].exists)
         keepScreenshot(app, name: "home-month-calendar")
         app.buttons["Cerrar"].tap()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 5))
 
         let hero = app.buttons["dashboard.recoveryHero"]
         XCTAssertTrue(hero.waitForExistence(timeout: 5))
@@ -93,7 +102,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testContextMenusAndSettingsPush() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let sourceMenu = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Fuente de datos'")).firstMatch
         XCTAssertTrue(sourceMenu.exists)
@@ -103,19 +112,105 @@ final class RecvelUITests: XCTestCase {
         app.tap()
 
         app.buttons["dashboard.moreMenu"].tap()
-        XCTAssertTrue(app.buttons["Datos y privacidad"].waitForExistence(timeout: 3))
+        let privacyItem = app.buttons["Datos y privacidad"]
+        XCTAssertTrue(privacyItem.waitForExistence(timeout: 3))
         keepScreenshot(app, name: "native-more-menu")
+        // Los items de Menu nativo a veces ignoran el tap directo del elemento;
+        // el tap por coordenada al centro del item si aterriza.
+        privacyItem.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+
+        XCTAssertTrue(app.navigationBars["Datos y privacidad"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.navigationBars.buttons["Atrás"].exists || app.navigationBars.buttons["Back"].exists,
+            "Ajustes debe conservar la navegación de regreso"
+        )
+        XCTAssertTrue(app.staticTexts["Privado por diseño"].exists)
+    }
+
+    @MainActor
+    func testLanguageSelectorChangesTheInterfaceImmediately() throws {
+        let app = launchApp()
+        XCTAssertTrue(app.buttons["dashboard.moreMenu"].waitForExistence(timeout: 8))
+        app.buttons["dashboard.moreMenu"].tap()
         app.buttons["Datos y privacidad"].tap()
 
-        XCTAssertTrue(app.navigationBars["Ajustes"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.navigationBars.buttons["Back"].exists)
-        XCTAssertTrue(app.staticTexts["Datos y privacidad"].exists)
+        let languageMenu = app.buttons["settings.language.menu"]
+        XCTAssertTrue(languageMenu.waitForExistence(timeout: 5))
+        languageMenu.tap()
+        XCTAssertTrue(app.buttons["English"].waitForExistence(timeout: 3))
+        app.buttons["English"].tap()
+
+        XCTAssertTrue(app.navigationBars["Data and privacy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Private by design"].exists)
+
+        app.terminate()
+        app.launchArguments = ["-hasCompletedOnboarding", "YES",
+            "-skipMorningReport", "YES", "-useDemoData", "YES"]
+        app.launch()
+        let todayTab = app.buttons["tab.today"]
+        XCTAssertTrue(todayTab.waitForExistence(timeout: 8))
+        XCTAssertEqual(todayTab.label, "Today")
+    }
+
+    @MainActor
+    func testPhysiologicalAgeUsesTheSelectedSpanishLanguage() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-hasCompletedOnboarding", "YES",
+            "-skipMorningReport", "YES",
+            "-useDemoData", "YES",
+            "-recvel.appLanguage", "en"
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.buttons["dashboard.moreMenu"].waitForExistence(timeout: 8))
+        app.buttons["dashboard.moreMenu"].tap()
+        app.buttons["Data and privacy"].tap()
+        let languageMenu = app.buttons["settings.language.menu"]
+        XCTAssertTrue(languageMenu.waitForExistence(timeout: 5))
+        languageMenu.tap()
+        app.buttons["Spanish (Mexico)"].tap()
+        XCTAssertTrue(app.navigationBars["Datos y privacidad"].waitForExistence(timeout: 5))
+
+        app.navigationBars["Datos y privacidad"].buttons.element(boundBy: 0).tap()
+        let bioAge = app.descendants(matching: .any)["dashboard.bioAge"]
+        var swipes = 0
+        while !bioAge.isHittable && swipes < 8 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(bioAge.waitForExistence(timeout: 5))
+        bioAge.tap()
+        let title = app.staticTexts["bioAge.hero.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        XCTAssertEqual(title.label, "Edad fisiológica")
+        XCTAssertFalse(app.staticTexts["Physiological age"].exists)
+    }
+
+    @MainActor
+    func testScientificHelpAppearsOnlyInsideTheDetailFlow() throws {
+        let app = launchApp()
+        XCTAssertFalse(app.buttons["scientific.info.HRV"].exists)
+
+        let recovery = app.buttons["dashboard.recoveryHero"]
+        XCTAssertTrue(recovery.waitForExistence(timeout: 8))
+        recovery.tap()
+
+        let info = app.buttons["scientific.info.HRV"]
+        XCTAssertTrue(info.waitForExistence(timeout: 5))
+        info.tap()
+        XCTAssertTrue(app.staticTexts["Variabilidad de la frecuencia cardíaca"].waitForExistence(timeout: 3))
+
+        let methodology = app.buttons["Ver metodología"]
+        XCTAssertTrue(methodology.waitForExistence(timeout: 3))
+        methodology.tap()
+        XCTAssertTrue(app.navigationBars["Metodología y límites"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testMetricDetailsExposeMeasuredContext() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let routes: [(button: String, detail: String, advice: String, screenshot: String)] = [
             ("dashboard.recoveryHero", "detail.recovery.factors", "detail.recovery.advice", "recovery-detail"),
@@ -142,14 +237,14 @@ final class RecvelUITests: XCTestCase {
 
             app.terminate()
             app.launch()
-            XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+            XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
         }
     }
 
     @MainActor
     func testStressVO2AndBioAgeSectionsExposeRealContext() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let stress = app.buttons["dashboard.stress"]
         for _ in 0..<5 where !stress.isHittable { app.swipeUp() }
@@ -161,16 +256,23 @@ final class RecvelUITests: XCTestCase {
                 || app.descendants(matching: .any)["detail.stress.hints"].exists,
             "Debe mostrar consejo generico o hints de factores"
         )
-        XCTAssertTrue(app.descendants(matching: .any)["detail.stress.activation"].exists, "Deben mostrarse las barras de activacion del dia")
-        XCTAssertTrue(app.descendants(matching: .any)["detail.stress.emotion"].exists, "Debe mostrarse el log de emociones")
-        XCTAssertTrue(app.buttons["Atras"].exists)
+        // El detalle renderiza lazy: las secciones fuera de pantalla no existen
+        // en el arbol de accesibilidad hasta scrollear hacia ellas.
+        let activation = app.descendants(matching: .any)["detail.stress.activation"]
+        var stressSwipes = 0
+        while !activation.exists && stressSwipes < 6 { app.swipeUp(); stressSwipes += 1 }
+        XCTAssertTrue(activation.exists, "Deben mostrarse las barras de activacion del dia")
+        let emotion = app.descendants(matching: .any)["detail.stress.emotion"]
+        while !emotion.exists && stressSwipes < 12 { app.swipeUp(); stressSwipes += 1 }
+        XCTAssertTrue(emotion.exists, "Debe mostrarse el log de emociones")
+        XCTAssertTrue(app.buttons["Atrás"].exists || app.buttons["Atras"].exists)
         keepScreenshot(app, name: "stress-detail-calm-score")
     }
 
     @MainActor
     func testStressEmotionLoggingFlow() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let stress = app.buttons["dashboard.stress"]
         for _ in 0..<5 where !stress.isHittable { app.swipeUp() }
@@ -251,7 +353,7 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(vo2.waitForExistence(timeout: 4))
         vo2.tap()
         XCTAssertTrue(app.descendants(matching: .any)["detail.vo2"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Como obtener una nueva estimacion"].exists)
+        XCTAssertTrue(app.staticTexts["Cómo obtener una nueva estimación"].exists)
 
         app.terminate()
         app.launch()
@@ -261,7 +363,7 @@ final class RecvelUITests: XCTestCase {
         bioAge.tap()
         XCTAssertTrue(app.descendants(matching: .any)["detail.bioAge"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Metodo transparente"].exists)
-        XCTAssertTrue(app.staticTexts["No es una edad biologica clinica"].exists)
+        XCTAssertTrue(app.staticTexts["No es una edad biológica clínica"].exists)
     }
 
     @MainActor
@@ -269,21 +371,22 @@ final class RecvelUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = [
             "-hasCompletedOnboarding", "YES",
+            "-skipMorningReport", "YES",
             "-useDemoData", "NO",
             "-skipHealthKitRefresh", "YES"
         ]
         app.launch()
 
         XCTAssertTrue(app.descendants(matching: .any)["dashboard.empty"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Tu briefing necesita datos"].exists)
+        XCTAssertTrue(app.staticTexts["Tu resumen necesita más datos"].exists)
         XCTAssertTrue(app.buttons["Conectar Apple Health"].exists)
-        XCTAssertFalse(app.staticTexts["RECOVERY"].exists)
+        XCTAssertFalse(app.staticTexts["RECUPERACIÓN"].exists)
     }
 
     @MainActor
     func testPrimaryProductFlowsOpen() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let planEntry = app.buttons["dashboard.plan"]
         XCTAssertTrue(planEntry.waitForExistence(timeout: 5))
@@ -305,17 +408,17 @@ final class RecvelUITests: XCTestCase {
         app.buttons["Atras"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Hoy y esta semana"].waitForExistence(timeout: 5))
         app.buttons["Atras"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 5))
 
         app.buttons["tab.journal"].tap()
-        XCTAssertTrue(app.staticTexts["Journal"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Diario"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Patrones emergentes"].exists)
         XCTAssertTrue(app.staticTexts["Diario mental"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["journal.calendar"].exists)
         keepScreenshot(app, name: "journal-bevel-recvel")
 
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["fitness.calendar"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["fitness.workoutList"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["fitness.cardioLoad"].exists)
@@ -323,7 +426,7 @@ final class RecvelUITests: XCTestCase {
 
         app.buttons["tab.nutrition"].tap()
         completeNutritionSetupIfNeeded(app)
-        XCTAssertTrue(app.staticTexts["Nutricion"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Nutrición"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["nutrition.nextMeal"].exists)
         keepScreenshot(app, name: "nutrition-bevel-recvel")
     }
@@ -332,7 +435,7 @@ final class RecvelUITests: XCTestCase {
     func testFitnessNativeMenuAndMeasuredDetailOpen() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
 
         let addMenu = app.buttons["fitness.add"]
         XCTAssertTrue(addMenu.waitForExistence(timeout: 3))
@@ -340,7 +443,7 @@ final class RecvelUITests: XCTestCase {
             .withOffset(CGVector(dx: addMenu.frame.midX, dy: addMenu.frame.midY))
             .tap()
         XCTAssertTrue(app.buttons["Registrar entrenamiento"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["Crear plantilla de fuerza"].exists)
+        XCTAssertTrue(app.buttons["Crear rutina de fuerza"].exists)
         XCTAssertTrue(app.buttons["Actualizar Apple Health"].exists)
         keepScreenshot(app, name: "fitness-native-menu")
         app.tap()
@@ -353,7 +456,7 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Carga cardio"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["fitness.detail.breakdown"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["fitness.detail.science"].exists)
-        XCTAssertTrue(app.staticTexts["Como leer esta metrica"].exists)
+        XCTAssertTrue(app.staticTexts["Cómo interpretar esta métrica"].exists)
         keepScreenshot(app, name: "fitness-cardio-load-detail")
     }
 
@@ -362,7 +465,7 @@ final class RecvelUITests: XCTestCase {
     func testFitnessLibrarySelectAddsExerciseToTemplate() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
 
         openCreateTemplate(app)
         fillTemplateName(app, "UITest Push Day")
@@ -379,7 +482,7 @@ final class RecvelUITests: XCTestCase {
         let save = app.buttons["fitness.templateEditor.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 3))
         save.tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
     }
 
     /// Multi-select: dos ejercicios + Agregar deben quedar en el editor.
@@ -387,7 +490,7 @@ final class RecvelUITests: XCTestCase {
     func testFitnessLibraryMultiSelectAddsSeveralExercises() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
 
         openCreateTemplate(app)
         fillTemplateName(app, "UITest Full Body")
@@ -408,7 +511,7 @@ final class RecvelUITests: XCTestCase {
     func testFitnessTemplateCanBeDeletedFromPreview() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
 
         openCreateTemplate(app)
         fillTemplateName(app, "UITest Borrame")
@@ -416,7 +519,7 @@ final class RecvelUITests: XCTestCase {
         let save = app.buttons["fitness.templateEditor.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 3))
         save.tap()
-        XCTAssertTrue(app.navigationBars["Fitness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
 
         // Abrir el preview de la plantilla recien creada.
         let card = app.buttons["fitness.template.card.UITest_Borrame"]
@@ -449,7 +552,7 @@ final class RecvelUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: .zero)
             .withOffset(CGVector(dx: addMenu.frame.midX, dy: addMenu.frame.midY))
             .tap()
-        let create = app.buttons["Crear plantilla de fuerza"]
+        let create = app.buttons["Crear rutina de fuerza"]
         XCTAssertTrue(create.waitForExistence(timeout: 3))
         create.tap()
         XCTAssertTrue(app.descendants(matching: .any)["fitness.templateEditor"].waitForExistence(timeout: 5))
@@ -541,8 +644,12 @@ final class RecvelUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["Editar"].waitForExistence(timeout: 3))
         app.buttons["Editar"].tap()
-        XCTAssertTrue(app.navigationBars["Editar comida"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.navigationBars.buttons["Back"].exists)
+        let editBar = app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH 'Editar'")).firstMatch
+        XCTAssertTrue(editBar.waitForExistence(timeout: 5), "Debe abrir el editor de comida")
+        XCTAssertTrue(
+            app.navigationBars.buttons["Atrás"].exists || app.navigationBars.buttons["Back"].exists,
+            "El editor debe conservar la navegación de regreso"
+        )
     }
 
     // MARK: - Ayuno intermitente
@@ -552,6 +659,7 @@ final class RecvelUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = [
             "-hasCompletedOnboarding", "YES",
+            "-skipMorningReport", "YES",
             "-useDemoData", "YES",
             "-fastingScreeningCompleted", screeningCompleted ? "YES" : "NO"
         ]
@@ -676,7 +784,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testTabBarVisibleAtRestThenCompactsOnScroll() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let today = app.buttons["tab.today"]
         XCTAssertTrue(
@@ -709,7 +817,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testTabBarFABOpensQuickActionMenu() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         app.buttons["tabbar.fab.open"].tap()
         XCTAssertTrue(app.buttons["tabbar.fab.close"].waitForExistence(timeout: 3), "+ debe morph a X")
@@ -725,7 +833,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testTabBarHidesWhenPushingDetail() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["tab.today"].isHittable, "La barra debe estar visible en la raiz")
 
         let hero = app.buttons["dashboard.recoveryHero"]
@@ -750,13 +858,13 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testTabBarReturnsAfterPoppingDetail() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         app.buttons["dashboard.recoveryHero"].tap()
         XCTAssertTrue(app.buttons["Atras"].waitForExistence(timeout: 8))
 
         app.buttons["Atras"].tap()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         XCTAssertTrue(
             waitForHittable(app.buttons["tab.today"], true),
@@ -767,7 +875,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testJournalProAndBioAgeProSurfaces() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         app.buttons["tab.journal"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["journal.root"].waitForExistence(timeout: 5))
@@ -779,14 +887,14 @@ final class RecvelUITests: XCTestCase {
         let journalMenu = app.buttons["journal.menu"]
         XCTAssertTrue(journalMenu.waitForExistence(timeout: 3))
         journalMenu.tap()
-        XCTAssertTrue(app.buttons["Personalizar Journal"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Personalizar Diario"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Entradas predeterminadas"].exists)
         XCTAssertTrue(app.buttons["Recordatorios"].exists)
         keepScreenshot(app, name: "journal-pro-native-menu")
         app.tap()
 
         app.buttons["tab.today"].tap()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 5))
         let bioAge = app.buttons["dashboard.bioAge"]
         for _ in 0..<8 where !bioAge.isHittable { app.swipeUp() }
         XCTAssertTrue(bioAge.waitForExistence(timeout: 5))
@@ -809,7 +917,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testSleepMetricCardsOpenMetricDetail() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let sleep = app.buttons["dashboard.score.sleep"]
         for _ in 0..<8 where !sleep.isHittable { app.swipeUp() }
@@ -850,7 +958,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testSleepBankAndCoachingAreVisible() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let sleep = app.buttons["dashboard.score.sleep"]
         for _ in 0..<8 where !sleep.isHittable { app.swipeUp() }
@@ -875,9 +983,9 @@ final class RecvelUITests: XCTestCase {
 
         let coaching = app.descendants(matching: .any)["detail.sleep.coaching"]
         XCTAssertTrue(coaching.waitForExistence(timeout: 5), "El coaching debe aparecer en el detalle de sueno")
-        XCTAssertTrue(app.staticTexts["Coaching"].exists)
-        let coachingTitle = app.staticTexts["Coaching"]
-        for _ in 0..<4 where !coachingTitle.isHittable { app.swipeUp() }
+        // Anclar por identifier, no por string literal: los titulos estan
+        // siendo migrados al String Catalog por otra sesion.
+        for _ in 0..<4 where !coaching.isHittable { app.swipeUp() }
         keepScreenshot(app, name: "sleep-coaching")
     }
 
@@ -885,7 +993,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testRecoveryExposesOxygenAndWristTemperature() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let recovery = app.buttons["dashboard.recoveryHero"]
         for _ in 0..<8 where !recovery.isHittable { app.swipeUp() }
@@ -914,7 +1022,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testStressHasPermanentBreathingEntrypoint() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let stress = app.buttons["dashboard.stress"]
         for _ in 0..<8 where !stress.isHittable { app.swipeUp() }
@@ -934,7 +1042,7 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["breathing.view"].waitForExistence(timeout: 6))
         // Debe ofrecer tecnicas con su evidencia, no solo un timer.
         XCTAssertTrue(app.descendants(matching: .any)["breathing.evidence"].exists)
-        XCTAssertTrue(app.staticTexts["Respiracion guiada"].exists)
+        XCTAssertTrue(app.staticTexts["Respiración guiada"].exists)
         keepScreenshot(app, name: "breathing-techniques")
 
         let start = app.buttons["breathing.start"]
@@ -950,7 +1058,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testStrainShowsFitnessClassification() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let strain = app.buttons["dashboard.score.strain"]
         for _ in 0..<8 where !strain.isHittable { app.swipeUp() }
@@ -987,7 +1095,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testStrainMetricCardsOpenMetricDetail() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let strain = app.buttons["dashboard.score.strain"]
         for _ in 0..<8 where !strain.isHittable { app.swipeUp() }
@@ -1011,7 +1119,7 @@ final class RecvelUITests: XCTestCase {
     @MainActor
     func testEnergyMetricCardsOpenMetricDetail() throws {
         let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Briefing diario"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
 
         let energy = app.buttons["dashboard.score.energy"]
         for _ in 0..<8 where !energy.isHittable { app.swipeUp() }
@@ -1032,5 +1140,367 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["metric.detail"].waitForExistence(timeout: 6))
         XCTAssertTrue(app.staticTexts["Luz diurna"].waitForExistence(timeout: 4))
         keepScreenshot(app, name: "metric-detail-energy-daylight")
+    }
+
+    // MARK: - Agenda semanal profesional (split, deporte, emoji, coaching, progresion)
+
+    /// El onboarding ampliado pide split de fuerza y deporte de cardio.
+    @MainActor
+    func testWeeklyRoutineOnboardingAsksSplitAndSport() throws {
+        let app = launchApp()
+        app.buttons["tab.fitness"].tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        // Abrir la agenda semanal. UserDefaults persiste en el simulador, así
+        // que la rutina puede estar ya creada (botón editar) o no (botón crear).
+        let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]
+        for _ in 0..<12 where !section.exists { app.swipeUp() }
+        XCTAssertTrue(section.waitForExistence(timeout: 5))
+
+        let create = app.buttons["fitness.weeklyRoutine.create"]
+        if create.exists {
+            for _ in 0..<4 where !create.isHittable { app.swipeUp() }
+            create.tap()
+        } else {
+            // Plan ya creado: el menú "..." ofrece "Editar plan".
+            let menu = app.buttons["fitness.weeklyRoutine.menu"]
+            for _ in 0..<4 where !menu.isHittable { app.swipeUp() }
+            menu.tap()
+            let edit = app.buttons["Editar plan"]
+            XCTAssertTrue(edit.waitForExistence(timeout: 3))
+            edit.tap()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.routineOnboarding"].waitForExistence(timeout: 5))
+
+        // Perfil: activar las opciones de alto rendimiento para ver todo el flujo.
+        XCTAssertTrue(app.staticTexts["Configura tu plan"].waitForExistence(timeout: 4))
+        // Encender modo avanzado por el camino de la propia app: elegir
+        // experiencia "Avanzada" activa `advanced = true` en la logica del
+        // wizard. Es determinista, a diferencia de pelear con el switch (que
+        // en suite puede quedar fuera de pantalla y comerse los taps).
+        let advancedRow = app.staticTexts["Avanzada"]
+        XCTAssertTrue(advancedRow.waitForExistence(timeout: 3))
+        var rowSwipes = 0
+        while !advancedRow.isHittable && rowSwipes < 4 { app.swipeUp(); rowSwipes += 1 }
+        advancedRow.tap()
+        let advancedSwitch = app.switches["fitness.routineOnboarding.advanced"]
+        XCTAssertTrue(advancedSwitch.waitForExistence(timeout: 3))
+        XCTAssertEqual(advancedSwitch.value as? String, "1", "Elegir experiencia avanzada debe encender el modo avanzado")
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+
+        // Modalidades: split de fuerza y deporte de cardio en la misma pantalla.
+        let ppl = app.buttons["fitness.routineOnboarding.split.pushPullLegs"]
+        XCTAssertTrue(ppl.waitForExistence(timeout: 4), "El onboarding debe pedir el tipo de split")
+        ppl.tap()
+        keepScreenshot(app, name: "routine-split-step")
+
+        let football = app.buttons["fitness.routineOnboarding.sport.football"]
+        for _ in 0..<5 where !football.isHittable { app.swipeUp() }
+        XCTAssertTrue(football.exists, "El onboarding debe pedir el deporte de cardio")
+        football.tap()
+        keepScreenshot(app, name: "routine-sport-step")
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+
+        // Nuevo flujo: tras modalidades viene el preview de la rutina (PPL).
+        XCTAssertTrue(app.staticTexts["Tu rutina sugerida"].waitForExistence(timeout: 4),
+                      "Con fuerza activa, el preview de rutina precede a los días")
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+
+        // Días (rediseñado): pregunta cuántos días; Atrás regresa al preview.
+        XCTAssertTrue(app.staticTexts["¿Cuántos días puedes entrenar?"].waitForExistence(timeout: 4))
+        let back = app.buttons["fitness.routineOnboarding.back"]
+        XCTAssertTrue(back.exists, "El wizard debe tener botón Atrás")
+        back.tap()
+        XCTAssertTrue(app.staticTexts["Tu rutina sugerida"].waitForExistence(timeout: 3),
+                      "Atrás desde días regresa al preview de rutina")
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+        XCTAssertTrue(app.staticTexts["¿Cuántos días puedes entrenar?"].waitForExistence(timeout: 4))
+
+        // Fase (modo avanzado) y luego editor por día con tipos de sesión pro.
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+        XCTAssertTrue(app.staticTexts["¿En qué fase estás?"].waitForExistence(timeout: 4))
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["plan.sessionEditor.2"].waitForExistence(timeout: 4),
+                      "El modo avanzado muestra el editor por día")
+    }
+
+    /// Flujo rápido (4 pantallas) guarda el plan y la biblioteca lo lista con
+    /// opción de eliminar todos.
+    @MainActor
+    func testQuickPlanWizardSavesAndOpensLibrary() throws {
+        let app = launchApp()
+        app.buttons["tab.fitness"].tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]
+        for _ in 0..<12 where !section.exists { app.swipeUp() }
+        XCTAssertTrue(section.waitForExistence(timeout: 5))
+
+        let create = app.buttons["fitness.weeklyRoutine.create"]
+        if create.exists {
+            for _ in 0..<4 where !create.isHittable { app.swipeUp() }
+            create.tap()
+        } else {
+            let menu = app.buttons["fitness.weeklyRoutine.menu"]
+            for _ in 0..<4 where !menu.isHittable { app.swipeUp() }
+            menu.tap()
+            let edit = app.buttons["Editar plan"]
+            XCTAssertTrue(edit.waitForExistence(timeout: 3))
+            edit.tap()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.routineOnboarding"].waitForExistence(timeout: 5))
+
+        // Flujo rápido: apagar avanzado si quedó encendido de otra corrida.
+        let quickSwitch = app.switches["fitness.routineOnboarding.advanced"]
+        if quickSwitch.waitForExistence(timeout: 3), (quickSwitch.value as? String) == "1" {
+            quickSwitch.tap()
+        }
+        // perfil → modalidades → [preview de rutina si hay fuerza] → días → revisión.
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+        if app.staticTexts["Tu rutina sugerida"].waitForExistence(timeout: 2) {
+            app.buttons["fitness.routineOnboarding.continue"].tap()
+        }
+        app.buttons["fitness.routineOnboarding.continue"].tap()
+        XCTAssertTrue(app.staticTexts["Tu plan semanal"].waitForExistence(timeout: 4),
+                      "La 4ª pantalla del flujo rápido es la revisión del plan")
+        // La revisión muestra qué esperar del plan.
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.routineOnboarding.expectations"].exists)
+        app.buttons["fitness.routineOnboarding.continue"].tap() // Guardar plan semanal
+
+        // De vuelta en Entrenamiento: abrir la biblioteca desde el menú del plan.
+        let menuAfter = app.buttons["fitness.weeklyRoutine.menu"]
+        for _ in 0..<8 where !menuAfter.isHittable { app.swipeUp() }
+        XCTAssertTrue(menuAfter.waitForExistence(timeout: 5))
+        menuAfter.tap()
+        let library = app.buttons["Biblioteca de planes"]
+        XCTAssertTrue(library.waitForExistence(timeout: 3))
+        library.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.plans.library"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["fitness.plans.deleteAll"].waitForExistence(timeout: 3),
+                      "La biblioteca debe permitir eliminar todos los planes")
+    }
+
+    /// La progresión por ejercicio existe (con dato o con estado vacío honesto).
+    @MainActor
+    func testFitnessShowsExerciseProgressionSection() throws {
+        let app = launchApp()
+        app.buttons["tab.fitness"].tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        let card = app.descendants(matching: .any)["fitness.exerciseProgressionCard"]
+        for _ in 0..<12 where !card.isHittable { app.swipeUp() }
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "Debe existir la sección de progresión por ejercicio")
+        XCTAssertTrue(app.staticTexts["Progresión por ejercicio"].exists)
+        keepScreenshot(app, name: "exercise-progression-section")
+    }
+
+    /// Flujo completo: terminar una sesión activa pregunta cómo se sintió con
+    /// emojis y guarda con ese esfuerzo (antes había un 6 hardcodeado).
+    @MainActor
+    func testActiveSessionAsksFeelingOnFinish() throws {
+        let app = launchApp()
+        app.buttons["tab.fitness"].tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        // Crear una plantilla mínima para poder iniciar sesión.
+        openCreateTemplate(app)
+        fillTemplateName(app, "UITest Feeling")
+        openLibrary(app)
+        tapLibraryItem(app, id: "fitness.library.item.Sentadilla")
+        confirmLibraryAdd(app)
+        let save = app.buttons["fitness.templateEditor.save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 3))
+        save.tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        // Abrir preview de la plantilla y empezar la sesión.
+        let card = app.buttons.matching(NSPredicate(format: "label CONTAINS 'UITest Feeling'")).firstMatch
+        var swipes = 0
+        while !card.isHittable && swipes < 10 { app.swipeUp(); swipes += 1 }
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        card.tap()
+        let start = app.buttons["fitness.templatePreview.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 4))
+        start.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.activeSession"].waitForExistence(timeout: 5))
+
+        // Terminar => diálogo => hoja de feeling.
+        app.buttons["fitness.activeSession.finish"].tap()
+        let confirm = app.buttons["Guardar sesion"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 4))
+        confirm.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.feelingPrompt"].waitForExistence(timeout: 5),
+                      "Al terminar debe preguntar cómo se sintió")
+        keepScreenshot(app, name: "workout-feeling-prompt")
+
+        // El botón de guardar está deshabilitado hasta elegir un emoji.
+        let feelingSave = app.buttons["fitness.feeling.save"]
+        XCTAssertTrue(feelingSave.waitForExistence(timeout: 3))
+        XCTAssertFalse(feelingSave.isEnabled, "Sin emoji elegido no se puede guardar")
+
+        app.buttons["fitness.feeling.hard"].tap()
+        XCTAssertTrue(feelingSave.isEnabled)
+        feelingSave.tap()
+
+        // Vuelve al listado de Entrenamiento (sesión guardada).
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 6))
+        keepScreenshot(app, name: "workout-feeling-saved")
+    }
+
+    /// Flujo de rutina pre-hecha: al elegir split se MUESTRA la rutina con su
+    /// badge, se puede editar, los días se sugieren y ajustan por tap, y el
+    /// Coach califica la semana en el review y en la agenda.
+    @MainActor
+    func testRoutinePresetPreviewDaysAndCoachFlow() throws {
+        let app = launchApp()
+        app.buttons["tab.fitness"].tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        // Abrir el wizard (crear o editar según el estado persistido).
+        let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]
+        for _ in 0..<12 where !section.exists { app.swipeUp() }
+        XCTAssertTrue(section.waitForExistence(timeout: 5))
+        let create = app.buttons["fitness.weeklyRoutine.create"]
+        if create.exists {
+            for _ in 0..<4 where !create.isHittable { app.swipeUp() }
+            create.tap()
+        } else {
+            let menu = app.buttons["fitness.weeklyRoutine.menu"]
+            for _ in 0..<4 where !menu.isHittable { app.swipeUp() }
+            menu.tap()
+            let edit = app.buttons["Editar plan"]
+            XCTAssertTrue(edit.waitForExistence(timeout: 3))
+            edit.tap()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.routineOnboarding"].waitForExistence(timeout: 5))
+
+        let next = app.buttons["fitness.routineOnboarding.continue"]
+
+        // Paso perfil (modo rápido) → modalidades (fullBody por defecto).
+        XCTAssertTrue(next.waitForExistence(timeout: 4))
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Tipo de rutina"].waitForExistence(timeout: 4))
+        next.tap()
+
+        // NUEVO: preview de la rutina pre-hecha con badge, preseleccionada.
+        let presetCard = app.buttons["fitness.routineOnboarding.preset.fullBody.hypertrophy"]
+        XCTAssertTrue(presetCard.waitForExistence(timeout: 5), "Debe mostrarse la rutina sugerida para el split")
+        XCTAssertTrue(app.staticTexts["Ideal para hipertrofia"].firstMatch.exists, "La card debe llevar su badge")
+        keepScreenshot(app, name: "routine-preset-preview")
+
+        // Editarla debe ser posible (abre el editor del día).
+        let editDay = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'fitness.routineOnboarding.editDay.'")).firstMatch
+        if editDay.exists && editDay.isHittable {
+            editDay.tap()
+            XCTAssertTrue(app.descendants(matching: .any)["fitness.templateEditor"].waitForExistence(timeout: 4))
+            keepScreenshot(app, name: "routine-preset-editor")
+            app.buttons["fitness.templateEditor.save"].tap()
+        }
+        next.tap()
+
+        // Días: contador + semana sugerida editable por tap.
+        let daysPicker = app.descendants(matching: .any)["fitness.routineOnboarding.daysCount"]
+        XCTAssertTrue(daysPicker.waitForExistence(timeout: 4), "Debe preguntar cuántos días")
+        let wednesday = app.buttons["fitness.routineOnboarding.week.4"]
+        XCTAssertTrue(wednesday.waitForExistence(timeout: 4), "La semana sugerida debe ser editable")
+        wednesday.tap() // cicla el miércoles al siguiente tipo
+        keepScreenshot(app, name: "routine-days-suggested")
+        next.tap()
+
+        // Review: el Coach califica la semana.
+        let coach = app.descendants(matching: .any)["fitness.routineOnboarding.coach"]
+        XCTAssertTrue(coach.waitForExistence(timeout: 5), "El Coach debe calificar el plan en el review")
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Coach:'")).firstMatch.exists,
+            "El veredicto debe hablar con voz de coach"
+        )
+        keepScreenshot(app, name: "routine-review-coach")
+        next.tap()
+
+        // De vuelta en la agenda: banner del coach siempre visible.
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 6))
+        let banner = app.descendants(matching: .any)["fitness.weeklyRoutine.coach"]
+        for _ in 0..<10 where !banner.exists { app.swipeUp() }
+        XCTAssertTrue(banner.waitForExistence(timeout: 5), "La agenda debe mostrar el veredicto del coach")
+        keepScreenshot(app, name: "routine-agenda-coach")
+    }
+
+    /// El preview de rutina muestra las TRES modalidades (fuerza + cardio con
+    /// minutos + movilidad) y el desafío diario; y en días, ciclar a movilidad
+    /// no infla el contador (cuenta como recuperación activa).
+    @MainActor
+    func testRoutinePreviewShowsCardioMobilityAndChallenge() throws {
+        let app = launchApp()
+        app.buttons["tab.fitness"].tap()
+        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+
+        // Abrir el wizard (crear o editar según estado persistido).
+        let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]
+        for _ in 0..<12 where !section.exists { app.swipeUp() }
+        XCTAssertTrue(section.waitForExistence(timeout: 5))
+        let create = app.buttons["fitness.weeklyRoutine.create"]
+        if create.exists {
+            for _ in 0..<4 where !create.isHittable { app.swipeUp() }
+            create.tap()
+        } else {
+            let menu = app.buttons["fitness.weeklyRoutine.menu"]
+            for _ in 0..<4 where !menu.isHittable { app.swipeUp() }
+            menu.tap()
+            let edit = app.buttons["Editar plan"]
+            XCTAssertTrue(edit.waitForExistence(timeout: 3))
+            edit.tap()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.routineOnboarding"].waitForExistence(timeout: 5))
+        let next = app.buttons["fitness.routineOnboarding.continue"]
+
+        // Perfil → modalidades: activar movilidad y desafío diario.
+        XCTAssertTrue(next.waitForExistence(timeout: 4))
+        next.tap()
+        XCTAssertTrue(app.staticTexts["¿Qué incluye tu semana?"].waitForExistence(timeout: 4))
+        // Es un boton de seleccion (no switch): garantizar movilidad activa
+        // tapeando si su fila no muestra el check. Como el estado persiste,
+        // simplemente la activamos si el preview luego no la muestra.
+        let mobilityToggle = app.buttons["fitness.routineOnboarding.mobilityToggle"]
+        XCTAssertTrue(mobilityToggle.waitForExistence(timeout: 3))
+        next.tap()
+
+        // Preview: fuerza + cardio (con minutos) + movilidad.
+        XCTAssertTrue(app.staticTexts["Tu rutina sugerida"].waitForExistence(timeout: 5))
+        let cardio = app.descendants(matching: .any)["fitness.routineOnboarding.cardioPreview"]
+        var swipes = 0
+        while !cardio.exists && swipes < 6 { app.swipeUp(); swipes += 1 }
+        XCTAssertTrue(cardio.exists, "El preview debe mostrar la sección de cardio con minutos")
+        XCTAssertTrue(app.descendants(matching: .any)["fitness.routineOnboarding.cardioMinutes"].exists)
+
+        var mobility = app.descendants(matching: .any)["fitness.routineOnboarding.mobilityPreview"]
+        while !mobility.exists && swipes < 12 { app.swipeUp(); swipes += 1 }
+        if !mobility.exists {
+            // La modalidad estaba apagada en el plan persistido: volver,
+            // activarla y regresar al preview.
+            app.buttons["fitness.routineOnboarding.back"].tap()
+            XCTAssertTrue(mobilityToggle.waitForExistence(timeout: 3))
+            var toggleSwipes = 0
+            while !mobilityToggle.isHittable && toggleSwipes < 4 { app.swipeUp(); toggleSwipes += 1 }
+            mobilityToggle.tap()
+            next.tap()
+            XCTAssertTrue(app.staticTexts["Tu rutina sugerida"].waitForExistence(timeout: 5))
+            mobility = app.descendants(matching: .any)["fitness.routineOnboarding.mobilityPreview"]
+            var backSwipes = 0
+            while !mobility.exists && backSwipes < 12 { app.swipeUp(); backSwipes += 1 }
+        }
+        XCTAssertTrue(mobility.exists, "El preview debe mostrar la rutina de movilidad")
+        keepScreenshot(app, name: "preview-three-modalities")
+        next.tap()
+
+        // Días: el copy del contador dice "recuperación activa".
+        XCTAssertTrue(app.staticTexts["¿Cuántos días puedes entrenar?"].waitForExistence(timeout: 4))
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'recuperación activa'")).firstMatch
+                .waitForExistence(timeout: 3),
+            "El contador de descansos debe incluir la recuperación activa"
+        )
+        keepScreenshot(app, name: "days-active-recovery-copy")
     }
 }

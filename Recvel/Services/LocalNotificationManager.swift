@@ -14,9 +14,13 @@ struct LocalNotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: ["recvel.morning"])
         guard enabled else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Tu briefing esta listo"
-        content.body = "Revisa Recovery, sueno y la carga sugerida para hoy."
+        content.title = RecvelL10n.text("notification.morning.title")
+        content.body = RecvelL10n.text("notification.morning.body")
         content.sound = .default
+        // El texto se queda sobrio a proposito: una notificacion local no puede
+        // recalcular al dispararse, asi que las cifras se calculan al abrir el
+        // reporte. El deep link es lo que da el valor.
+        content.userInfo = [NotificationRouter.deepLinkKey: "recvel://morning"]
         let minutes = normalized(wakeMinutes + 15)
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: DateComponents(hour: minutes / 60, minute: minutes % 60),
@@ -29,8 +33,8 @@ struct LocalNotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: ["recvel.bedtime"])
         guard enabled else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Empieza a cerrar el dia"
-        content.body = "Tu ventana de sueno comienza pronto. Baja el ritmo y protege tu horario."
+        content.title = RecvelL10n.text("notification.bedtime.title")
+        content.body = RecvelL10n.text("notification.bedtime.body")
         content.sound = .default
         let bedtime = wakeMinutes - Int(sleepGoalHours * 60) - 45
         let minutes = normalized(bedtime)
@@ -48,24 +52,24 @@ struct LocalNotificationManager {
         if morning {
             await addDaily(
                 id: ids[0],
-                title: "Completa la noche",
-                body: "Registra solo lo que recuerdes y deja lo demas como desconocido.",
+                title: RecvelL10n.text("notification.journal.morning.title"),
+                body: RecvelL10n.text("notification.journal.morning.body"),
                 minutes: normalized(wakeMinutes + 20)
             )
         }
         if evening {
             await addDaily(
                 id: ids[1],
-                title: "Cierra tu Journal",
-                body: "Un minuto de contexto hace mas utiles tus patrones personales.",
+                title: RecvelL10n.text("notification.journal.evening.title"),
+                body: RecvelL10n.text("notification.journal.evening.body"),
                 minutes: normalized(wakeMinutes + 13 * 60)
             )
         }
         if continuity {
             await addDaily(
                 id: ids[2],
-                title: "Tu registro sigue abierto",
-                body: "Puedes completar una sola entrada; no hace falta llenar todo.",
+                title: RecvelL10n.text("notification.journal.continuity.title"),
+                body: RecvelL10n.text("notification.journal.continuity.body"),
                 minutes: normalized(wakeMinutes + 15 * 60)
             )
         }
@@ -76,8 +80,8 @@ struct LocalNotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: ["recvel.plan.workout"])
         guard enabled else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Ventana de movimiento"
-        content.body = "Si encaja, un bloque corto de 20+ min acerca tu meta semanal."
+        content.title = RecvelL10n.text("notification.movement.title")
+        content.body = RecvelL10n.text("notification.movement.body")
         content.sound = .default
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: DateComponents(hour: hour, minute: minute),
@@ -91,8 +95,8 @@ struct LocalNotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: ["recvel.plan.checkin"])
         guard enabled else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Revisa tu plan"
-        content.body = "Un vistazo a enfoque, sueno de esta noche y metas de la semana."
+        content.title = RecvelL10n.text("notification.plan.title")
+        content.body = RecvelL10n.text("notification.plan.body")
         content.sound = .default
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: DateComponents(hour: hour, minute: minute),
@@ -130,6 +134,21 @@ struct LocalNotificationManager {
         await center.notificationSettings().authorizationStatus
     }
 
+    func relocalizePendingNotifications() async {
+        let requests = await center.pendingNotificationRequests()
+        for request in requests where request.identifier.hasPrefix("recvel.") {
+            guard let copy = localizedContent(for: request.identifier), let trigger = request.trigger else { continue }
+            let content = UNMutableNotificationContent()
+            content.title = copy.title
+            content.body = copy.body
+            content.sound = .default
+            center.removePendingNotificationRequests(withIdentifiers: [request.identifier])
+            try? await center.add(
+                UNNotificationRequest(identifier: request.identifier, content: content, trigger: trigger)
+            )
+        }
+    }
+
     /// Cancela pendientes y entregadas de Recvel (fresh install local).
     func cancelAll() {
         center.removeAllPendingNotificationRequests()
@@ -150,5 +169,24 @@ struct LocalNotificationManager {
             repeats: true
         )
         try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+    }
+
+
+    private func localizedContent(for identifier: String) -> (title: String, body: String)? {
+        let keys: (String, String)? = switch identifier {
+        case "recvel.morning": ("notification.morning.title", "notification.morning.body")
+        case "recvel.bedtime": ("notification.bedtime.title", "notification.bedtime.body")
+        case "recvel.journal.morning": ("notification.journal.morning.title", "notification.journal.morning.body")
+        case "recvel.journal.evening": ("notification.journal.evening.title", "notification.journal.evening.body")
+        case "recvel.journal.continuity": ("notification.journal.continuity.title", "notification.journal.continuity.body")
+        case "recvel.plan.workout": ("notification.movement.title", "notification.movement.body")
+        case "recvel.plan.checkin": ("notification.plan.title", "notification.plan.body")
+        case "recvel.plan.winddown": ("notification.winddown.title", "notification.winddown.body")
+        case "recvel.plan.inbed": ("notification.inBed.title", "notification.inBed.body")
+        case "recvel.plan.lightsout": ("notification.lightsOut.title", "notification.lightsOut.body")
+        default: nil
+        }
+        guard let keys else { return nil }
+        return (RecvelL10n.text(keys.0), RecvelL10n.text(keys.1))
     }
 }

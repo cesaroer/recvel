@@ -18,6 +18,208 @@
    Debe imprimir `** BUILD SUCCEEDED **` sin lineas `error:`.
 7. **No cambies la postura central del proyecto sin preguntar al usuario primero:** sin backend, sin cuenta, sin premium, local-first por defecto. La unica excepcion documentada y aprobada por el usuario es un modo opcional "uso personal" (ver `Calorie_AI_Research.md` seccion 9) que permite licencias research-only y APIs cloud con tier gratuito **solo porque el uso actual es personal, no distribuido**. No generalices esa excepcion a "toda la app puede usar cloud" sin que el usuario lo confirme de nuevo.
 
+## Estado del planner de entrenamiento (julio 2026, sesion "agenda pro")
+
+Implementado en esta sesion (todo en archivos EXISTENTES — el pbxproj no tiene
+grupos sincronizados, no crear .swift nuevos):
+
+- `ExerciseSetLog` (@Model, HealthModels.swift): series persistidas por ejercicio.
+  Registrado en los 3 ModelContainer (RecvelApp, ContentView preview, LaboratoryView preview).
+  ANTES las series se descartaban al terminar la sesion: no habia progresion real.
+- `OneRepMaxEstimator` + `TrainingCoachingEngine` + `LastWorkoutContext` en
+  `HealthIntelligenceEngine.swift` (evidencia citada en AI_CONTEXT.md, seccion
+  "Coaching de entrenamiento del dia siguiente").
+- `WorkoutFeeling` (emoji RPE post-entreno) en HealthModels.swift; reemplaza el
+  `perceivedEffort: 6` que estaba hardcodeado en `ActiveWorkoutSessionView.finish()`.
+- `SplitType` + `CardioSport` + `WeeklyRoutine.init(from:)` retro-compatible en
+  FitnessView.swift; onboarding de 6 pasos adaptativos.
+- `WorkoutSummary.effortScore/effortIsEstimated` leidos de HKWorkoutEffortScore
+  (iOS 18, manual > estimado, solo lectura); entra a Strain con peso 30%.
+- Progresion por ejercicio (`ExerciseProgression` en FitnessView.swift) reusa
+  `MetricDetailView` con series peso top-set y e1RM.
+
+**Rutinas pre-hechas + Coach de rutina (julio 2026, sesion "agenda pro 2"):**
+`TrainingPresetCatalog.swift` (nuevo, registrado via `xcodegen generate`) contiene
+el catalogo de 8 presets, `PresetPickerSection` (paso routinePreview del wizard),
+la materialización en `WorkoutTemplate` y `RoutineCoachCard`.
+`RoutineAssessmentEngine` vive en HealthIntelligenceEngine.swift. El wizard
+(`WeeklyPlanOnboardingView`) gano el paso `.routinePreview` (solo con fuerza), el
+paso de dias por contador con semana editable por tap, y enlaza las plantillas
+del preset por `sourceID` estable. El banner del
+coach es SIEMPRE visible en `WeeklyRoutineSection` (id `fitness.weeklyRoutine.coach`).
+El editor del preview es `WorkoutTemplateEditor`, el mismo de Plantillas.
+El proyecto ahora usa xcodegen: para archivos nuevos, editar `project.yml` no es
+necesario (sources incluye `Recvel/` completo), solo correr `xcodegen generate`.
+
+**Banco de ejercicios del Desafio diario (julio 2026):** `ExerciseLibrary`
+tiene el grupo "Challenge" (~32 ejercicios de FUERZA ligera: McGill Big 3,
+banda/fisioterapia, pasos, Pilates mat, calistenia y yoga de fuerza). El engine
+los consume via `DailyChallengeEngine.maintenancePacks` (5 packs x 3 variantes),
+que rota por weekday y SALTA el pack cuyo `bucket` choque con los dias de fuerza
+adyacentes. Cada tercer dia queda movilidad para variar. Guardia:
+`testDailyChallengeEmissionsExistInExerciseLibrary` cubre packs + variantes.
+
+**IMPLEMENTADO (25 jul 2026) — "Ver mecanica del ejercicio":** dentro de la
+sesion activa (`ActiveWorkoutSessionView` → `ActiveSessionExerciseCard`) cada
+ejercicio tiene un boton "Ver mecanica del ejercicio" que abre
+`ExerciseMechanicsSheet` (`Recvel/Views/ExerciseMechanicsView.swift`): resumen,
+posicion inicial, ejecucion numerada, claves y errores comunes, en espanol y
+100% offline (`Recvel/Services/ExerciseMechanicsCatalog.swift`, una entrada por
+cada ejercicio de `ExerciseLibrary`). La misma hoja se abre desde la "i" de cada
+fila de la biblioteca (antes era decorativa; ahora es un boton real).
+Demostracion visual: 104 fotogramas de **free-exercise-db** empaquetados en
+`Recvel/Resources/ExerciseMedia/<slug>_0.jpg` y `_1.jpg` (inicio/fin), que
+`ExerciseMechanicsPlayer` alterna cada 0.9 s con crossfade para simular un gif
+(boton play/pausa, respeta Reduce Motion). Detalles no obvios:
+- Los slugs del dataset NO se derivan del nombre en espanol (p. ej. no existe
+  `Bird_Dog` ni `Burpee`): el mapeo es explicito en `mediaSlug`, y los que no
+  tienen imagen caen a la silueta SF Symbol sin romper la vista.
+- Los jpg viven sueltos en el bundle, no en el asset catalog, asi que
+  `UIImage(named:)` sin extension devuelve nil → `ExerciseMechanicsPlayer.loadImage`
+  resuelve la ruta con `Bundle.main.url(forResource:withExtension:"jpg")`.
+- xcodegen (`sources: - path: Recvel`) los agrega solos a Copy Bundle Resources.
+- Guardias: `testEveryLibraryExerciseHasMechanics`,
+  `testMechanicsCatalogHasNoOrphanEntries`, `testMechanicsMediaFramesExistInBundle`.
+
+**Reporte de la mañana (27 jul 2026):** `MorningReportEngine` +
+`MorningReportView` arman la hoja que se lee al despertar: Recuperacion con la
+señal que mas resto, sueño + banco de 14 d, la accion del dia y el margen de
+carga con la sesion planeada de la agenda. Decisiones que conviene no deshacer:
+- **No duplica Home.** Home ya se llama "Resumen de la mañana" y es un tablero
+  vivo; la hoja es una foto congelada del despertar que se cierra.
+- **Se calcula al abrirla, nunca la noche anterior.** Una notificacion local no
+  puede recalcular su contenido al dispararse, asi que el texto de la notif se
+  queda sobrio y las cifras se computan en el momento. Programarlas con datos de
+  la noche anterior mostraria numeros falsos.
+- **Tres entradas:** deep link `recvel://morning` (nuevo `NotificationRouter`,
+  delegate de `UNUserNotificationCenter` que enruta el tap por
+  `.recvelOpenDeepLink`), auto-apertura una vez al dia dentro de la ventana
+  matutina (`shouldAutoPresent`, con test), y enlace fijo bajo el titulo de Home.
+- **"Visto hoy" se marca cuando la hoja aparece de verdad** (`onAppear`), no al
+  intentar abrirla: presentar dentro del `task` inicial se pierde porque la
+  ventana aun no es key — de ahi el pequeño retraso antes de presentar. Si la
+  presentacion falla, mañana reintenta.
+- **Sin `BGTaskScheduler`:** no hay refresco en segundo plano; es una decision,
+  no un olvido.
+- **Diseño (27 jul 2026, 4a pasada — la vigente):** sigue la linea de la pantalla
+  **Bio Age de la referencia** (no la de la app), escrita desde cero en
+  MorningReportView.swift: fondo de nebulosa + campo de estrellas con bokeh y
+  deriva (`LabBackdrop`/`StarField`), **dial doble** (`DualDialHero`) con surco de
+  ticks exterior = Recuperacion e interior = Energia, disco elevado, etiquetas
+  rotadas, marcador con halo en el extremo del arco y reveal por particulas
+  convergentes; abajo, modulos de instrumento con micro-encabezado rotulado.
+  - Metricas del reporte (elegidas por el usuario): los 4 scores
+    (Recuperacion, Sueño, Energia, Carga), sueño de la noche + banco 14 d con
+    grafica de noches, margen de carga + sesion planeada, **señales de la noche**
+    (HRV, FC reposo, respiracion, SpO2, temperatura de muñeca con rango personal
+    y micro-medidor), estres + emociones 24 h, y ayuno + nutricion del dia.
+  - **Animaciones (medidas, no a ojo).** Se extrajeron fotogramas de la
+    referencia con ffmpeg y se compararon pixel a pixel con PIL:
+    · un punto fijo del **fondo** varia **≤3 niveles de 255 en 1.6 s** y no se
+      desplaza → en la referencia el fondo NO titila ni deriva;
+    · la **nube de particulas del centro** cambia **~16% de sus pixeles entre
+      fotogramas separados 0.4 s** → es lo unico con vida continua.
+    Por eso el fondo es `StaticStarField` (Canvas dibujado UNA vez, con
+    `drawingGroup`) mas un `DustLayer` de 26 motas apenas perceptibles, y toda la
+    vida esta en `OrbitingParticles`: cumulos que orbitan + deriva browniana
+    (dos senos incompatibles por eje) + parpadeo propio. La primera version hacia
+    lo contrario (fondo entero titilando, particulas que desaparecian tras el
+    reveal) y por eso se veia barata.
+    **Los aros NO animan** (decision del usuario, 27 jul): se dibujan estaticos
+    en su valor, con `drawingGroup`, y no hay punto marcador. Se probaron un
+    barrido con cabeza de luz viajera y un marcador con halo, y se rechazaron.
+    Lo unico que se mueve en la pantalla es el polvo: `OrbitingParticles` en el
+    hero y `DustLayer` en el fondo. El resplandor del arco es fijo (trazo
+    difuminado del propio arco, no `.shadow` de la vista).
+    Metodo de verificacion repetible: grabar con
+    `xcrun simctl io <udid> recordVideo`, extraer a 2.5 fps y medir el % de
+    pixeles que cambian por zona. Tras el arreglo la nube pasa de 0.4% a 1.6% con
+    el fondo en 0.1% (la referencia mide 16% sobre una caja mucho mas densa, no
+    es comparable en crudo).
+  - `MorningReportEngine.signals` solo incluye lo medido (nunca rellena), y
+    normaliza SpO2 (HealthKit la da como fraccion o como %) con tope de 100 %.
+  - Pasadas anteriores: (2a) copiaba Bio Age de la app 1:1 → rechazada;
+    (3a) lenguaje del Home de Bevel (anillos + COACHING) → los componentes de esa
+    version viven ahora en `Recvel/Views/RevelInspiredComponents/` (ver su
+    README) y NO se usan aqui. Regla del usuario: en esa carpeta solo entra lo
+    que el pida explicitamente.
+- **`skipMorningReport`:** los UI tests pasan este launch argument porque entran
+  a Home a cualquier hora y la auto-apertura los haria fallar segun la hora del
+  dia (mismo patron que `skipHealthKitRefresh`).
+- Pendiente de verificar en dispositivo: el tap real sobre la notificacion local
+  (la ruta esta probada por deep link; el permiso de notificaciones no estaba
+  concedido en el simulador).
+
+**Mapa muscular + tempo de la demostracion (27 jul 2026):** la hoja de mecanica
+ahora abre con un mapa anatomico (`MuscleMapView`, `MuscleMapCatalog`): silueta
+gris de frente y espalda con el musculo principal en rojo y el secundario en
+ambar, mas leyenda con los nombres. Notas:
+- Assets de **wger** (wger-project/wger, wger.de) en `Recvel/Resources/MuscleMap`:
+  `body_front/back.svg` + `muscle_<id>_main.svg`. El repo de wger es AGPL-3.0 y
+  su data es Creative Commons; sirve para uso personal sin distribucion. Si algun
+  dia la app se publica, hay que sustituir estas laminas o cumplir la licencia.
+- SwiftUI no rasteriza SVG: el compositor es un `WKWebView` que apila el marcado
+  **en linea** (`loadHTMLString(baseURL: nil)`, sin red ni disco).
+- Los SVG de wger NO traen `viewBox` (solo width/height de Inkscape): sin el,
+  WebKit no escala y el mapa sale EN BLANCO. `MuscleMapRenderer.normalized`
+  inyecta `viewBox` + `preserveAspectRatio`; hay test.
+- El rojo `#fc0000` del asset se reemplaza en caliente para distinguir principal
+  de secundario.
+- La demostracion de dos fotogramas ya no parpadea: `ExerciseMechanicsPlayer.blend`
+  hace un fundido de ida y vuelta con ciclo de 5 s y 1.4 s de pausa en cada
+  extremo (funcion pura, con test de monotonia), y en pausa aparecen los botones
+  Inicio/Fin para comparar posiciones.
+- **Limite conocido:** las laminas ilustradas tipo workoutingym.com/musclewiki
+  son material con derechos; no se pueden empaquetar. Con fuentes libres solo hay
+  2 fotogramas por ejercicio. Para animaciones ilustradas reales haria falta una
+  fuente de pago (ExerciseDB con GIFs) o arte propio.
+
+**Investigacion de APIs de ejercicios con imagen/instrucciones (julio 2026, base
+de lo anterior):** la mejor opcion para la regla de "todo local, gratis" es
+**free-exercise-db** (https://github.com/yuhonas/free-exercise-db): licencia
+**Unlicense (dominio publico)**, 800+ ejercicios, JSON estatico + imagenes en el
+repo (sin API key, sin backend). Se puede empaquetar offline en el bundle.
+Campos: id, name, force, level, mechanic, equipment, primaryMuscles,
+secondaryMuscles, instructions, category, images. Alternativas descartadas para
+v1: ExerciseDB API (11k ejercicios con GIFs pero requiere servicio/llave) y wger
+(REST, exige self-host). Pendiente si se quiere: script de importacion que mapee
+esos nombres (en ingles) a los del catalogo en espanol y descargue las imagenes
+al bundle.
+
+**Preview 3 modalidades + movilidad=descanso (julio 2026):** el paso
+"Tu rutina sugerida" muestra fuerza (presets) + cardio (deporte + stepper de
+minutos, `cardioMinutesDraft`) + movilidad (plantilla `generated.mobility.plan`
+editada con WorkoutTemplateEditor; `enrichSessionDetails` la consulta al
+contexto en vivo, no al array capturado). Movilidad cuenta como descanso en
+contador/coach/planSummary (`RoutineAssessmentEngine.isRestEquivalent`).
+ExerciseLibrary gano grupos Cardio y Movilidad + Step-ups/Desplantes/Flexiones/
+Band pull-aparts; el engine del challenge quedo alineado a esos nombres
+("Sentadilla" singular, "Face pull"). Plantillas segmentada por kind. La rama
+"Cardio planeado" del todayCard se CONSERVA como fallback de planes legados sin
+plantilla materializada.
+
+**Reconciliacion de tests con la migracion de strings (julio 2026, RESUELTA):**
+la suite UI quedo reconciliada con los strings acentuados del catalogo. Cambios
+mecanicos aplicados en RecvelUITests: "Como obtener una nueva estimacion" ->
+"Cómo obtener una nueva estimación"; "Como leer esta metrica" -> "Cómo
+interpretar esta métrica"; "Respiracion guiada"/"Nutricion"/"No es una edad
+biologica clinica"/"Tu briefing necesita datos" -> formas actuales; boton back
+"Back"/"Atras" -> acepta "Atrás"; items de Menu nativo con tap por coordenada;
+el detalle de Stress renderiza lazy (scrollear hasta que la seccion exista en el
+arbol); el toggle avanzado del wizard se enciende via experiencia "Avanzada"
+(camino de la app, determinista) en vez de pelear con el switch.
+
+**Deuda conocida (no bloqueante):**
+- Los enums de fitness (WeeklyGoal, DayAssignment, SplitType, CardioSport,
+  WorkoutFeeling) tienen labels en espanol hardcodeado, consistente con el resto
+  de FitnessView; falta migrarlos al String Catalog (`Shared/Localizable.xcstrings`).
+- Notificacion programada de "hora sugerida de entrenamiento" NO se implemento:
+  el consejo de hora vive in-app en la tarjeta de hoy (tip de timing). Si se
+  quiere notificacion, extender `LocalNotificationManager` + su switch
+  `localizedContent` + claves del catalogo + toggle en Ajustes.
+- `MuscleGroupClassifier` (FitnessView.swift) clasifica por palabras clave; los
+  ejercicios que no matchean caen al focus de la plantilla o "General".
+
 ## Mapa de documentacion (que ya existe, no volver a investigar)
 
 | Archivo | Que contiene | Cuando consultarlo |
@@ -71,6 +273,15 @@ Ya implementado en `Recvel/`:
 - `HealthDataProvider` ya lee luz diurna, mindfulness, agua/cafeina, peso, grasa, masa magra, presion y SpO2. El SDK no expone un tipo `dietaryAlcohol`; ese dato permanece manual/Journal.
 - Suite final verde en `iPhone 16 Pro, iOS 18.6`: 61 unit tests y 20 UI tests, sin fallos. No usar ni crear otro simulador.
 
+## Actualizacion 16 julio 2026: Widgets, Live Activity y Apple Watch v1
+
+- El proyecto ahora se genera con `project.yml`/XcodeGen y contiene cuatro productos embebidos: `Recvel`, `RecvelWidgets`, `RecvelWatch` y `RecvelWatchWidgets`. Regenerar con `xcodegen generate` si se agregan archivos o targets.
+- `Shared/RecvelSharedSnapshot.swift` es el unico contrato entre superficies: snapshot diario Codable, versionado, sin historial de HealthKit. iOS/widgets usan App Group; iPhone/Watch usan WatchConnectivity.
+- Widgets iOS: Readiness small/medium/Lock Screen y tablero fisiologico medium/large/Lock Screen. La complicacion watchOS muestra Recovery/Sleep/Strain.
+- Ayuno inicia y termina una Live Activity con Lock Screen/Dynamic Island. El deep link `recvel://fasting` abre la tab y un cambio retroactivo de hora reconstruye el intervalo.
+- Watch app: Readiness, senales y workouts de carrera/caminata/ciclismo/fuerza mediante `HKWorkoutSession`, con FC, energia y distancia en vivo y guardado en Apple Health.
+- Build verde del esquema completo en el unico simulador permitido: `iPhone 16 Pro, iOS 18.6`. Pasaron 82 unit tests, el smoke de onboarding y los UI tests enfocados de navegacion + ayuno. Una primera ejecucion combinada quedo esperando el relanzamiento de un runner XCTest caido y fue interrumpida tras 12 minutos; las ejecuciones aisladas posteriores fueron verdes. Sigue pendiente validar sensores, bateria y sincronizacion de fondo en hardware.
+
 **NO implementado todavia (solo investigado/documentado):**
 - Las **11 reglas de producto de seguridad clinica** de la seccion 12.10 (screening de exclusion antes de ayuno, prohibicion de streaks punitivos, disclaimers especificos de "no usar para decisiones clinicas", etc.) — la nutricion actual en codigo no las tiene todavia.
 - Reemplazo del clasificador generico de Vision por un **modelo Core ML real de Food-101** (los 3 candidatos con licencia confirmada de la seccion "Verificacion con fuente primaria").
@@ -107,6 +318,47 @@ Solo usar, sin verificar de nuevo la licencia (ya esta hecho):
 ### Tarea D — Reconciliar el set de documentos duplicado (prioridad baja, requiere decision del usuario)
 
 Existen dos sets de README que cubren terreno parecido (`README.md`/`COMPETITORS.md`/`AI_CONTEXT.md` vs `README_APP.md`/`README_COMPETIDORES.md`/`README_IA_CONTEXT.md`). No decidir unilateralmente cual es "el bueno" — preguntarle al usuario si quiere fusionarlos o mantener ambos.
+
+## Actualización 20 julio 2026: Agenda semanal profesional
+
+- WeeklyRoutine conserva el JSON anterior y agrega experiencia, objetivo, fase, evento y configuración completa por día.
+- Cada sesión define hora fija, preferida o flexible, duración, RPE objetivo, intención de cardio y foco editable; la semana muestra minutos, intensidad y carga sRPE planificada frente a ejecutada.
+- TrainingReadinessCheckIn guarda localmente energía, molestias, motivación y dolor o limitación. El motor prioriza este reporte y nunca empuja a entrenar con dolor.
+- Apple Health aporta entrenamientos, esfuerzo manual o estimado y rachas cuando están disponibles; sesiones duplicadas con registros locales no se cuentan dos veces.
+- La lógica de horario solo interviene en sesiones intensas próximas a dormir y distingue horarios fijos de flexibles. La regla muscular usa carga reciente y molestias, no una prohibición universal de 48 h.
+- Método, competidores, evidencia y límites: TRAINING_PLANNER_PRO.md.
+- Verificación: build completo verde, 117 unit tests verdes y UI test enfocado del configurador verde en iPhone 16 Pro, iOS 18.6.
+
+## Actualización 20 julio 2026 (tarde): Plan semanal v2 — biblioteca, alto rendimiento y dos velocidades
+
+**Nota de proceso:** con XcodeGen (`project.yml`) los archivos bajo `Recvel/` se incluyen por carpeta; al crear un `.swift` nuevo hay que correr `xcodegen generate` (hecho). Ya no aplica la regla vieja de "no crear .swift nuevos".
+
+Implementado (nuevo archivo `Recvel/Views/TrainingPlanViews.swift` + edits en `FitnessView.swift` y `HealthIntelligenceEngine.swift`):
+
+- **Arquitectura de rutinas:** la agenda es "Plan semanal" y la biblioteca es "Plantillas de entrenamiento". Fuerza, cardio, movilidad, recuperación, rendimiento y desafío diario usan `WorkoutTemplateEditor`; no crear editores específicos de la agenda.
+- **Tipos de sesión nuevos en `DayAssignment`:** `.mobility`, `.recovery` (fisioterapia), `.plyometrics`, `.speed`, `.contrast`, `.technique`; cada uno con icono, color, RPE y duración por defecto; `isHighNeuralDemand` / `isRecoveryOriented` alimentan el coaching.
+- **`ScheduledSessionDetails` pro** (custom decoder retro-compatible): `jumpContacts`, `contrastSets`, `speedReps`, `speedDistanceMeters`, `targetZone`, `mainLiftPercent1RM`, `sessionNote`.
+- **`WeeklyRoutine` plan fields:** `planName`, `advancedConfig`, `personalRecords` (1RM por `MainLift`), `planWeeks` — todo `decodeIfPresent`.
+- **Biblioteca de planes** (`WeeklyPlan` + `WeeklyPlanLibraryStore` en UserDefaults): guardar copia, aplicar (con confirmación), renombrar, duplicar, eliminar uno, eliminar todos. El wizard siempre hace upsert al guardar.
+- **Gestor de rutinas** (`WorkoutTemplateManagerView`): lista, editar, eliminar una o todas (entrada: menú "..." de "Plantillas de entrenamiento").
+- **Wizard nuevo** (`WeeklyPlanOnboardingView`, reemplaza `WeeklyRoutineOnboardingView` que fue eliminado): rápido = 4 pantallas (perfil, modalidades, días, revisión); avanzado (toggle "Opciones de alto rendimiento", auto-ON en nivel avanzado/competitivo) = + fase, editor por día con tipo de sesión y params pro, marcas 1RM. **Botón Atrás** en toolbar desde el paso 2.
+- **`SessionDetailEditor`** compartido entre wizard y `TrainingDayEditorSheet` (se abre tocando un día de la tira semanal de la agenda).
+- **`PlanExpectationEngine`**: bullets de expectativa por objetivo/nivel/fase + precauciones (0 descansos, ≥3 RPE 8+, potencia en nivel inicial, <120 min) en la revisión.
+- **Coaching**: `tips(..., plannedKind:)` — sesiones neurales con recovery <55 o molestias ≥4 sugieren mover/adaptar; días de recuperación tras racha ≥3 reciben refuerzo positivo.
+- **Planner**: `suggestedWeek(..., includeMobility:)` convierte el último cardio en movilidad (o la coloca tras el último día de fuerza); `defaultSplit(forStrengthDays:)` (2-3 fullBody, 4 upperLower, 5+ PPL).
+
+Verificación: build verde tras `xcodegen generate`; suite unitaria completa verde (17 tests nuevos: decoders legacy, biblioteca, movilidad, coaching neural/recuperación, expectativas); UI tests verdes: `testWeeklyRoutineOnboardingAsksSplitAndSport` (reescrito al flujo nuevo con toggle avanzado + botón Atrás) y `testQuickPlanWizardSavesAndOpensLibrary` (nuevo: flujo rápido 4 pantallas + biblioteca + eliminar todos) + `testFitnessShowsExerciseProgressionSection` sin regresión. iPhone 16 Pro, iOS 18.6.
+
+### Plantillas unificadas (20 jul 2026)
+- `WorkoutTemplateKind`, `sourceID` y `durationMinutes` convierten el catálogo incluido y las sesiones generadas en rutinas persistidas editables.
+- `WeeklyRoutine.sessionTemplateIDs` y `dailyChallengeTemplateIDs` enlazan agenda y desafíos a Plantillas; la decodificación anterior sigue soportada y se materializa al abrir Entrenamiento.
+- Se eliminó `PresetDayEditor` y el editor especial de desafío. Ambos abren `WorkoutTemplateEditor`.
+- `TemplateCodec` entiende `3x10`, `30`, `45s` y `12 min`; las modalidades sin peso usan `ActiveTimedRoutineView`.
+
+**Deuda conocida (no bloqueante):**
+- Los tipos de sesión nuevos (movilidad, plio, etc.) tienen labels en español hardcodeado, igual que el resto de FitnessView; pendiente la migración al String Catalog.
+- El gestor de rutinas no tiene UI test propio (crear una rutina por UI es un flujo largo); su lógica de borrado es directa sobre SwiftData.
+- Las marcas 1RM se guardan y muestran como %1RM objetivo en el editor; aún no se cruzan con el 1RM estimado de `ExerciseSetLog` para sugerir kg por serie.
 
 ## Si algo en este HANDOFF ya no coincide con el estado real del proyecto
 

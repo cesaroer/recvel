@@ -36,6 +36,11 @@ struct ContentView: View {
         .onAppear {
             tabBarVisibility.selectedTab = selection
         }
+        .onOpenURL { open($0) }
+        .onReceive(NotificationCenter.default.publisher(for: .recvelOpenDeepLink)) { notification in
+            guard let url = notification.object as? URL else { return }
+            open(url)
+        }
         .onChange(of: tabBarVisibility.wantsFitnessTab) { _, wants in
             guard wants else { return }
             mountedTabs.insert(.fitness)
@@ -46,6 +51,23 @@ struct ContentView: View {
         .environment(tabBarVisibility)
         .tint(ScoreKind.recovery.color)
         .preferredColorScheme(.dark)
+    }
+
+    /// Enrutado de `recvel://` (widgets, Live Activity y notificaciones locales).
+    private func open(_ url: URL) {
+        guard url.scheme == "recvel" else { return }
+        switch url.host {
+        case "fitness": selection = .fitness
+        case "nutrition": selection = .nutrition
+        case "fasting": selection = .fasting
+        case "journal": selection = .journal
+        case "morning":
+            selection = .today
+            // Home observa la bandera y presenta el reporte de la mañana.
+            tabBarVisibility.wantsMorningReport = true
+        default: selection = .today
+        }
+        mountedTabs.insert(selection)
     }
 
     @ViewBuilder
@@ -82,7 +104,9 @@ struct ContentView: View {
                 PlannedSleepNight.self,
                 JournalTagConfiguration.self,
                 BiomarkerSample.self,
-                BioAgeReportRecord.self
+                BioAgeReportRecord.self,
+                ExerciseSetLog.self,
+                TrainingReadinessCheckIn.self
             ],
             inMemory: true
         )

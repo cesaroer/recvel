@@ -3,6 +3,14 @@ import SwiftUI
 
 @main
 struct RecvelApp: App {
+    @StateObject private var language = LanguageController()
+
+    init() {
+        _ = WatchSyncManager.shared
+        // Sin delegate, tocar una notificacion abre la app pero no navega.
+        NotificationRouter.shared.register()
+    }
+
     private let modelContainer: ModelContainer = {
         do {
             return try ModelContainer(
@@ -20,7 +28,9 @@ struct RecvelApp: App {
                 PlannedSleepNight.self,
                 JournalTagConfiguration.self,
                 BiomarkerSample.self,
-                BioAgeReportRecord.self
+                BioAgeReportRecord.self,
+                ExerciseSetLog.self,
+                TrainingReadinessCheckIn.self
             )
         } catch {
             fatalError("Unable to create local store: \(error)")
@@ -31,6 +41,11 @@ struct RecvelApp: App {
         WindowGroup {
             AppRootView()
                 .preferredColorScheme(.dark)
+                .environmentObject(language)
+                .environment(\.locale, language.locale)
+                .onReceive(NotificationCenter.default.publisher(for: .recvelLanguageDidChange)) { _ in
+                    Task { await LocalNotificationManager().relocalizePendingNotifications() }
+                }
         }
         .modelContainer(modelContainer)
     }

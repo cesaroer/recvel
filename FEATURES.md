@@ -82,7 +82,7 @@ Leyenda: **Done** = usable en app · **Partial** = existe pero incompleto / heur
 | Metas semanales editables (entrenos, noches, carga, nutrición, check-in) | Done | `PlanView` |
 | Esta noche: ciclos ~90 min, wind-down, notifs rutina/cama | Done | `TonightDetailView`, `SleepCyclePlanner`, `SleepWindDownScheduler` |
 | Disciplina vs plan (noches medidas) | Done | `SleepDisciplineEngine` |
-| Recordatorios locales matutino / cama | Partial | `LocalNotificationManager` (texto genérico, no Morning Report rico) |
+| Recordatorios locales matutino / cama | Done | `LocalNotificationManager` + `NotificationRouter`: la matutina abre el Reporte de la mañana por deep link |
 
 ### Journal
 
@@ -114,15 +114,22 @@ Leyenda: **Done** = usable en app · **Partial** = existe pero incompleto / heur
 | Screening de exclusión (contraindicaciones) | Done | `FastingScreeningView` |
 | Feeling multi (tope 6), gráfica, consejo terminar | Done | `FastingFeelingLog` |
 | Stats neutrales, calendario, correlación ayuno↔Recovery | Done | `recoveryImpact` (≥3/3 días) |
-| Live Activity de ayuno | Missing | sin ActivityKit |
+| Live Activity de ayuno | Done | `FastingLiveActivityManager`, Lock Screen y Dynamic Island; reinicia si cambia la hora inicial |
 
 ### Fitness
 
 | Feature | Estado | Evidencia |
 | --- | --- | --- |
 | Calendario 30 d, Strain vs target, carga cardio, focus, HRR | Done | `FitnessView`, `FitnessEngine` |
-| Fuerza: minutos HK + plantillas series×reps×kg + sesión activa | Partial | builder local sí; sin companion Watch ni periodización IA |
+| Plantillas de entrenamiento: fuerza, cardio, movilidad, recuperación, rendimiento y desafío | Partial | editor y ejecución local compartidos; fuerza registra series×reps×kg y otras modalidades tiempo; sin rutina estructurada sincronizada al Watch ni periodización IA |
 | Rutina semanal / onboarding de plantillas | Done | `WeeklyRoutineSection` |
+| Agenda pro: split de fuerza (full body/torso-pierna/PPL/grupo por día) + deporte de cardio + minutos por día | Done | `SplitType`/`CardioSport`, onboarding de 6 pasos, retro-compatible con agendas guardadas |
+| Series persistidas por ejercicio + 1RM estimado (Epley+Brzycki, gate ≤10 reps) | Done | `ExerciseSetLog` + `OneRepMaxEstimator`; progresión por ejercicio reusa `MetricDetailView` |
+| Emoji post-entreno (RPE 1-10) + esfuerzo de Apple Health (iOS 18, solo lectura) | Done | `WorkoutFeeling`, `HKWorkoutEffortScore` manual>estimado con etiqueta honesta |
+| Coaching del día siguiente con evidencia (readiness muscular 48h, timing vs sueño, deload, moderación) | Done | `TrainingCoachingEngine` en la tarjeta de hoy de la agenda |
+| Rutinas pre-hechas por split con badge ("Ideal para hipertrofia") + preview editable en el wizard | Done | `PresetRoutineCatalog` (8 presets), materialización con dedupe al guardar |
+| Días rediseñados: cuántos días + tiempo → semana sugerida editable por tap (fuerza/cardio/descanso) | Done | `canonicalDays` espaciados 48-72h, mini-coach en vivo |
+| Coach de rutina: califica la semana en el review y SIEMPRE en la agenda (balanceada / pocos descansos / variar en 4-6 semanas) | Done | `RoutineAssessmentEngine` + `RoutineCoachCard` |
 
 ### HealthKit / datos / baselines
 
@@ -140,9 +147,9 @@ Leyenda: **Done** = usable en app · **Partial** = existe pero incompleto / heur
 | --- | --- | --- |
 | Insights deterministas + briefing | Done | `InsightEngine` |
 | Coach Q&A conversacional local | Missing | sin chat/Foundation Models coach |
-| Widgets Home / Lock Screen | Missing | sin WidgetKit |
-| Live Activities / Dynamic Island | Missing | sin ActivityKit |
-| Companion watchOS | Missing | solo iPhone + HK |
+| Widgets Home / Lock Screen | Done | Readiness + tablero fisiologico en `RecvelWidgets` |
+| Live Activities / Dynamic Island | Done | ayuno activo, progreso temporal y deep link |
+| Companion watchOS | Partial | briefing, metricas, complicacion y workout con FC/energia/distancia; falta validacion fisica |
 | Export CSV / respaldo | Missing | sin `fileExporter` / export de datos |
 | Snapshot bajo demanda (~2 min) | Missing | — |
 | Validación Apple Watch real (campo) | Missing | P0 de producto; no verificable en simulador |
@@ -176,9 +183,9 @@ Plan original = módulos/roadmap de `README.md` + backlog `COMPETITORS.md` + pro
 | SpO2 en producto | Done | Recovery detail |
 | Ciclo menstrual × HRV/sueño | Missing | tags sí; cruce no |
 | Coach conversacional on-device | Missing | insights sí, chat no |
-| Morning Report rico | Partial | notif genérica «briefing listo» |
-| Widgets / Live Activities | Missing | — |
-| Apple Watch companion | Missing | previsto en README, no código |
+| Morning Report rico | Done | hoja propia con Recovery, sueño, acción y margen; 3 entradas |
+| Widgets / Live Activities | Done | dos widgets iOS + Live Activity de ayuno |
+| Apple Watch companion | Partial | briefing, senales, complicacion y workout; hardware pendiente |
 | Food-101 / VLM local producción | Missing | investigación sí |
 | Reglas clínicas 12.10 (nutrición) | Missing | ayuno sí tiene screening |
 | Snapshot bajo demanda | Missing | — |
@@ -186,7 +193,7 @@ Plan original = módulos/roadmap de `README.md` + backlog `COMPETITORS.md` + pro
 | Citas científicas en UI de insights | Partial | en Sleep/respiración/recursos; no en todos los insights |
 | Sin backend / sin premium v1 | Done | contrato de producto |
 
-**Conteo plan original (tabla B):** Done **24** · Partial **6** · Missing **11**
+**Conteo plan original (tabla B):** Done **25** · Partial **7** · Missing **9**
 
 ---
 
@@ -197,8 +204,8 @@ Fuente canónica: `README.md` § «Sugerencias Grok» (julio 2026).
 
 ### P0 — Hábito diario y confianza nutricional
 
-- [ ] **Widgets Home Screen / Lock Screen** (Recovery, Strain, Sleep) — Missing
-- [ ] **Morning Report rico** — Partial (notif básica; no pantalla/payload rico)
+- [x] **Widgets Home Screen / Lock Screen** (Recovery, Strain, Sleep) — Done
+- [x] **Morning Report rico** — Done (`MorningReportView`; notif sobria + deep link, auto-apertura diaria y enlace en Home)
 - [ ] **Food-101 Core ML** — Missing (`VNClassifyImageRequest`)
 - [ ] **Reglas de seguridad clínica 12.10 en nutrición** — Missing (ayuno ya tiene screening; nutrición no)
 - [ ] **Validación en Apple Watch real** — Missing (proceso de campo, no feature de UI)
@@ -215,8 +222,8 @@ Fuente canónica: `README.md` § «Sugerencias Grok» (julio 2026).
 
 ### P2 — Paridad de mercado
 
-- [ ] **Companion watchOS + complicaciones** — Missing
-- [ ] **Live Activities / Dynamic Island** — Missing
+- [x] **Companion watchOS + complicaciones** — Partial: producto v1 listo; validacion fisica pendiente
+- [x] **Live Activities / Dynamic Island** — Done para ayuno; workout queda como ampliacion
 - [x] **Bio Age trazable por lentes** (FRIEND + PhenoAge) — Done *(supersede: antes “edad biológica opt-in” genérica)*
 - [ ] **Ciclo menstrual × HRV/sueño** — Missing
 - [ ] **Strength builder** (series × reps × peso) — Partial *(plantillas/sesión locales; sync Watch pendiente)*
@@ -232,25 +239,45 @@ Fuente canónica: `README.md` § «Sugerencias Grok» (julio 2026).
 | --- | ---: |
 | **Done `[x]`** | **4** |
 | **Partial** (sigue `[ ]`, hay avance en código) | **5** |
-| **Missing** | **11** |
+| **Missing** | **8** |
 
-- Done: Bio Age lentes, VO2 UI, Home Stress, Bio Age explicable  
-- Partial: Morning Report, Journal rico (ayuno↔Recovery ya Done dentro del ítem), citas en UI, Strength builder, smart alarm/bedtime  
-- Missing: widgets, Food-101, reglas 12.10 nutri, validación Watch, batería energía, coach Q&A, export, watchOS, Live Activities, ciclo × HRV, snapshot  
+- Done: widgets, Live Activity de ayuno, Bio Age lentes, VO2 UI, Home Stress, Bio Age explicable
+- Partial: companion watchOS (hardware pendiente), Journal rico, citas en UI, Strength builder, smart alarm/bedtime
+- Missing: Food-101, reglas 12.10 nutri, validación Watch, batería energía, coach Q&A, export, ciclo × HRV, snapshot
 
 ---
 
-## D. Gaps prioritarios
+## D. Agenda semanal profesional → Plan semanal v2
+
+- [x] Perfil de experiencia, objetivo, fase y evento opcional.
+- [x] Fuerza por split y cardio por deporte.
+- [x] Configuración por día: foco, duración, RPE objetivo, intención, hora y flexibilidad.
+- [x] Carga prevista y ejecutada mediante sRPE, con Apple Health cuando existe esfuerzo asociado.
+- [x] Registro previo local de energía, molestias, motivación y dolor/limitación.
+- [x] Coaching contextual con Recovery, esfuerzo previo, grupos musculares, racha, sueño y horario.
+- [x] Compatibilidad con agendas JSON anteriores y progreso de 1RM estimado existente.
+- [x] **Plan semanal v2 (20 jul 2026):** Plan semanal + Plantillas de entrenamiento, biblioteca de planes guardables (`WeeklyPlanLibraryStore`: aplicar/renombrar/duplicar/eliminar/eliminar todos), gestor de rutinas con "eliminar todas", wizard rápido de 4 pantallas + modo avanzado (fase, editor por día, marcas 1RM), botón Atrás, tipos de sesión más allá del gimnasio (movilidad, recuperación/fisioterapia, técnica, pliometría, velocidad, contraste) con parámetros propios (contactos, bloques de contraste, reps × metros, zona FC, %1RM, nota), editor de día desde la tira semanal, revisión con "Qué esperar de este plan" (`PlanExpectationEngine`), coaching consciente de sesiones neurales y días de recuperación (`plannedKind`).
+- [x] **Desafío diario y plantillas unificadas (20 jul 2026):** toggle opt-in en «¿Qué incluye tu semana?»; mini-rutina ligera distinta al estímulo del día (upper↔lower, anti-overlap). Rutinas prefabricadas, cardio, movilidad, recuperación, rendimiento y desafíos son `WorkoutTemplate`, aparecen en Plantillas y usan el mismo editor. Cardio = un ejercicio + minutos; `TemplateCodec` soporta repeticiones y tiempo. Motor: `DailyChallengeEngine`.
+
+- [x] **Mecánica del ejercicio (25 jul 2026):** botón «Ver mecánica del ejercicio» en cada tarjeta de la sesión activa y en la «i» de la biblioteca → `ExerciseMechanicsSheet` con demostración animada (dos fotogramas alternados tipo gif, play/pausa, respeta Reduce Motion), posición inicial, ejecución paso a paso, claves y errores comunes. Catálogo propio en español (`ExerciseMechanicsCatalog`, cobertura 1:1 con `ExerciseLibrary`, verificada por test) e imágenes empaquetadas de free-exercise-db (Unlicense, dominio público) → funciona sin conexión.
+
+- [x] **Mapa muscular y tempo de la demostración (27 jul 2026):** cada mecánica abre con la lámina anatómica (frente y espalda, músculo principal en rojo y secundario en ámbar, con leyenda) compuesta desde los SVG de wger; el fundido entre los dos fotogramas pasó a un ciclo lento de 5 s con pausa en los extremos y botones Inicio/Fin en pausa. Límite: no existe fuente libre con animaciones ilustradas por ejercicio; las láminas tipo workoutingym.com son material con derechos.
+
+- [x] **Morning Report rico (27 jul 2026):** hoja «Reporte de la mañana» (`MorningReportView` + `MorningReportEngine`) con Recuperación y la señal que más restó, sueño + banco de 14 d, la acción del día y el margen de carga con la sesión planeada. Tres entradas: deep link `recvel://morning` desde la notificación (`NotificationRouter`), apertura automática una vez al día dentro de la ventana matutina, y enlace fijo bajo el título de Home. Cierra el P0 «Morning Report rico» del README §Sugerencias Grok. Diseño propio en la línea de la pantalla Bio Age de la referencia: fondo de nebulosa y estrellas, dial doble (Recuperación fuera, Energía dentro) con reveal por partículas, y módulos de instrumento. Métricas: los 4 scores, sueño + banco 14 d, margen de carga + sesión, señales de la noche (HRV, FC reposo, respiración, SpO₂, temp. muñeca con rango personal), estrés + ánimo y ayuno + nutrición. Componentes de la versión anterior archivados en `Recvel/Views/RevelInspiredComponents/`.
+
+Fuente metodológica y límites: TRAINING_PLANNER_PRO.md.
+
+## E. Gaps prioritarios
 
 Top missing/partial con más impacto diario (alineado a Grok P0 + Bevel gap + HANDOFF):
 
-1. **Widgets Home / Lock Screen** — sin ellos el loop glanceable lo ganan Athlytic/Bevel.
-2. **Food-101 Core ML + reglas 12.10 en nutrición** — visión genérica + sin screening/disclaimer clínico de conteo.
-3. **Morning Report rico** — hoy solo notif genérica; falta Recovery/sueño/acción/margen Strain en el payload o pantalla.
-4. **Validación Apple Watch real** — scores P0 dependen de calidad de muestras, zonas y notifs en dispositivo.
-5. **Batería de energía continua / Energy Bank propio** — o, si se prioriza hábito: **coach Q&A local** / export; el quinto gap “de producto memorable” más citado es la batería unificada.
+1. **Food-101 Core ML + reglas 12.10 en nutrición** — visión genérica + sin screening/disclaimer clínico de conteo.
+2. ~~Morning Report rico~~ — **hecho el 27 jul 2026** (§D).
+3. **Validación Apple Watch real** — scores P0 dependen de calidad de muestras, zonas, WatchConnectivity y batería.
+4. **Batería de energía continua / Energy Bank propio** — lectura intradía memorable y accionable.
+5. **Coach Q&A local / export** — explicabilidad conversacional y portabilidad sin backend.
 
-Menciones cercanas: Live Activities (ayuno/workout), ciclo × HRV, companion watchOS.
+Menciones cercanas: Live Activity de workout, fuerza estructurada en Watch y ciclo × HRV.
 
 ---
 

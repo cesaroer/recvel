@@ -31,6 +31,9 @@ final class TabBarVisibility {
     /// Switches to the Fitness tab (Home weekly workouts / FAB).
     var wantsFitnessTab = false
 
+    /// Abre el reporte de la mañana (deep link `recvel://morning` o notificacion).
+    var wantsMorningReport = false
+
     /// Active tab selection — tabs observe this to refresh when returning (views stay mounted).
     var selectedTab: AppTab = .today
 
