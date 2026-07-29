@@ -100,6 +100,18 @@ como si fuera "ahora". Ahora:
   punteada y leyenda Tranquilo/Activo/Muy activo.
   **Ojo:** las dos barras de la misma hora usan `yStart:/yEnd:`; con `y:` Charts
   las APILA y la barra de color queda flotando sobre la pista.
+- **Tarjeta "Estres ahora"** (`StressTodayCard`, id `detail.stress.now`): copia la
+  gramatica de "Today's stress" de la referencia — punto de estado + titulo +
+  hora, tres cifras (mas alto / mas bajo / promedio) con divisores finos, y dial
+  de ticks a la derecha con el valor actual y su banda dentro. Habla en **indice
+  de estres** (0 = sin presion, 100 = maxima), no en calma: es la lectura del
+  momento, no el resumen del dia.
+- **Estilo de tarjeta de la referencia** (`RevelCardStyle` / `.revelCard()`):
+  relleno plano un punto mas claro que el fondo, radio 28 y **sin borde ni
+  degradado ni tinte**. Es lo que diferencia sus tarjetas de nuestro glass.
+- La tarjeta de ahora se muestra con **una sola lectura** (`profile.current != nil`),
+  no con el gate de 3 h: de madrugada el promedio del dia aun no aplica pero el
+  valor actual si, y antes desaparecia justo cuando mas se necesita.
 - Tests: `testStressDayProfileSeparatesAverageFromCurrent`,
   `testStressDayProfileNeedsThreeHours`, `testStressPressureIndexAndBands`.
 

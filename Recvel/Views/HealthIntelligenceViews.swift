@@ -272,7 +272,9 @@ struct StressDetailView: View {
                 progress: heroProgress
             )
 
-            if profile.hasEnoughData {
+            // Basta una lectura para mostrar "ahora": en la madrugada el
+            // promedio del dia aun no existe, pero el valor actual si.
+            if profile.current != nil {
                 IntelligenceSectionTitle(title: "Ahora", detail: "última hora medida")
                 nowCard
             }
@@ -349,43 +351,11 @@ struct StressDetailView: View {
         return "Promedio de las \(profile.hours) h medidas hoy. El valor de ahora va aparte, abajo."
     }
 
-    /// Lectura actual, separada del promedio para no confundir "hoy" con "ahora".
+    /// Estres de ahora, en la gramatica de la tarjeta "Today's stress" de la
+    /// referencia: punto de estado + titulo + hora, tres cifras con divisores
+    /// finos y un dial de ticks a la derecha con el valor actual.
     private var nowCard: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(profile.current.map { String(100 - $0) } ?? "--")
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                    Text("calma")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-                Text(profile.current.map { StressDayProfile.band(for: $0).displayName } ?? "Sin lectura")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(color)
-            }
-            Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 46)
-            nowStat(profile.lowest.map { String(100 - $0) } ?? "--", "MÁS CALMADO")
-            nowStat(profile.highest.map { String(100 - $0) } ?? "--", "MENOS CALMADO")
-        }
-        .padding(16)
-        .liquidGlass(cornerRadius: 8, tint: color)
-        .accessibilityIdentifier("detail.stress.now")
-    }
-
-    private func nowStat(_ value: String, _ label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.headline.weight(.bold))
-                .monospacedDigit()
-            Text(label)
-                .font(.system(size: 8, weight: .heavy))
-                .kerning(0.4)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
+        StressTodayCard(profile: profile, updatedAt: activation.last?.date)
     }
 
     /// Tarjeta de acceso a la respiracion guiada, siempre visible.
@@ -518,8 +488,7 @@ struct StressDetailView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(16)
-        .liquidGlass(cornerRadius: 8, tint: color)
+        .revelCard()
         .accessibilityIdentifier("detail.stress.activation")
     }
 
@@ -1373,5 +1342,189 @@ struct BreathingExerciseView: View {
     private func applyScale() {
         guard !reduceMotion else { return }
         withAnimation(.easeInOut(duration: phase.seconds)) { scale = phase.scale }
+    }
+}
+
+// MARK: - Estres de ahora (tarjeta de la referencia)
+
+/// Estilo de tarjeta de la referencia: relleno plano un punto mas claro que el
+/// fondo, radio grande y **sin borde ni degradado**. Es lo que separa sus
+/// tarjetas de las nuestras (glass con tinte y hairline).
+private struct RevelCardStyle: ViewModifier {
+    var cornerRadius: CGFloat = 28
+
+    func body(content: Content) -> some View {
+        content
+            .padding(18)
+            .background(
+                Color(red: 0.110, green: 0.115, blue: 0.132),
+                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            )
+    }
+}
+
+private extension View {
+    func revelCard(cornerRadius: CGFloat = 28) -> some View {
+        modifier(RevelCardStyle(cornerRadius: cornerRadius))
+    }
+}
+
+/// Tarjeta "Estres ahora": replica la de la referencia (punto + titulo + hora,
+/// tres cifras con divisores, dial de ticks con el valor actual dentro).
+///
+/// Habla en **indice de estres** (0 = sin presion, 100 = presion maxima), no en
+/// calma: es la lectura del momento, no el resumen del dia que va en el hero.
+private struct StressTodayCard: View {
+    let profile: StressDayProfile
+    let updatedAt: Date?
+
+    private var currentBand: PhysiologicalStressLevel {
+        profile.current.map(StressDayProfile.band(for:)) ?? .unavailable
+    }
+
+    private var bandColor: Color { StressTodayCard.color(for: currentBand) }
+
+    static func color(for band: PhysiologicalStressLevel) -> Color {
+        switch band {
+        case .great: Color(red: 0.42, green: 0.82, blue: 0.78)
+        case .normal: Color(red: 0.60, green: 0.58, blue: 0.96)
+        case .attention: Color(red: 0.98, green: 0.76, blue: 0.42)
+        case .overload: Color(red: 0.98, green: 0.55, blue: 0.42)
+        case .unavailable: .gray
+        }
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(bandColor)
+                            .frame(width: 9, height: 9)
+                        Text("Estrés ahora")
+                            .font(.system(size: 19, weight: .semibold))
+                    }
+                    Text(updatedAt.map { "Actualizado a las \($0.formatted(date: .omitted, time: .shortened))" }
+                        ?? "Sin lectura reciente")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 0) {
+                    stat(profile.highest, "Más alto", tint: Color(red: 0.98, green: 0.55, blue: 0.42))
+                    divider
+                    stat(profile.lowest, "Más bajo", tint: Color(red: 0.42, green: 0.82, blue: 0.78))
+                    divider
+                    stat(profile.hasEnoughData ? profile.average : nil, "Promedio", tint: .white)
+                }
+
+                if !profile.hasEnoughData {
+                    Text("Llevas \(profile.hours) \(profile.hours == 1 ? "hora medida" : "horas medidas") hoy · el promedio del día aparece a partir de \(StressDayProfile.minimumHours)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            StressTickGauge(
+                value: profile.current,
+                band: currentBand.displayName,
+                color: bandColor
+            )
+            .frame(width: 104, height: 104)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .revelCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Estrés ahora \(profile.current.map(String.init) ?? "sin lectura"), \(currentBand.displayName)")
+        .accessibilityIdentifier("detail.stress.now")
+    }
+
+    private var divider: some View {
+        Rectangle().fill(Color.white.opacity(0.10)).frame(width: 1, height: 46)
+    }
+
+    private func stat(_ value: Int?, _ label: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value.map(String.init) ?? "--")
+                .font(.system(size: 30, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(tint)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 2)
+    }
+}
+
+/// Dial de ticks radiales de la referencia: la escala completa va de frio a
+/// calido y solo se enciende hasta el valor; dentro, un disco elevado con la
+/// cifra y la banda.
+private struct StressTickGauge: View {
+    let value: Int?
+    let band: String
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            Canvas { context, size in
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                let radius = min(size.width, size.height) / 2 - 3
+                let progress = Double(value ?? 0) / 100
+                let start = 130.0            // arranca abajo-izquierda
+                let sweep = 280.0            // deja el hueco inferior, como la referencia
+                var step = 0.0
+                while step <= sweep {
+                    let fraction = step / sweep
+                    let radians = Angle.degrees(start + step).radians
+                    let dx = CGFloat(cos(radians))
+                    let dy = CGFloat(sin(radians))
+                    let length: CGFloat = 9
+                    var path = Path()
+                    path.move(to: CGPoint(x: center.x + dx * (radius - length), y: center.y + dy * (radius - length)))
+                    path.addLine(to: CGPoint(x: center.x + dx * radius, y: center.y + dy * radius))
+                    // Escala frio → calido; apagada por encima del valor.
+                    let scale = Color(
+                        hue: 0.42 - 0.42 * fraction,
+                        saturation: 0.62,
+                        brightness: 0.95
+                    )
+                    let lit = fraction <= progress
+                    context.stroke(
+                        path,
+                        with: .color(lit ? scale.opacity(0.95) : scale.opacity(0.16)),
+                        lineWidth: 2.4
+                    )
+                    step += 5
+                }
+            }
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.white.opacity(0.10), Color.white.opacity(0.02)],
+                        center: .init(x: 0.5, y: 0.25), startRadius: 2, endRadius: 46
+                    )
+                )
+                .frame(width: 74, height: 74)
+
+            VStack(spacing: 0) {
+                Text(value.map(String.init) ?? "--")
+                    .font(.system(size: 28, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.92))
+                Text(band)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

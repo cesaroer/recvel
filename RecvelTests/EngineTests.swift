@@ -2576,6 +2576,20 @@ final class EngineTests: XCTestCase {
         let profile = StressEngine().dayProfile(activation: series, now: today, calendar: calendar)
         XCTAssertEqual(profile.hours, 2)
         XCTAssertFalse(profile.hasEnoughData)
+        // Pero el valor ACTUAL si existe: la tarjeta "Estres ahora" debe poder
+        // mostrarse en la madrugada, cuando el promedio del dia aun no aplica.
+        XCTAssertNotNil(profile.current)
+        XCTAssertNotNil(profile.highest)
+        XCTAssertNotNil(profile.lowest)
+
+        // Con una sola lectura sigue habiendo "ahora".
+        let single = StressEngine().dayProfile(
+            activation: [ActivationPoint(date: today, value: 0.9)],
+            now: today,
+            calendar: calendar
+        )
+        XCTAssertNotNil(single.current)
+        XCTAssertFalse(single.hasEnoughData)
 
         let empty = StressEngine().dayProfile(activation: [], now: today, calendar: calendar)
         XCTAssertNil(empty.average)
