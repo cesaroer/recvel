@@ -81,6 +81,28 @@ Demostracion visual: 104 fotogramas de **free-exercise-db** empaquetados en
 - Guardias: `testEveryLibraryExerciseHasMechanics`,
   `testMechanicsCatalogHasNoOrphanEntries`, `testMechanicsMediaFramesExistInBundle`.
 
+**Estres: promedio del dia vs ahora (27 jul 2026):** el hero y el entrypoint
+mostraban el indice del dia (HRV/FC reposo vs baseline) sin etiqueta, y se leia
+como si fuera "ahora". Ahora:
+- `StressEngine.dayProfile(activation:)` resume la curva horaria en
+  `StressDayProfile` (promedio, actual, maximo, minimo, horas medidas).
+- **Hero y entrypoint = PROMEDIO DEL DIA**; el **valor actual** vive en su propia
+  tarjeta ("Ahora · ultima hora medida", id `detail.stress.now`) junto al mas y
+  menos calmado del dia.
+- Con menos de 3 horas medidas (`StressDayProfile.minimumHours`) NO se afirma un
+  promedio: la UI cae al indice del dia de siempre.
+- `StressEngine.pressureIndex` mapea activacion (FC sobre reposo / 30) a 0-100
+  saturando en 2.0 (~60 lpm sobre tu reposo). Es una estimacion y la pantalla lo
+  dice: la activacion no entra en el indice de estres.
+- Grafica horaria con estilo de la referencia: capsulas redondeadas con
+  degradado sobre pista tenue, paleta fria→lavanda→ambar (se quito el rojo de
+  alarma; la activacion alta es actividad, no un fallo), media del dia como linea
+  punteada y leyenda Tranquilo/Activo/Muy activo.
+  **Ojo:** las dos barras de la misma hora usan `yStart:/yEnd:`; con `y:` Charts
+  las APILA y la barra de color queda flotando sobre la pista.
+- Tests: `testStressDayProfileSeparatesAverageFromCurrent`,
+  `testStressDayProfileNeedsThreeHours`, `testStressPressureIndexAndBands`.
+
 **Reporte de la mañana (27 jul 2026):** `MorningReportEngine` +
 `MorningReportView` arman la hoja que se lee al despertar: Recuperacion con la
 señal que mas resto, sueño + banco de 14 d, la accion del dia y el margen de

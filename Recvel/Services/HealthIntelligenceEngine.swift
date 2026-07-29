@@ -30,7 +30,7 @@ struct StressEngine {
                 score: nil,
                 level: .unavailable,
                 confidence: .low,
-                summary: baselineDays < 3 ? "Necesitamos al menos 3 dias comparables para empezar." : "Faltan HRV o FC en reposo para estimar presion fisiologica.",
+                summary: RecvelL10n.text(baselineDays < 3 ? "stress.summary.needsHistory" : "stress.summary.missingSignals"),
                 drivers: drivers(snapshot: snapshot, hrvHistory: hrvHistory, rhrHistory: rhrHistory, hrvDeviation: hrvDeviation, rhrDeviation: rhrDeviation),
                 baselineDays: baselineDays
             )
@@ -73,15 +73,15 @@ struct StressEngine {
             result.append(StressDriver(
                 name: "HRV (SDNN)",
                 value: "\(Int(current.rounded())) ms",
-                baseline: baseline.median(baseline.robustValues(hrvHistory)).map { "Tipico \(Int($0.rounded())) ms" } ?? "Baseline pendiente",
+                baseline: baseline.median(baseline.robustValues(hrvHistory)).map { RecvelL10n.text("metric.usualValue", values: ["value": "\(Int($0.rounded())) ms"]) } ?? RecvelL10n.text("stress.reference.pending"),
                 impact: hrvDeviation ?? 0
             ))
         }
         if let current = snapshot.restingHeartRate {
             result.append(StressDriver(
-                name: "FC en reposo",
-                value: "\(Int(current.rounded())) lpm",
-                baseline: baseline.median(baseline.robustValues(rhrHistory)).map { "Tipico \(Int($0.rounded())) lpm" } ?? "Baseline pendiente",
+                name: RecvelL10n.text("term.rhr.name"),
+                value: "\(Int(current.rounded())) \(RecvelL10n.text("unit.heartRate"))",
+                baseline: baseline.median(baseline.robustValues(rhrHistory)).map { RecvelL10n.text("metric.usualValue", values: ["value": "\(Int($0.rounded())) \(RecvelL10n.text("unit.heartRate"))"]) } ?? RecvelL10n.text("stress.reference.pending"),
                 impact: rhrDeviation ?? 0
             ))
         }
@@ -90,11 +90,11 @@ struct StressEngine {
 
     private func summary(for level: PhysiologicalStressLevel) -> String {
         switch level {
-        case .great: "Tus senales autonomicas estan mejor que tu rango reciente."
-        case .normal: "Tus senales estan cerca de tu rango fisiologico habitual."
-        case .attention: "Una o mas senales se alejaron de tu baseline; baja el ritmo y observa la tendencia."
-        case .overload: "HRV y/o FC sugieren presion fisiologica alta frente a tu historial."
-        case .unavailable: "Aun no hay datos suficientes."
+        case .great: RecvelL10n.text("stress.summary.great")
+        case .normal: RecvelL10n.text("stress.summary.normal")
+        case .attention: RecvelL10n.text("stress.summary.attention")
+        case .overload: RecvelL10n.text("stress.summary.overload")
+        case .unavailable: RecvelL10n.text("stress.summary.unavailable")
         }
     }
 }
@@ -110,8 +110,42 @@ extension StressEngine {
             calmScore: calmScore,
             displayValue: calmScore.map(String.init) ?? "--",
             ringProgress: Double(calmScore ?? 0) / 100,
-            headline: assessment.level.rawValue
+            headline: assessment.level.displayName
         )
+    }
+
+    /// Perfil del dia a partir de la curva de activacion horaria.
+    ///
+    /// Antes la pantalla solo mostraba el indice del dia (HRV/FC en reposo vs
+    /// baseline), que se leia como si fuera "ahora". Aqui se separan las dos
+    /// lecturas: el **promedio del dia** (lo que resume la jornada, y lo que va
+    /// en el hero y en el entrypoint) y el **valor actual** (la ultima hora
+    /// medida, que vive en su propio componente).
+    ///
+    /// La activacion es FC relativa al reposo, no una medida clinica de estres:
+    /// se mapea a 0-100 con `pressureIndex` y se etiqueta como estimacion.
+    func dayProfile(activation: [ActivationPoint], now: Date = .now, calendar: Calendar = .current) -> StressDayProfile {
+        let today = activation
+            .filter { calendar.isDate($0.date, inSameDayAs: now) }
+            .sorted { $0.date < $1.date }
+        guard !today.isEmpty else {
+            return StressDayProfile(average: nil, current: nil, highest: nil, lowest: nil, hours: 0)
+        }
+        let values = today.map(\.value)
+        let mean = values.reduce(0, +) / Double(values.count)
+        return StressDayProfile(
+            average: Self.pressureIndex(mean),
+            current: today.last.map { Self.pressureIndex($0.value) },
+            highest: values.max().map(Self.pressureIndex),
+            lowest: values.min().map(Self.pressureIndex),
+            hours: today.count
+        )
+    }
+
+    /// Activacion (FC por encima del reposo, normalizada /30 lpm) → indice 0-100.
+    /// 2.0 = ~60 lpm sobre tu reposo se toma como tope practico del dia.
+    static func pressureIndex(_ activation: Double) -> Int {
+        Int((min(max(activation / 2.0, 0), 1) * 100).rounded())
     }
 
     /// Clasifica un valor de ActivationPoint (0...3) para colorear las barras
@@ -284,7 +318,7 @@ extension StressEngine {
         if average >= 1 {
             return FastingFeelingAdvice(
                 title: "Te sientes bien en este ayuno",
-                detail: "Sigue hidratado y rompe el ayuno con calma cuando toque. Si algo cambia, registra otro check-in.",
+                detail: "Mantén la hidratación y termina el ayuno con calma cuando corresponda. Si algo cambia, haz otro registro.",
                 suggestsEnding: false
             )
         }
@@ -350,7 +384,7 @@ struct BioAgeEngine {
         let confidence: DataConfidence = sampleCount >= 3 && ageDays <= 90 ? .medium : .low
         let delta = estimated - Double(age)
         let summary: String
-        if abs(delta) < 1.5 { summary = "Tu fitness cardiorrespiratorio esta cerca de la mediana de tu edad." }
+        if abs(delta) < 1.5 { summary = "Tu capacidad cardiorrespiratoria está cerca de la mediana para tu edad." }
         else if delta < 0 { summary = "Tu VO2 se parece a la mediana de un grupo mas joven." }
         else { summary = "Tu VO2 se parece a la mediana de un grupo de mayor edad; la tendencia es mas util que una lectura." }
 
@@ -645,6 +679,17 @@ enum FitnessClass: String, CaseIterable, Identifiable {
     case sedentary = "Sedentario"
     var id: String { rawValue }
 
+    var displayName: String {
+        switch self {
+        case .elite: RecvelL10n.text("fitness.class.elite")
+        case .high: RecvelL10n.text("fitness.class.high")
+        case .good: RecvelL10n.text("fitness.class.good")
+        case .average: RecvelL10n.text("fitness.class.average")
+        case .low: RecvelL10n.text("fitness.class.low")
+        case .sedentary: RecvelL10n.text("fitness.class.sedentary")
+        }
+    }
+
     /// Percentil minimo (inclusive) de cada categoria.
     var minimumPercentile: Double {
         switch self {
@@ -801,5 +846,458 @@ struct FitnessClassificationEngine {
         let ordered = FitnessClass.allCases.sorted { $0.minimumPercentile < $1.minimumPercentile }
         guard let index = ordered.firstIndex(of: current), index + 1 < ordered.count else { return nil }
         return ordered[index + 1]
+    }
+}
+
+// MARK: - 1RM estimado (progresion de fuerza)
+
+/// Estima el 1RM (una repeticion maxima) a partir de un set submaximo.
+///
+/// Fuente: formulas de Epley (1985) y Brzycki (1993). Su exactitud es de ±5%
+/// en el rango de 2-10 repeticiones y se degrada notablemente por encima de
+/// 10-12 reps (±15-20%), porque asumen una relacion lineal reps/%1RM que en
+/// realidad es curva. Por eso Recvel promedia ambas y NO estima por encima de
+/// 10 reps. Es una estimacion de tendencia, no un 1RM real medido.
+enum OneRepMaxEstimator {
+    /// Rep maxima donde la estimacion sigue siendo razonable.
+    static let maxReliableReps = 10
+
+    static func epley(weightKg: Double, reps: Int) -> Double {
+        weightKg * (1 + Double(reps) / 30)
+    }
+
+    static func brzycki(weightKg: Double, reps: Int) -> Double {
+        // 37 - reps se acerca a 0 en reps altas; el gate de `estimate` evita
+        // ese regimen, pero protegemos la division igualmente.
+        let denominator = 37 - Double(reps)
+        guard denominator > 0 else { return weightKg }
+        return weightKg * 36 / denominator
+    }
+
+    /// Promedio de Epley y Brzycki. `nil` si no hay peso, o si las reps caen
+    /// fuera del rango fiable (1...10): preferimos no mostrar dato a mostrar uno
+    /// enganoso.
+    static func estimate(weightKg: Double, reps: Int) -> Double? {
+        guard weightKg > 0, (1...maxReliableReps).contains(reps) else { return nil }
+        // A 1 rep, ambas formulas devuelven el propio peso (ya es el 1RM).
+        if reps == 1 { return weightKg }
+        return (epley(weightKg: weightKg, reps: reps) + brzycki(weightKg: weightKg, reps: reps)) / 2
+    }
+}
+
+// MARK: - Coaching de entrenamiento (dia siguiente)
+
+/// Consejo de entrenamiento accionable, con evidencia citada (patron
+/// `SleepCoachingTip`). Cada tip DEBE llevar `evidence`: nunca damos una
+/// instruccion de entrenamiento sin decir de donde sale.
+struct TrainingCoachingTip: Identifiable, Equatable {
+    enum Kind: String { case readiness, recovery, timing, muscleReadiness, deload, positive }
+    let kind: Kind
+    let title: String
+    let detail: String
+    let evidence: String
+    let symbol: String
+    /// Si aplica, minutos que se sugiere adelantar el entreno (para el copy de
+    /// "muévelo N min antes"). 0 cuando no es un consejo de timing.
+    var suggestedShiftMinutes: Int = 0
+    var id: String { kind.rawValue + title }
+}
+
+struct TrainingReadinessContext: Equatable {
+    let energy: Int
+    let soreness: Int
+    let motivation: Int
+    let hasPainOrLimitation: Bool
+
+    var score: Int {
+        let energyScore = Double(min(max(energy, 1), 5))
+        let sorenessScore = Double(6 - min(max(soreness, 1), 5))
+        let motivationScore = Double(min(max(motivation, 1), 5))
+        return Int(((energyScore * 0.4 + sorenessScore * 0.4 + motivationScore * 0.2) / 5 * 100).rounded())
+    }
+}
+
+/// Contexto del ultimo entrenamiento registrado, para el coaching.
+struct LastWorkoutContext: Equatable {
+    let endedAt: Date
+    /// Esfuerzo 1-10 (del emoji del usuario o de HealthKit).
+    let effortScore: Int?
+    let muscleGroup: String
+    /// true si es una sesion de fuerza (no cardio).
+    let wasStrength: Bool
+}
+
+/// Genera coaching de entrenamiento para hoy cruzando la recuperacion, el
+/// esfuerzo/hora del ultimo entreno, los dias consecutivos sin descanso y la
+/// ventana de sueno. Es orientacion de *readiness y moderacion*, nunca una
+/// afirmacion de riesgo de lesion (regla AI_CONTEXT.md).
+struct TrainingCoachingEngine {
+    private let calendar = Calendar.autoupdatingCurrent
+
+    /// - Parameters:
+    ///   - todayFocus: grupo/foco del entreno planeado para hoy (del planner).
+    ///   - recovery: recovery score de hoy (0-100), si existe.
+    ///   - lastWorkout: contexto del ultimo entreno registrado.
+    ///   - consecutiveTrainingDays: dias seguidos entrenando sin descanso.
+    ///   - plannedBedtime: hora de dormir planeada, para el consejo de timing.
+    ///   - proposedStart: hora a la que el usuario planea entrenar hoy (si la fijó).
+    func tips(
+        todayFocus: String?,
+        recovery: Int?,
+        lastWorkout: LastWorkoutContext?,
+        consecutiveTrainingDays: Int,
+        plannedBedtime: Date?,
+        proposedStart: Date?,
+        plannedDurationMinutes: Int = 60,
+        targetRPE: Int = 8,
+        scheduleFlexibility: ScheduleFlexibility = .flexible,
+        readiness: TrainingReadinessContext? = nil,
+        plannedKind: DayAssignment? = nil,
+        now: Date = .now
+    ) -> [TrainingCoachingTip] {
+        var tips: [TrainingCoachingTip] = []
+
+        // 0a. Sesiones de alta demanda neuronal (pliometría, velocidad,
+        // contraste) piden sistema nervioso fresco: con recuperación baja o
+        // molestias altas se sugiere moverlas o cambiar el estímulo.
+        if let plannedKind, plannedKind.isHighNeuralDemand {
+            let sorenessHigh = (readiness?.soreness ?? 0) >= 4
+            let recoveryLow = (recovery ?? 100) < 55
+            if sorenessHigh || recoveryLow {
+                tips.append(TrainingCoachingTip(
+                    kind: .readiness,
+                    title: "La sesión de hoy pide estar fresco",
+                    detail: sorenessHigh
+                        ? "Reportaste molestias altas y la \(plannedKind.shortLabel.lowercased()) exige movimiento reactivo de calidad. Considera cambiarla por movilidad o recuperación, o reduce el volumen a la mitad."
+                        : "Tu Recuperación está en \(recovery ?? 0)% y la \(plannedKind.shortLabel.lowercased()) rinde mejor con el sistema nervioso descansado. Moverla a mañana suele dar más calidad que forzarla hoy.",
+                    evidence: "Los métodos de potencia (pliometría, sprints, contraste) se programan al inicio de la sesión y con baja fatiga: la fatiga reduce la producción de fuerza explosiva y degrada la técnica (Verkhoshansky; revisado en Science for Sport).",
+                    symbol: "bolt.trianglebadge.exclamationmark.fill"
+                ))
+            }
+        }
+
+        // 0b. Día de recuperación/movilidad tras racha o con recovery baja:
+        // refuerzo positivo de la decisión (la recuperación también entrena).
+        if let plannedKind, plannedKind.isRecoveryOriented, plannedKind != .rest,
+           consecutiveTrainingDays >= 3 || (recovery ?? 100) < 45 {
+            tips.append(TrainingCoachingTip(
+                kind: .positive,
+                title: "Buena elección para hoy",
+                detail: consecutiveTrainingDays >= 3
+                    ? "Llevas \(consecutiveTrainingDays) días seguidos: esta sesión ligera consolida adaptaciones sin sumar fatiga."
+                    : "Con tu Recuperación baja, la sesión ligera de hoy aporta flujo sanguíneo y rango de movimiento sin apenas carga.",
+                evidence: "La recuperación activa de baja intensidad puede mantener la adherencia y el bienestar sin interferir la adaptación; la carga total semanal es lo que determina el estímulo (Kellmann et al., consenso IOC 2018).",
+                symbol: "leaf.fill"
+            ))
+        }
+
+        // 0. El reporte de la persona tiene prioridad sobre cualquier score.
+        if let readiness {
+            if readiness.hasPainOrLimitation {
+                tips.append(TrainingCoachingTip(
+                    kind: .readiness,
+                    title: "Adapta la sesión antes de empezar",
+                    detail: "Registraste dolor o una limitación. Evita forzar el movimiento afectado; cambia el ejercicio o detén la sesión si la molestia aumenta. Si persiste, consulta a un profesional.",
+                    evidence: "El dolor no puede interpretarse con datos de un wearable. La decisión debe priorizar síntomas, función y valoración profesional cuando sea necesario.",
+                    symbol: "cross.case.fill"
+                ))
+            } else if readiness.energy <= 2 || readiness.soreness >= 4 || readiness.motivation <= 2 {
+                let reducedRPE = max(targetRPE - 2, 3)
+                let reducedMinutes = max(Int((Double(plannedDurationMinutes) * 0.75).rounded()), 20)
+                tips.append(TrainingCoachingTip(
+                    kind: .readiness,
+                    title: "Reduce la carga de hoy",
+                    detail: "Tu registro previo está por debajo de tu mejor rango. Prueba \(reducedMinutes) min alrededor de RPE \(reducedRPE)/10 y vuelve a evaluar después del calentamiento.",
+                    evidence: "El RPE de sesión es una medida válida de carga interna y permite ajustar volumen e intensidad a la respuesta diaria (Haddad et al., IJSPP 2017, PMID 29163016).",
+                    symbol: "slider.horizontal.below.square.filled.and.square"
+                ))
+            }
+        }
+
+        // 1. La proximidad entre sesiones es contexto, no una prohibición fija.
+        if let last = lastWorkout, last.wasStrength, let todayFocus {
+            let hoursSince = now.timeIntervalSince(last.endedAt) / 3600
+            let sameGroup = last.muscleGroup.caseInsensitiveCompare(todayFocus) == .orderedSame
+            if sameGroup && hoursSince < 36 {
+                let sorenessHigh = (readiness?.soreness ?? 0) >= 4
+                tips.append(TrainingCoachingTip(
+                    kind: .muscleReadiness,
+                    title: sorenessHigh ? "Revisa el foco muscular" : "Hay carga reciente en este grupo",
+                    detail: sorenessHigh
+                        ? "Entrenaste \(last.muscleGroup.lowercased()) hace \(max(Int(hoursSince), 0)) h y reportaste molestias altas. Considera otra zona o reduce series si no mejora con el calentamiento."
+                        : "Entrenaste \(last.muscleGroup.lowercased()) hace \(max(Int(hoursSince), 0)) h. Valora el calentamiento y conserva la sesión solo si el movimiento y el rendimiento se sienten habituales.",
+                    evidence: "No existe una espera universal de 48 h. La frecuencia puede organizarse de distintas formas cuando el volumen semanal se iguala; la respuesta individual ayuda a decidir (Ramos-Campo et al. 2024, PMID 38595233).",
+                    symbol: "figure.cooldown"
+                ))
+            } else if !sameGroup && hoursSince < 24 {
+                // Caso de la madrugada: entrenó de noche/madrugada, hoy otra zona.
+                tips.append(TrainingCoachingTip(
+                    kind: .muscleReadiness,
+                    title: "Puedes entrenar otra zona hoy",
+                    detail: "Tu último trabajo fue de \(last.muscleGroup.lowercased()). Un grupo distinto se recupera antes, así que hoy es buen día para \(todayFocus.lowercased()).",
+                    evidence: "Distribuir el volumen entre grupos y días es compatible con distintas rutinas; full body y rutinas divididas son similares cuando el volumen se iguala (Ramos-Campo et al. 2024, PMID 38595233).",
+                    symbol: "arrow.triangle.2.circlepath"
+                ))
+            }
+        }
+
+        // 2. Deload: muchos dias seguidos sin descanso + recovery baja.
+        if consecutiveTrainingDays >= 6 {
+            let recoveryLow = (recovery ?? 100) < 50
+            tips.append(TrainingCoachingTip(
+                kind: .deload,
+                title: recoveryLow ? "Considera una sesión de recuperación" : "Llevas varios días consecutivos",
+                detail: recoveryLow
+                    ? "Son \(consecutiveTrainingDays) días entrenando sin descanso y tu recuperación está baja. Mover el entrenamiento a mañana o hacer una sesión ligera suele rendir más que forzar."
+                    : "Son \(consecutiveTrainingDays) días seguidos. Un día de descanso o una sesión ligera ayuda a consolidar las adaptaciones.",
+                evidence: "La recuperación forma parte de la planificación de carga. Una racha por sí sola no diagnostica sobreentrenamiento; debe interpretarse junto con rendimiento y respuesta personal (Kellmann et al., consenso IOC 2018).",
+                symbol: "bed.double.fill"
+            ))
+        }
+
+        // 3. Esfuerzo previo alto + recovery baja => moderar hoy.
+        if let last = lastWorkout, let effort = last.effortScore, effort >= 8, (recovery ?? 100) < 55 {
+            tips.append(TrainingCoachingTip(
+                kind: .recovery,
+                title: "Modera la intensidad hoy",
+                detail: "Tu última sesión fue exigente (esfuerzo \(effort)/10) y tu recuperación aún no vuelve a tu rango. Mantén el volumen pero baja un punto la intensidad.",
+                evidence: "La recuperación autonómica incompleta (HRV baja) tras cargas altas se asocia con menor readiness; ajustar la intensidad al estado diario mejora la adaptación (Bellenger et al., Sports Med 2016).",
+                symbol: "gauge.with.dots.needle.33percent"
+            ))
+        }
+
+        // 4. Timing vs sueño: entreno vigoroso que termina muy cerca de dormir.
+        if let plannedBedtime, let proposedStart, todayFocus != nil, targetRPE >= 7 {
+            let estimatedEnd = proposedStart.addingTimeInterval(Double(plannedDurationMinutes) * 60)
+            let minutesBeforeBed = plannedBedtime.timeIntervalSince(estimatedEnd) / 60
+            // Avisar si termina a <1h de dormir, incluyendo terminar DESPUÉS de
+            // la hora de dormir (peor caso). El límite inferior de -180 min evita
+            // confundir un entreno de madrugada (que es del día siguiente) con
+            // uno que se alarga pasada la hora de dormir.
+            if minutesBeforeBed < 60 && minutesBeforeBed > -180 {
+                let shift = max(Int(120 - minutesBeforeBed), 60)
+                let canMove = scheduleFlexibility != .fixed
+                tips.append(TrainingCoachingTip(
+                    kind: .timing,
+                    title: canMove ? "Separa esta sesión de tu hora de dormir" : "Modera la parte final de la sesión",
+                    detail: canMove
+                        ? "La sesión intensa terminaría muy cerca de tu hora de dormir. Si puedes, muévela unos \(shift) min antes y observa cómo responde tu sueño."
+                        : "Tu horario es fijo y la sesión intensa terminaría cerca de dormir. Conserva la hora, pero evita terminar al máximo esfuerzo y registra cómo duermes.",
+                    evidence: "El ejercicio nocturno no empeora el sueño de forma universal. La intensidad alta muy próxima a dormir puede reducir modestamente el sueño REM en algunas personas (PMID 36540196; PMID 41032147).",
+                    symbol: "clock.badge.exclamationmark",
+                    suggestedShiftMinutes: canMove ? shift : 0
+                ))
+            }
+        }
+
+        // 5. Refuerzo positivo: buena recovery, sin banderas.
+        if tips.isEmpty, let recovery, recovery >= 70, todayFocus != nil {
+            tips.append(TrainingCoachingTip(
+                kind: .positive,
+                title: "Buen día para entrenar",
+                detail: "Tu recuperación está en tu rango alto. Es un buen momento para una sesión de calidad.",
+                evidence: "Programar las cargas más altas en días de mayor readiness (HRV en rango) mejora las adaptaciones frente a un plan rígido (Javaloyes et al., Int J Sports Physiol Perform 2019).",
+                symbol: "checkmark.seal.fill"
+            ))
+        }
+
+        return tips
+    }
+
+    /// Cuenta los días consecutivos (terminando hoy o ayer) con al menos un
+    /// entrenamiento registrado, para la regla de deload.
+    func consecutiveTrainingDays(workoutDates: [Date], now: Date = .now) -> Int {
+        let days = Set(workoutDates.map { calendar.startOfDay(for: $0) })
+        guard !days.isEmpty else { return 0 }
+        var count = 0
+        var cursor = calendar.startOfDay(for: now)
+        // Permitir que la racha empiece hoy o ayer (aún no entrena hoy).
+        if !days.contains(cursor) {
+            cursor = calendar.date(byAdding: .day, value: -1, to: cursor) ?? cursor
+        }
+        while days.contains(cursor) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
+            cursor = previous
+        }
+        return count
+    }
+}
+
+// MARK: - Coach de rutina (calificacion de la semana)
+
+/// Veredicto del coach sobre una semana de entrenamiento armada.
+struct RoutineAssessment: Equatable {
+    enum Verdict: String { case balanced, caution, unsustainable }
+    let verdict: Verdict
+    /// Siempre con prefijo "Coach: " — es la voz del coach en la UI.
+    let headline: String
+    let detail: String
+    /// Evidencia citada, patron `TrainingCoachingTip.evidence`.
+    let evidence: String
+    var symbol: String {
+        switch verdict {
+        case .balanced: "checkmark.seal.fill"
+        case .caution: "exclamationmark.triangle.fill"
+        case .unsustainable: "moon.zzz.fill"
+        }
+    }
+}
+
+/// Entrada ligera para calificar una semana ANTES de guardarla (el wizard) o
+/// una ya guardada (la agenda). `planCreatedAt` viene de `WeeklyPlan.createdAt`.
+struct RoutineAssessmentInput {
+    var days: [Int: DayAssignment]
+    var splitType: SplitType
+    var goal: WeeklyGoal
+    var planCreatedAt: Date?
+    var planWeeks: Int = 4
+}
+
+/// Califica la semana con lenguaje de sostenibilidad y constancia — nunca de
+/// riesgo de lesion (regla AI_CONTEXT.md: el ACWR y las metricas de razon son
+/// estadisticamente fragiles para predecir lesiones y Recvel no hace esas
+/// afirmaciones).
+enum RoutineAssessmentEngine {
+    /// Semanas tras las cuales sugerimos variar el estimulo (bloques tipicos
+    /// de 4-8 semanas; cambio de fase comun a las 4-6).
+    static let staleWeeksThreshold = 5
+
+    /// Movilidad y recuperacion activa cuentan como DESCANSO para las reglas
+    /// de sostenibilidad: son sesiones de baja intensidad que no comprometen
+    /// la recuperacion (y pueden favorecerla). Decision del usuario + evidencia
+    /// de recuperacion activa.
+    static func isRestEquivalent(_ assignment: DayAssignment) -> Bool {
+        switch assignment {
+        case .rest, .mobility, .recovery: true
+        default: false
+        }
+    }
+
+    static func assess(_ input: RoutineAssessmentInput, now: Date = .now) -> RoutineAssessment {
+        let assignments = (1...7).map { input.days[$0] ?? .rest }
+        let restDays = assignments.filter { isRestEquivalent($0) }.count
+        let trainingDays = 7 - restDays
+        let strengthDays = assignments.filter { isStrength($0) }.count
+
+        let staleNote = staleNote(createdAt: input.planCreatedAt, planWeeks: input.planWeeks, now: now)
+
+        // 1. Sin descanso NI recuperacion activa: no sostenible.
+        if restDays == 0 {
+            return RoutineAssessment(
+                verdict: .unsustainable,
+                headline: "Coach: no veo dias de descanso",
+                detail: "Entrenar exigente los 7 dias no deja ventana de recuperacion. Convierte al menos un dia en descanso o en movilidad suave; asi la semana si es sostenible.",
+                evidence: "La recomendacion estandar es al menos 1-2 dias de descanso por semana; la recuperacion activa de baja intensidad (movilidad, caminata) no compromete la recuperacion y puede favorecer la percepcion de recuperacion (Ortiz et al., J Strength Cond Res 2019; ACSM)."
+            )
+        }
+
+        // 2. Un solo descanso con semana muy cargada.
+        if restDays == 1 && trainingDays >= 6 {
+            return RoutineAssessment(
+                verdict: .caution,
+                headline: "Coach: solo un dia de descanso",
+                detail: appending("Seis dias de entrenamiento con un descanso es exigente. Vigila como respondes las primeras 2 semanas y baja un dia si el cansancio se acumula.", staleNote),
+                evidence: "El descanso programado permite la supercompensacion; la carga sin recuperacion suficiente degrada rendimiento y animo (Kellmann et al., consenso IOC 2018)."
+            )
+        }
+
+        // 3. Frecuencia por grupo segun split.
+        let rotation = input.splitType.focusRotation.count
+        if input.splitType == .broSplit && strengthDays > 0 && strengthDays < 5 {
+            return RoutineAssessment(
+                verdict: .caution,
+                headline: "Coach: este split necesita mas dias",
+                detail: appending("Con \(strengthDays) dias de fuerza y un grupo por dia, varios grupos quedan por debajo de 2 veces por semana. Considera torso/pierna o full body para esos dias.", staleNote),
+                evidence: "El volumen semanal POR GRUPO es el driver principal; frecuencias de 2-3x/semana por grupo facilitan acumularlo (Schoenfeld et al., 2016/2019)."
+            )
+        }
+        if rotation > 1 && strengthDays > 0 && strengthDays < rotation && input.splitType != .broSplit {
+            return RoutineAssessment(
+                verdict: .caution,
+                headline: "Coach: la rotacion no se completa",
+                detail: appending("Tu split rota \(rotation) focos pero solo hay \(strengthDays) dias de fuerza: cada semana quedaria un foco sin entrenar. Anade un dia o cambia a full body.", staleNote),
+                evidence: "Completar la rotacion cada semana mantiene la frecuencia por grupo; con dias insuficientes, un split mas corto rinde mas (Schoenfeld et al., 2016/2019)."
+            )
+        }
+
+        // 4. Fuerza en bloque sin descanso intercalado (full body pega todo el
+        //    cuerpo cada sesion: 4+ dias seguidos rompen las ~48h por grupo).
+        if input.splitType == .fullBody, maxConsecutiveStrengthDays(assignments) >= 4 {
+            return RoutineAssessment(
+                verdict: .caution,
+                headline: "Coach: demasiada fuerza seguida",
+                detail: appending("Full body en 4 o mas dias consecutivos golpea los mismos grupos sin sus ~48 h de recuperacion. Intercala descanso o cardio.", staleNote),
+                evidence: "La sintesis proteica muscular sigue elevada ~24-48 h tras entrenar un grupo (Damas et al., J Physiol 2016)."
+            )
+        }
+
+        // 5. Balanceada (con recordatorio de variacion si el plan ya es viejo).
+        if let staleNote {
+            return RoutineAssessment(
+                verdict: .balanced,
+                headline: "Coach: toca variar el estimulo",
+                detail: staleNote + " La estructura de la semana se ve bien; cambia ejercicios, rangos o el split para renovar el estimulo.",
+                evidence: "Los bloques de entrenamiento tipicos duran 4-8 semanas; la variacion estructurada evita el estancamiento (principio de periodizacion)."
+            )
+        }
+        return RoutineAssessment(
+            verdict: .balanced,
+            headline: "Coach: esta semana se ve balanceada",
+            detail: "Buen reparto entre entrenamiento y descanso. Siguela con constancia y considera variarla en 4-6 semanas.",
+            evidence: "La consistencia semanal es el mayor predictor de progreso; los bloques de 4-8 semanas con variacion posterior evitan mesetas (Schoenfeld 2016/2019; principio de periodizacion)."
+        )
+    }
+
+    /// Conveniencia para una rutina guardada.
+    static func assess(routine: WeeklyRoutine, createdAt: Date?, now: Date = .now) -> RoutineAssessment {
+        assess(
+            RoutineAssessmentInput(
+                days: routine.days,
+                splitType: routine.splitType,
+                goal: routine.goal,
+                planCreatedAt: createdAt,
+                planWeeks: routine.planWeeks ?? 4
+            ),
+            now: now
+        )
+    }
+
+    // MARK: Helpers
+
+    private static func isStrength(_ assignment: DayAssignment) -> Bool {
+        if case .template = assignment { return true }
+        if case .cardio(let name) = assignment, name == "Fuerza libre" { return true }
+        return false
+    }
+
+    /// Maxima racha de dias de fuerza consecutivos (semana circular).
+    private static func maxConsecutiveStrengthDays(_ assignments: [DayAssignment]) -> Int {
+        // Duplicar la semana simula la circularidad (domingo -> lunes).
+        let doubled = assignments + assignments
+        var best = 0
+        var current = 0
+        for assignment in doubled {
+            if isStrength(assignment) {
+                current += 1
+                best = max(best, min(current, assignments.count))
+            } else {
+                current = 0
+            }
+        }
+        return best
+    }
+
+    private static func staleNote(createdAt: Date?, planWeeks: Int, now: Date) -> String? {
+        guard let createdAt else { return nil }
+        let weeks = now.timeIntervalSince(createdAt) / (7 * 24 * 3600)
+        let threshold = Double(max(planWeeks, staleWeeksThreshold))
+        guard weeks > threshold else { return nil }
+        return "Llevas mas de \(Int(weeks)) semanas con este plan."
+    }
+
+    private static func appending(_ base: String, _ note: String?) -> String {
+        guard let note else { return base }
+        return base + " " + note
     }
 }

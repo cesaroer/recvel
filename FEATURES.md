@@ -52,7 +52,7 @@ Leyenda: **Done** = usable en app · **Partial** = existe pero incompleto / heur
 | Briefing / acción del día | Done | `InsightEngine` |
 | Calendario semanal + mensual con anillos segmentados | Done | `HomeCalendarViews`, `HomeDayRingEngine` (chips ≤2) |
 | Activación fisiológica 24 h (FC vs reposo) | Done | `HealthDataProvider` + UI Home/Stress |
-| Stress (bandas Excelente→Sobrecarga) | Done | `StressEngine`, `StressHomeCard`, `StressDetailView` |
+| Stress (bandas Excelente→Sobrecarga) | Done | `StressEngine`, `StressHomeCard`, `StressDetailView`; hero/entrypoint muestran el **promedio del día** y el valor actual tiene tarjeta propia (`StressDayProfile`) |
 | Emociones multi/día (tope 6) + gráfica + consejo | Done | `EmotionLog`, `HealthIntelligenceViews` |
 | Respiración guiada | Done | `BreathingExerciseView` |
 | VO2 Max (valor, fecha, tendencia, detalle) | Done | `HealthDataProvider` + `VO2DetailView` |

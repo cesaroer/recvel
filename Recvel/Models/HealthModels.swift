@@ -6,6 +6,14 @@ enum DataConfidence: String, Codable {
     case low = "Baja"
     case medium = "Media"
     case high = "Alta"
+
+    var displayName: String {
+        switch self {
+        case .low: RecvelL10n.text("common.low")
+        case .medium: RecvelL10n.text("common.medium")
+        case .high: RecvelL10n.text("common.high")
+        }
+    }
 }
 
 enum HealthDataMode: String {
@@ -14,6 +22,16 @@ enum HealthDataMode: String {
     case buildingBaseline = "Creando baseline"
     case partial = "Datos parciales"
     case healthKit = "Apple Health"
+
+    var displayName: String {
+        switch self {
+        case .empty: RecvelL10n.text("common.noData")
+        case .demo: RecvelL10n.text("common.demoData")
+        case .buildingBaseline: RecvelL10n.text("dataMode.buildingReference")
+        case .partial: RecvelL10n.text("common.partialData")
+        case .healthKit: RecvelL10n.text("common.appleHealth")
+        }
+    }
 }
 
 enum HealthPermissionState: String {
@@ -94,6 +112,13 @@ struct WorkoutSummary: Identifiable {
     let zones: [HeartRateZoneDuration]
     let cardiovascularLoad: Double
     let sourceName: String
+    /// Esfuerzo del entrenamiento en escala 1-10 (HKWorkoutEffortScore, iOS 18).
+    /// `nil` en iOS<18 o cuando no hay muestra asociada.
+    var effortScore: Double? = nil
+    /// true = Apple lo estimó automáticamente (walk/run/hike/cycle);
+    /// false = el usuario lo registró manualmente en Fitness. Para etiquetar
+    /// honestamente "estimado por Apple" vs "tu registro".
+    var effortIsEstimated: Bool = false
 }
 
 enum ScoreKind: String, CaseIterable, Identifiable {
@@ -103,6 +128,15 @@ enum ScoreKind: String, CaseIterable, Identifiable {
     case energy = "Energy"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .recovery: RecvelL10n.text("score.recovery.title")
+        case .strain: RecvelL10n.text("score.load.title")
+        case .sleep: RecvelL10n.text("score.sleep.title")
+        case .energy: RecvelL10n.text("score.energy.title")
+        }
+    }
 
     var icon: String {
         switch self {
@@ -477,6 +511,16 @@ enum NutritionGoal: String, CaseIterable, Identifiable {
     case eatMoreProtein = "Comer mas proteina"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .loseFat: RecvelL10n.text("nutrition.goal.loseFat")
+        case .maintain: RecvelL10n.text("nutrition.goal.maintain")
+        case .gainMuscle: RecvelL10n.text("nutrition.goal.gainMuscle")
+        case .improveEnergy: RecvelL10n.text("nutrition.goal.improveEnergy")
+        case .eatMoreProtein: RecvelL10n.text("nutrition.goal.moreProtein")
+        }
+    }
 }
 
 enum WeeklyWorkoutRange: String, CaseIterable, Identifiable {
@@ -493,6 +537,14 @@ enum NutritionSex: String, CaseIterable, Identifiable {
     case male = "Hombre"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .unspecified: RecvelL10n.text("nutrition.sex.unspecified")
+        case .female: RecvelL10n.text("nutrition.sex.female")
+        case .male: RecvelL10n.text("nutrition.sex.male")
+        }
+    }
 }
 
 enum DietStyle: String, CaseIterable, Identifiable {
@@ -503,6 +555,16 @@ enum DietStyle: String, CaseIterable, Identifiable {
     case mediterranean = "Mediterranea"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .flexible: RecvelL10n.text("nutrition.diet.flexible")
+        case .vegetarian: RecvelL10n.text("nutrition.diet.vegetarian")
+        case .vegan: RecvelL10n.text("nutrition.diet.vegan")
+        case .lowCarb: RecvelL10n.text("nutrition.diet.lowCarb")
+        case .mediterranean: RecvelL10n.text("nutrition.diet.mediterranean")
+        }
+    }
 }
 
 enum PreferredUnits: String, CaseIterable, Identifiable {
@@ -510,6 +572,7 @@ enum PreferredUnits: String, CaseIterable, Identifiable {
     case imperial = "Imperial"
 
     var id: String { rawValue }
+    var displayName: String { RecvelL10n.text(self == .metric ? "units.metric" : "units.imperial") }
 }
 
 enum MealType: String, CaseIterable, Identifiable {
@@ -519,6 +582,15 @@ enum MealType: String, CaseIterable, Identifiable {
     case snack = "Snack"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .breakfast: RecvelL10n.text("meal.breakfast")
+        case .lunch: RecvelL10n.text("meal.lunch")
+        case .dinner: RecvelL10n.text("meal.dinner")
+        case .snack: RecvelL10n.text("meal.snack")
+        }
+    }
 }
 
 struct NutritionTargets: Equatable {
@@ -571,6 +643,16 @@ enum PhysiologicalStressLevel: String, CaseIterable {
     case attention = "Atencion"
     case overload = "Sobrecarga"
     case unavailable = "Sin datos"
+
+    var displayName: String {
+        switch self {
+        case .great: RecvelL10n.text("stress.level.great")
+        case .normal: RecvelL10n.text("stress.level.normal")
+        case .attention: RecvelL10n.text("stress.level.attention")
+        case .overload: RecvelL10n.text("stress.level.overload")
+        case .unavailable: RecvelL10n.text("common.noData")
+        }
+    }
 }
 
 struct StressDriver: Identifiable, Equatable {
@@ -605,6 +687,35 @@ struct StressPresentation: Equatable {
 /// Intensidad de una barra horaria de activacion (valor 0...3 de ActivationPoint).
 enum StressBarIntensity: Equatable {
     case low, medium, high
+}
+
+/// Resumen del dia a partir de la curva de activacion horaria.
+///
+/// `average` es lo que resume la jornada (hero y entrypoint); `current` es la
+/// ultima hora medida y se muestra aparte para no confundir "hoy" con "ahora".
+/// Todos los valores son un indice 0-100 estimado desde la FC relativa al
+/// reposo: no es una medida clinica de estres.
+struct StressDayProfile: Equatable {
+    let average: Int?
+    let current: Int?
+    let highest: Int?
+    let lowest: Int?
+    /// Horas con dato hoy. Con menos de 3 no se afirma un promedio del dia.
+    let hours: Int
+
+    static let minimumHours = 3
+
+    var hasEnoughData: Bool { hours >= Self.minimumHours && average != nil }
+
+    /// Banda del indice, con los mismos cortes que el indice de estres del dia.
+    static func band(for index: Int) -> PhysiologicalStressLevel {
+        switch index {
+        case ...30: .great
+        case ...55: .normal
+        case ...75: .attention
+        default: .overload
+        }
+    }
 }
 
 /// Hint de posible factor asociado al stress del dia. Solo cruza datos
@@ -674,6 +785,77 @@ enum StressEmotion: String, CaseIterable, Identifiable {
 /// guias tipicas 2-3/dia; MindDoc ~3). Seis cubre manana/tarde/noche + extras.
 enum CheckInLimits {
     static let maxPerDay = 6
+}
+
+/// Como se sintio un entrenamiento (RPE con emoji). Calcado de `StressEmotion`:
+/// enum crudo + emoji + valencia. Mapea a la escala 1-10 de esfuerzo percibido
+/// (RPE de Borg CR10 / la misma escala 1-10 de HKWorkoutEffortScore de Apple),
+/// para reemplazar el `perceivedEffort` que hoy esta hardcodeado a 6.
+///
+/// Nota de localizacion: labels en espanol, consistente con `WeeklyGoal` y
+/// `DayAssignment` del mismo modulo (aun no migrados al String Catalog).
+enum WorkoutFeeling: String, CaseIterable, Identifiable {
+    case easy, comfortable, solid, hard, maximal
+
+    var id: String { rawValue }
+
+    var emoji: String {
+        switch self {
+        case .easy: "😎"
+        case .comfortable: "🙂"
+        case .solid: "💪"
+        case .hard: "😮‍💨"
+        case .maximal: "🥵"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .easy: "Facil"
+        case .comfortable: "Comodo"
+        case .solid: "Solido"
+        case .hard: "Duro"
+        case .maximal: "Al limite"
+        }
+    }
+
+    /// Esfuerzo percibido en la escala 1-10 (Borg CR10 / HKWorkoutEffortScore).
+    /// Se guarda como `perceivedEffort` y alimenta el coaching del dia siguiente.
+    var effortScore1to10: Int {
+        switch self {
+        case .easy: 2
+        case .comfortable: 4
+        case .solid: 6
+        case .hard: 8
+        case .maximal: 10
+        }
+    }
+
+    /// Valencia para graficas (-2 ... +2). Un entreno "solido" es la zona dulce;
+    /// facil y al-limite se alejan del punto optimo de estimulo sostenible.
+    var valence: Double {
+        switch self {
+        case .solid: 2
+        case .comfortable, .hard: 1
+        case .easy: 0
+        case .maximal: -1
+        }
+    }
+
+    /// Esfuerzo alto sostenido: el coaching sugiere moderar si la recovery baja.
+    var isDemanding: Bool { self == .hard || self == .maximal }
+
+    /// Mapea una escala 1-10 (p. ej. HKWorkoutEffortScore de Apple) al caso mas
+    /// cercano, para presentar el esfuerzo importado con el mismo lenguaje.
+    static func fromEffortScore(_ score: Double) -> WorkoutFeeling {
+        switch score {
+        case ..<3: .easy
+        case ..<5: .comfortable
+        case ..<7: .solid
+        case ..<9: .hard
+        default: .maximal
+        }
+    }
 }
 
 struct BioAgeFactor: Identifiable, Equatable {
@@ -1059,6 +1241,12 @@ final class FitnessActivityLog {
     var totalVolumeKg: Double?
     var muscleGroup: String
     var notes: String
+    /// rawValue de `WorkoutFeeling` (emoji post-entreno). Opcional: no rompe el
+    /// store existente y las sesiones viejas quedan sin feeling.
+    var workoutFeelingRaw: String?
+    /// Origen del esfuerzo: "feeling" (emoji del usuario), "hkManual",
+    /// "hkEstimated". Para etiquetar honestamente medido vs estimado.
+    var effortSource: String?
 
     init(
         startDate: Date = .now,
@@ -1069,7 +1257,9 @@ final class FitnessActivityLog {
         activeEnergy: Double? = nil,
         totalVolumeKg: Double? = nil,
         muscleGroup: String = "General",
-        notes: String = ""
+        notes: String = "",
+        workoutFeelingRaw: String? = nil,
+        effortSource: String? = nil
     ) {
         self.id = UUID()
         self.startDate = startDate
@@ -1081,6 +1271,134 @@ final class FitnessActivityLog {
         self.totalVolumeKg = totalVolumeKg
         self.muscleGroup = muscleGroup
         self.notes = notes
+        self.workoutFeelingRaw = workoutFeelingRaw
+        self.effortSource = effortSource
+    }
+
+    var workoutFeeling: WorkoutFeeling? {
+        workoutFeelingRaw.flatMap(WorkoutFeeling.init(rawValue:))
+    }
+}
+
+/// Registro subjetivo previo a entrenar. Complementa HealthKit con señales que
+/// un sensor no puede inferir de forma fiable: energía, molestias y motivación.
+/// Se conserva un registro por día; la UI actualiza el existente al repetirlo.
+@Model
+final class TrainingReadinessCheckIn {
+    var id: UUID
+    var date: Date
+    var energy: Int
+    var soreness: Int
+    var motivation: Int
+    var hasPainOrLimitation: Bool
+    var note: String
+
+    init(
+        id: UUID = UUID(),
+        date: Date = .now,
+        energy: Int,
+        soreness: Int,
+        motivation: Int,
+        hasPainOrLimitation: Bool = false,
+        note: String = ""
+    ) {
+        self.id = id
+        self.date = date
+        self.energy = min(max(energy, 1), 5)
+        self.soreness = min(max(soreness, 1), 5)
+        self.motivation = min(max(motivation, 1), 5)
+        self.hasPainOrLimitation = hasPainOrLimitation
+        self.note = note
+    }
+
+    var coachingContext: TrainingReadinessContext {
+        TrainingReadinessContext(
+            energy: energy,
+            soreness: soreness,
+            motivation: motivation,
+            hasPainOrLimitation: hasPainOrLimitation
+        )
+    }
+}
+
+/// Una serie registrada de un ejercicio de fuerza. Es lo que habilita la
+/// progresion de peso por ejercicio y el 1RM estimado: hasta ahora las series
+/// se descartaban al terminar la sesion y solo se guardaba el volumen agregado.
+///
+/// Se correlaciona con `FitnessActivityLog` por `sessionID` plano (mismo patron
+/// de la app: sin `@Relationship`, para evitar ciclos y migraciones fragiles).
+/// El e1RM se materializa al insertar, asi la grafica lo lee directo.
+@Model
+final class ExerciseSetLog {
+    var id: UUID
+    /// = id del `FitnessActivityLog` de la misma sesion.
+    var sessionID: UUID
+    var date: Date
+    /// Clave de progresion (nombre del ejercicio, ej. "Press de banca").
+    var exerciseName: String
+    var muscleGroup: String
+    var setIndex: Int
+    var weightKg: Double
+    var reps: Int
+    var completed: Bool
+    /// 1RM estimado (Epley+Brzycki promediado). `nil` si reps > 10, donde las
+    /// formulas pierden fiabilidad (±15-20%).
+    var estimatedOneRepMaxKg: Double?
+
+    init(
+        sessionID: UUID,
+        date: Date = .now,
+        exerciseName: String,
+        muscleGroup: String = "General",
+        setIndex: Int,
+        weightKg: Double,
+        reps: Int,
+        completed: Bool = true,
+        estimatedOneRepMaxKg: Double? = nil
+    ) {
+        self.id = UUID()
+        self.sessionID = sessionID
+        self.date = date
+        self.exerciseName = exerciseName
+        self.muscleGroup = muscleGroup
+        self.setIndex = setIndex
+        self.weightKg = weightKg
+        self.reps = reps
+        self.completed = completed
+        self.estimatedOneRepMaxKg = estimatedOneRepMaxKg
+    }
+}
+
+enum WorkoutTemplateKind: String, Codable, CaseIterable, Identifiable {
+    case strength
+    case cardio
+    case mobility
+    case recovery
+    case dailyChallenge
+    case performance
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .strength: "Fuerza"
+        case .cardio: "Cardio"
+        case .mobility: "Movilidad"
+        case .recovery: "Recuperación"
+        case .dailyChallenge: "Desafío diario"
+        case .performance: "Rendimiento"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .strength: "dumbbell"
+        case .cardio: "figure.run"
+        case .mobility: "figure.flexibility"
+        case .recovery: "figure.mind.and.body"
+        case .dailyChallenge: "flame.fill"
+        case .performance: "bolt.fill"
+        }
     }
 }
 
@@ -1091,13 +1409,35 @@ final class WorkoutTemplate {
     var focus: String
     var exercisesText: String
     var createdAt: Date
+    /// Permite que fuerza, cardio, movilidad y desafios compartan biblioteca y editor.
+    var kindRaw: String = WorkoutTemplateKind.strength.rawValue
+    /// Identificador estable para catalogo o agenda. Evita duplicar rutinas al regenerar el plan.
+    var sourceID: String?
+    /// Duracion planeada cuando la rutina se prescribe por tiempo.
+    var durationMinutes: Int?
 
-    init(name: String, focus: String, exercisesText: String, createdAt: Date = .now) {
+    init(
+        name: String,
+        focus: String,
+        exercisesText: String,
+        createdAt: Date = .now,
+        kind: WorkoutTemplateKind = .strength,
+        sourceID: String? = nil,
+        durationMinutes: Int? = nil
+    ) {
         self.id = UUID()
         self.name = name
         self.focus = focus
         self.exercisesText = exercisesText
         self.createdAt = createdAt
+        self.kindRaw = kind.rawValue
+        self.sourceID = sourceID
+        self.durationMinutes = durationMinutes
+    }
+
+    var kind: WorkoutTemplateKind {
+        get { WorkoutTemplateKind(rawValue: kindRaw) ?? .strength }
+        set { kindRaw = newValue.rawValue }
     }
 
     var exerciseCount: Int {
@@ -1205,6 +1545,16 @@ struct BreathPhase: Equatable {
         case hold = "Manten"
         case exhale = "Exhala"
         case holdEmpty = "Manten vacio"
+
+        var displayName: String {
+            switch self {
+            case .inhale: RecvelL10n.text("breathing.phase.inhale")
+            case .inhaleTop: RecvelL10n.text("breathing.phase.inhaleTop")
+            case .hold: RecvelL10n.text("breathing.phase.hold")
+            case .exhale: RecvelL10n.text("breathing.phase.exhale")
+            case .holdEmpty: RecvelL10n.text("breathing.phase.holdEmpty")
+            }
+        }
     }
     let kind: Kind
     let seconds: Double
@@ -1223,6 +1573,15 @@ enum BreathingTechnique: String, CaseIterable, Identifiable {
     case box = "Cuadrada"
     case relaxing = "4-7-8"
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .cyclicSigh: RecvelL10n.text("breathing.technique.cyclicSigh")
+        case .resonance: RecvelL10n.text("breathing.technique.resonance")
+        case .box: RecvelL10n.text("breathing.technique.box")
+        case .relaxing: "4-7-8"
+        }
+    }
 
     var subtitle: String {
         switch self {

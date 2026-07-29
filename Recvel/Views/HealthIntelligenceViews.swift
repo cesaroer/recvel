@@ -10,9 +10,11 @@ struct StressHomeCard: View {
     private let engine = StressEngine()
     /// Calm score presentado: 100 = relajado ("Excelente"), anillo lleno = bien.
     private var presentation: StressPresentation { engine.presentation(for: assessment) }
+    /// Promedio del dia (no "ahora"): es lo que resume la jornada.
+    private var profile: StressDayProfile { engine.dayProfile(activation: activation) }
 
     private var color: Color {
-        switch assessment.level {
+        switch level {
         case .great: ScoreKind.recovery.color
         case .normal: .cyan
         case .attention: ScoreKind.energy.color
@@ -21,14 +23,36 @@ struct StressHomeCard: View {
         }
     }
 
+    /// Banda mostrada: la del promedio del dia cuando hay horas suficientes.
+    private var level: PhysiologicalStressLevel {
+        guard profile.hasEnoughData, let average = profile.average else { return assessment.level }
+        return StressDayProfile.band(for: average)
+    }
+
+    /// Numero del anillo: promedio del dia en calma (100 = relajado).
+    private var displayValue: String {
+        guard profile.hasEnoughData, let average = profile.average else { return presentation.displayValue }
+        return String(100 - average)
+    }
+
+    private var ringProgress: Double {
+        guard profile.hasEnoughData, let average = profile.average else { return presentation.ringProgress }
+        return Double(100 - average) / 100
+    }
+
+    private var caption: String {
+        guard profile.hasEnoughData else { return assessment.summary }
+        return "Promedio de \(profile.hours) h medidas hoy. Toca para ver el valor actual y las horas."
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("STRESS", systemImage: "waveform.path.ecg")
+                Label(RecvelL10n.text("score.stress.title").uppercased(), systemImage: "waveform.path.ecg")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(color)
                 Spacer()
-                Text("PRESION FISIOLOGICA")
+                Text(profile.hasEnoughData ? "PROMEDIO DEL DIA" : "PRESION FISIOLOGICA")
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.tertiary)
             }
@@ -42,25 +66,27 @@ struct StressHomeCard: View {
                         .rotationEffect(.degrees(-90))
                         .shadow(color: color.opacity(0.35), radius: 7)
                     VStack(spacing: 0) {
-                        Text(presentation.displayValue)
+                        Text(displayValue)
                             .font(.system(size: 32, weight: .bold, design: .rounded))
                             .monospacedDigit()
-                        Text("CALMA").font(.system(size: 9, weight: .heavy)).foregroundStyle(.secondary)
+                        Text(profile.hasEnoughData ? "PROMEDIO" : "CALMA")
+                            .font(.system(size: 9, weight: .heavy))
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .frame(width: 104, height: 104)
 
                 VStack(alignment: .leading, spacing: 7) {
-                    Text(assessment.level.rawValue)
+                    Text(level.displayName)
                         .font(.title2.weight(.bold))
-                    Text(assessment.summary)
+                    Text(caption)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                     HStack(spacing: 6) {
-                        Text("Confianza \(assessment.confidence.rawValue.lowercased())")
+                        Text("\(RecvelL10n.text("common.confidence")) \(assessment.confidence.displayName.lowercased())")
                         Text("·")
-                        Text("\(assessment.baselineDays)d baseline")
+                        Text("\(assessment.baselineDays) d · \(RecvelL10n.text("common.personalBaseline"))")
                     }
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(color)
@@ -87,11 +113,11 @@ struct StressHomeCard: View {
         .liquidGlass(cornerRadius: 8, tint: color)
         .onAppear {
             withAnimation(.spring(response: 0.75, dampingFraction: 0.82)) {
-                reveal = presentation.ringProgress
+                reveal = ringProgress
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Stress fisiologico, \(assessment.level.rawValue), calma \(presentation.displayValue) de 100")
+        .accessibilityLabel("\(RecvelL10n.text("score.stress.title")), \(level.displayName), \(RecvelL10n.text("score.calm.title")) \(displayValue) de 100")
     }
 }
 
@@ -104,7 +130,7 @@ struct VO2HomeCard: View {
             icon: "lungs.fill",
             value: snapshot?.vo2Max.map { String(format: "%.1f", $0) } ?? "--",
             unit: "ml/kg/min",
-            detail: snapshot?.vo2MaxDate.map { "Apple Health · \($0.formatted(.relative(presentation: .named)))" } ?? "Sin estimacion reciente",
+            detail: snapshot?.vo2MaxDate.map { "Apple Health · \($0.formatted(.relative(presentation: .named)))" } ?? "Sin estimación reciente",
             color: .cyan
         )
     }
@@ -115,12 +141,12 @@ struct LegacyBioAgeHomeCard: View {
 
     var body: some View {
         MetricIntelligenceCard(
-            eyebrow: "BIO AGE · BETA",
+            eyebrow: "EDAD FISIOLÓGICA · BETA",
             icon: "hourglass",
             value: estimate.estimatedYears.map { String(format: "%.0f", $0) } ?? "--",
-            unit: "anos",
+            unit: "años",
             detail: estimate.deltaYears.map { delta in
-                abs(delta) < 0.5 ? "Cerca de tu edad" : String(format: "%+.0f vs cronologica", delta)
+                abs(delta) < 0.5 ? "Cerca de tu edad cronológica" : String(format: "%+.0f vs. edad cronológica", delta)
             } ?? "Requiere VO2, edad y sexo",
             color: ScoreKind.recovery.color
         )
@@ -192,6 +218,14 @@ struct StressDetailView: View {
 
     private let engine = StressEngine()
     private var presentation: StressPresentation { engine.presentation(for: assessment) }
+    /// Perfil del dia: promedio (hero) y actual (tarjeta propia).
+    private var profile: StressDayProfile { engine.dayProfile(activation: activation) }
+
+    /// Banda del promedio del dia; sin horas suficientes cae al indice del dia.
+    private var displayLevel: PhysiologicalStressLevel {
+        guard profile.hasEnoughData, let average = profile.average else { return assessment.level }
+        return StressDayProfile.band(for: average)
+    }
 
     private var todayEmotions: [EmotionLog] {
         emotionLogs
@@ -217,7 +251,7 @@ struct StressDetailView: View {
     }
 
     private var color: Color {
-        switch assessment.level {
+        switch displayLevel {
         case .great: ScoreKind.recovery.color
         case .normal: .cyan
         case .attention: ScoreKind.energy.color
@@ -227,21 +261,26 @@ struct StressDetailView: View {
     }
 
     var body: some View {
-        IntelligenceDetailScaffold(title: "Stress", symbol: "waveform.path.ecg", color: color, identifier: "detail.stress") {
+        IntelligenceDetailScaffold(title: RecvelL10n.text("score.stress.title"), symbol: "waveform.path.ecg", color: color, identifier: "detail.stress") {
             IntelligenceHero(
-                eyebrow: "PRESION FISIOLOGICA",
-                value: presentation.displayValue,
+                eyebrow: profile.hasEnoughData ? "PROMEDIO DEL DIA" : "PRESION FISIOLOGICA",
+                value: heroValue,
                 unit: "CALMA",
-                status: assessment.level.rawValue,
-                summary: assessment.summary,
+                status: displayLevel.displayName,
+                summary: heroSummary,
                 color: color,
-                progress: presentation.ringProgress
+                progress: heroProgress
             )
+
+            if profile.hasEnoughData {
+                IntelligenceSectionTitle(title: "Ahora", detail: "última hora medida")
+                nowCard
+            }
 
             stressScale
 
             if !assessment.drivers.isEmpty {
-                IntelligenceSectionTitle(title: "Que lo mueve", detail: "vs. tu baseline")
+                IntelligenceSectionTitle(title: RecvelL10n.text("stress.factors.title"), detail: RecvelL10n.text("common.vsPersonalBaseline"))
                 VStack(spacing: 0) {
                     ForEach(Array(assessment.drivers.enumerated()), id: \.element.id) { index, driver in
                         HStack(spacing: 12) {
@@ -263,7 +302,7 @@ struct StressDetailView: View {
             }
 
             if !activation.isEmpty {
-                IntelligenceSectionTitle(title: "Activacion del dia", detail: "Por FC · no es el score")
+                IntelligenceSectionTitle(title: "Activación del día", detail: "Según tu FC · no forma parte de la puntuación")
                 activationChart
             }
 
@@ -279,7 +318,7 @@ struct StressDetailView: View {
             breathingEntry
 
             IntelligenceSectionTitle(
-                title: "¿Como te sientes?",
+                title: "¿Cómo te sientes?",
                 detail: "\(todayEmotions.count)/\(CheckInLimits.maxPerDay) hoy"
             )
             emotionLogger
@@ -294,6 +333,61 @@ struct StressDetailView: View {
         }
     }
 
+    /// Numero del hero: promedio del dia en calma (100 = relajado).
+    private var heroValue: String {
+        guard profile.hasEnoughData, let average = profile.average else { return presentation.displayValue }
+        return String(100 - average)
+    }
+
+    private var heroProgress: Double {
+        guard profile.hasEnoughData, let average = profile.average else { return presentation.ringProgress }
+        return Double(100 - average) / 100
+    }
+
+    private var heroSummary: String {
+        guard profile.hasEnoughData else { return assessment.summary }
+        return "Promedio de las \(profile.hours) h medidas hoy. El valor de ahora va aparte, abajo."
+    }
+
+    /// Lectura actual, separada del promedio para no confundir "hoy" con "ahora".
+    private var nowCard: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(profile.current.map { String(100 - $0) } ?? "--")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                    Text("calma")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                Text(profile.current.map { StressDayProfile.band(for: $0).displayName } ?? "Sin lectura")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(color)
+            }
+            Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 46)
+            nowStat(profile.lowest.map { String(100 - $0) } ?? "--", "MÁS CALMADO")
+            nowStat(profile.highest.map { String(100 - $0) } ?? "--", "MENOS CALMADO")
+        }
+        .padding(16)
+        .liquidGlass(cornerRadius: 8, tint: color)
+        .accessibilityIdentifier("detail.stress.now")
+    }
+
+    private func nowStat(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.headline.weight(.bold))
+                .monospacedDigit()
+            Text(label)
+                .font(.system(size: 8, weight: .heavy))
+                .kerning(0.4)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     /// Tarjeta de acceso a la respiracion guiada, siempre visible.
     private var breathingEntry: some View {
         Button {
@@ -306,7 +400,7 @@ struct StressDetailView: View {
                     Image(systemName: "wind").font(.headline).foregroundStyle(.cyan)
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Respiracion guiada")
+                    Text("Respiración guiada")
                         .font(.subheadline.weight(.bold))
                     Text("Suspiro ciclico, resonancia, cuadrada o 4-7-8")
                         .font(.caption2)
@@ -347,32 +441,80 @@ struct StressDetailView: View {
         .liquidGlass(cornerRadius: 8)
     }
 
-    /// Barras por hora coloreadas por intensidad (patron StressWatch/Garmin).
-    /// La activacion es FC relativa al reposo y NO entra en el indice de estres.
+    /// Barras por hora, en la linea de la referencia: capsulas redondeadas con
+    /// degradado suave sobre una pista tenue, paleta fria→ambar (sin el rojo de
+    /// alarma) y la media del dia como linea punteada. La activacion es FC
+    /// relativa al reposo y NO entra en el indice de estres.
     private var activationChart: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Chart(activation) { point in
-                BarMark(
-                    x: .value("Hora", point.date, unit: .hour),
-                    y: .value("Activacion", point.value),
-                    width: .fixed(6)
-                )
-                .cornerRadius(2)
-                .foregroundStyle(barColor(engine.barIntensity(point.value)))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Por hora")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if let average = profile.average {
+                    Text("media \(100 - average) calma")
+                        .font(.system(size: 11, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
             }
-            .chartYScale(domain: 0...3)
-            .chartXAxis { AxisMarks(values: .stride(by: .hour, count: 6)) { _ in AxisValueLabel(format: .dateTime.hour()) } }
-            .chartYAxis(.hidden)
-            .frame(height: 160)
 
-            HStack(spacing: 12) {
-                barLegend(color: barColor(.low), label: "Baja")
-                barLegend(color: barColor(.medium), label: "Media")
-                barLegend(color: barColor(.high), label: "Alta")
+            Chart {
+                ForEach(activation) { point in
+                    // yStart/yEnd explicitos: con `y:` Charts APILA las dos
+                    // barras de la misma hora y la de color acababa flotando
+                    // encima de la pista.
+                    BarMark(
+                        x: .value("Hora", point.date, unit: .hour),
+                        yStart: .value("Base", 0),
+                        yEnd: .value("Escala", 2.0),
+                        width: .fixed(9)
+                    )
+                    .cornerRadius(5)
+                    .foregroundStyle(Color.white.opacity(0.05))
+
+                    BarMark(
+                        x: .value("Hora", point.date, unit: .hour),
+                        yStart: .value("Base", 0),
+                        yEnd: .value("Activacion", min(point.value, 2.0)),
+                        width: .fixed(9)
+                    )
+                    .cornerRadius(5)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [barColor(engine.barIntensity(point.value)).opacity(0.95),
+                                     barColor(engine.barIntensity(point.value)).opacity(0.45)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+
+                if let average = profile.average {
+                    RuleMark(y: .value("Media", Double(average) / 100 * 2.0))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 5]))
+                        .foregroundStyle(Color.white.opacity(0.28))
+                }
+            }
+            .chartYScale(domain: 0...2.0)
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .hour, count: 6)) { _ in
+                    AxisValueLabel(format: .dateTime.hour())
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .chartYAxis(.hidden)
+            .frame(height: 150)
+
+            HStack(spacing: 14) {
+                barLegend(color: barColor(.low), label: "Tranquilo")
+                barLegend(color: barColor(.medium), label: "Activo")
+                barLegend(color: barColor(.high), label: "Muy activo")
                 Spacer()
             }
 
-            Text("Activacion por frecuencia cardiaca. No entra en el indice de estres.")
+            Text("Activación estimada con la frecuencia cardíaca. No forma parte de la puntuación de Estrés fisiológico.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -381,18 +523,20 @@ struct StressDetailView: View {
         .accessibilityIdentifier("detail.stress.activation")
     }
 
+    /// Paleta amable: azul/verde → lavanda → ambar. Sin rojo de alarma: la
+    /// activacion alta no es un fallo, es actividad.
     private func barColor(_ intensity: StressBarIntensity) -> Color {
         switch intensity {
-        case .low: ScoreKind.recovery.color
-        case .medium: ScoreKind.energy.color
-        case .high: ScoreKind.strain.color
+        case .low: Color(red: 0.42, green: 0.82, blue: 0.78)
+        case .medium: Color(red: 0.60, green: 0.58, blue: 0.96)
+        case .high: Color(red: 0.98, green: 0.76, blue: 0.42)
         }
     }
 
     private func barLegend(color: Color, label: String) -> some View {
         HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
-            Text(label).font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+            Capsule().fill(color).frame(width: 8, height: 12)
+            Text(label).font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
         }
     }
 
@@ -568,7 +712,7 @@ struct StressDetailView: View {
                 }
             }
 
-            Text("Tu registro se queda en el dispositivo y ayuda a entender tu contexto; Recvel no infiere emociones desde tus senales. Autoconocimiento, no diagnostico.")
+            Text("Tu registro permanece en el dispositivo y aporta contexto. Recvel no infiere emociones a partir de tus señales. Es una herramienta de autoconocimiento, no de diagnóstico.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -656,14 +800,14 @@ struct StressDetailView: View {
         let detail: String
         switch assessment.level {
         case .attention, .overload:
-            title = "Haz una pausa de recuperacion"
-            detail = "Prueba 5-10 minutos de respiracion tranquila o una caminata suave. Observa varias lecturas antes de cambiar tu entrenamiento."
+            title = "Haz una pausa para recuperarte"
+            detail = "Prueba de 5 a 10 minutos de respiración tranquila o una caminata suave. Observa varias lecturas antes de modificar tu entrenamiento."
         case .great, .normal:
             title = "Protege este estado"
-            detail = "Mantener hidratacion, pausas y una carga acorde a Recovery ayuda a sostener tus senales habituales."
+            detail = "Mantén la hidratación, incluye pausas y ajusta la Carga a tu Recuperación y a cómo te sientes."
         case .unavailable:
             title = "Construyendo tu referencia"
-            detail = "Usa el Apple Watch varios dias, especialmente durante el sueno, para comparar HRV y FC en reposo contigo mismo."
+            detail = "Usa el Apple Watch durante varios días, especialmente al dormir, para comparar tu HRV y RHR con tu referencia personal."
         }
         return LabelCard(icon: "sparkles", title: title, detail: detail, color: color)
             .accessibilityIdentifier("detail.stress.advice")
@@ -672,8 +816,8 @@ struct StressDetailView: View {
     private var scienceCard: some View {
         LabelCard(
             icon: "checkmark.shield.fill",
-            title: "Lo que este score puede decir",
-            detail: "Estima presion fisiologica con HRV SDNN y FC en reposo frente a tu historial. No mide estres emocional, ansiedad ni la causa del cambio. Movimiento, ejercicio, cafeina, alcohol, enfermedad y medicamentos pueden influir.",
+            title: "Lo que indica esta puntuación",
+            detail: "Estima la presión fisiológica con HRV SDNN y RHR frente a tu historial. No mide estrés emocional, ansiedad ni la causa del cambio. El movimiento, el ejercicio, la cafeína, el alcohol, una enfermedad y algunos medicamentos pueden influir.",
             color: .cyan
         )
     }
@@ -692,19 +836,27 @@ struct VO2DetailView: View {
     }
 
     var body: some View {
-        IntelligenceDetailScaffold(title: "VO2 Max", symbol: "lungs.fill", color: .cyan, identifier: "detail.vo2") {
+        IntelligenceDetailScaffold(title: "VO₂ max", symbol: "lungs.fill", color: .cyan, identifier: "detail.vo2") {
             IntelligenceHero(
-                eyebrow: "FITNESS CARDIORRESPIRATORIO",
+                eyebrow: "CAPACIDAD CARDIORRESPIRATORIA",
                 value: snapshot?.vo2Max.map { String(format: "%.1f", $0) } ?? "--",
                 unit: "ml/kg/min",
                 status: freshness,
-                summary: "Una tendencia de fitness estimada por Apple Watch durante caminatas, carreras o senderismo al aire libre.",
+                summary: "Una estimación de tu capacidad cardiorrespiratoria basada en caminatas, carreras o senderismo al aire libre registrados por Apple Watch.",
                 color: .cyan,
                 progress: min((snapshot?.vo2Max ?? 0) / 60, 1)
             )
 
+            HStack(spacing: 6) {
+                Text("VO₂ max")
+                    .font(.subheadline.weight(.semibold))
+                ScientificInfoButton(term: .vo2Max)
+                Spacer()
+            }
+            .padding(.horizontal, 2)
+
             if !points.isEmpty {
-                IntelligenceSectionTitle(title: "Tendencia", detail: "Ultimos 30 dias")
+                IntelligenceSectionTitle(title: "Tendencia", detail: "Últimos 30 días")
                 Chart(points) { point in
                     LineMark(x: .value("Fecha", point.date), y: .value("VO2", point.value))
                         .interpolationMethod(.catmullRom)
@@ -719,8 +871,8 @@ struct VO2DetailView: View {
                 .accessibilityIdentifier("detail.vo2.trend")
             }
 
-            LabelCard(icon: "figure.run", title: "Como obtener una nueva estimacion", detail: "Haz una caminata, carrera o senderismo al aire libre de al menos 20 minutos, con buen GPS y suficiente intensidad. Apple decide cuando guarda una muestra.", color: .cyan)
-            LabelCard(icon: "info.circle.fill", title: "Estimacion, no prueba de laboratorio", detail: "Apple Watch usa una prediccion submaxima. Sirve mejor para seguir cambios durante semanas que para interpretar decimales o comparar dispositivos.", color: ScoreKind.energy.color)
+            LabelCard(icon: "figure.run", title: "Cómo obtener una nueva estimación", detail: "Haz una caminata, carrera o sesión de senderismo al aire libre de al menos 20 minutos, con buena señal GPS e intensidad suficiente. Apple determina cuándo guardar una muestra.", color: .cyan)
+            LabelCard(icon: "info.circle.fill", title: "Es una estimación, no una prueba de laboratorio", detail: "Apple Watch utiliza una predicción submáxima. Es más útil para seguir cambios durante varias semanas que para interpretar decimales o comparar dispositivos.", color: ScoreKind.energy.color)
         }
     }
 
@@ -734,11 +886,11 @@ struct LegacyBioAgeDetailView: View {
     let vo2Snapshot: DailyHealthSnapshot?
 
     var body: some View {
-        IntelligenceDetailScaffold(title: "Bio Age", symbol: "hourglass", color: ScoreKind.recovery.color, identifier: "detail.bioAge") {
+        IntelligenceDetailScaffold(title: RecvelL10n.text("bioage.title"), symbol: "hourglass", color: ScoreKind.recovery.color, identifier: "detail.bioAge") {
             IntelligenceHero(
                 eyebrow: "EDAD CARDIORRESPIRATORIA · BETA",
                 value: estimate.estimatedYears.map { String(format: "%.0f", $0) } ?? "--",
-                unit: "anos",
+                unit: "años",
                 status: deltaText,
                 summary: estimate.summary,
                 color: ScoreKind.recovery.color,
@@ -746,9 +898,9 @@ struct LegacyBioAgeDetailView: View {
             )
 
             HStack(spacing: 0) {
-                bioStat("Cronologica", estimate.chronologicalYears.map(String.init) ?? "--")
+                bioStat("Cronológica", estimate.chronologicalYears.map(String.init) ?? "--")
                 Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 50)
-                bioStat("Confianza", estimate.confidence.rawValue)
+                bioStat(RecvelL10n.text("common.confidence"), estimate.confidence.displayName)
                 Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 50)
                 bioStat("Base", vo2Snapshot?.vo2Max.map { String(format: "%.1f", $0) } ?? "--")
             }
@@ -777,13 +929,13 @@ struct LegacyBioAgeDetailView: View {
                 .accessibilityIdentifier("detail.bioAge.factors")
             }
 
-            LabelCard(icon: "function", title: "Metodo transparente", detail: "Esta beta convierte tu VO2 de Apple Health en la edad cuya mediana se aproxima mas en las referencias FRIEND por sexo. Los otros biomarcadores dan contexto, pero todavia no suman ni restan anos.", color: .cyan)
+            LabelCard(icon: "function", title: "Método transparente", detail: "Esta versión beta compara tu VO₂ máx. de Apple Health con las medianas de las referencias FRIEND por edad y sexo. Los demás biomarcadores aportan contexto, pero todavía no suman ni restan años.", color: .cyan)
             LabelCard(icon: "exclamationmark.shield.fill", title: "No es una edad biologica clinica", detail: "No es PhenoAge, un reloj epigenetico ni una prediccion de longevidad. Sin biomarcadores de laboratorio no afirmamos medir envejecimiento biologico total.", color: ScoreKind.energy.color)
         }
     }
 
     private var deltaText: String {
-        estimate.deltaYears.map { String(format: "%+.0f anos vs cronologica", $0) } ?? "Completa edad, sexo y VO2"
+        estimate.deltaYears.map { String(format: "%+.0f años vs. edad cronológica", $0) } ?? "Completa edad, sexo y VO₂ máx."
     }
 
     private var ageProgress: Double {
@@ -844,7 +996,7 @@ private struct IntelligenceDetailScaffold<Content: View>: View {
                         .headerCircleChrome(size: 36)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Atras")
+                .accessibilityLabel("Atrás")
             }
             ToolbarItem(placement: .principal) {
                 Label(title, systemImage: symbol)
@@ -984,7 +1136,7 @@ struct BreathingExerciseView: View {
     private var setup: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Respiracion guiada")
+                Text("Respiración guiada")
                     .font(.title2.weight(.bold))
                 Text("Un minuto puede bajar tu activacion. Elige como.")
                     .font(.subheadline)
@@ -1059,7 +1211,7 @@ struct BreathingExerciseView: View {
                 .foregroundStyle(technique == item ? .cyan : .secondary)
                 .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.rawValue).font(.subheadline.weight(.semibold))
+                Text(item.displayName).font(.subheadline.weight(.semibold))
                 Text(item.subtitle).font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
@@ -1116,7 +1268,7 @@ struct BreathingExerciseView: View {
 
     private var session: some View {
         VStack(spacing: 26) {
-            Text(finished ? "Listo" : phase.kind.rawValue)
+            Text(finished ? RecvelL10n.text("common.done") : phase.kind.displayName)
                 .font(.title2.weight(.bold))
                 .contentTransition(.opacity)
                 .accessibilityIdentifier("breathing.phase")
@@ -1146,7 +1298,7 @@ struct BreathingExerciseView: View {
 
             if finished {
                 VStack(spacing: 6) {
-                    Text("\(cycles) ciclos · \(technique.rawValue)")
+                    Text("\(cycles) \(RecvelL10n.text("breathing.cycles")) · \(technique.displayName)")
                         .font(.subheadline.weight(.semibold))
                     Text("Un minuto para ti. Vuelve cuando lo necesites.")
                         .font(.caption)

@@ -2531,6 +2531,72 @@ final class EngineTests: XCTestCase {
         }
     }
 
+    // MARK: - Estres: promedio del dia vs ahora
+
+    /// El hero y el entrypoint muestran el PROMEDIO del dia; el valor actual es
+    /// la ultima hora medida y vive aparte. Este test fija esa separacion.
+    func testStressDayProfileSeparatesAverageFromCurrent() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.date(from: DateComponents(year: 2026, month: 7, day: 27, hour: 12))!
+        func hour(_ h: Int, _ value: Double, dayOffset: Int = 0) -> ActivationPoint {
+            let base = calendar.date(byAdding: .day, value: dayOffset, to: today)!
+            let date = calendar.date(bySettingHour: h, minute: 0, second: 0, of: base)!
+            return ActivationPoint(date: date, value: value)
+        }
+
+        // Ayer no debe contaminar el promedio de hoy.
+        let series = [
+            hour(9, 2.0, dayOffset: -1),
+            hour(8, 0.2),
+            hour(10, 1.0),
+            hour(12, 0.6)
+        ]
+        let profile = StressEngine().dayProfile(activation: series, now: today, calendar: calendar)
+
+        XCTAssertEqual(profile.hours, 3)
+        XCTAssertTrue(profile.hasEnoughData)
+        // Promedio de 0.2, 1.0 y 0.6 = 0.6 -> indice 30.
+        XCTAssertEqual(profile.average, 30)
+        // El actual es la ULTIMA hora (12 h), no la mayor ni el promedio.
+        XCTAssertEqual(profile.current, StressEngine.pressureIndex(0.6))
+        XCTAssertEqual(profile.highest, StressEngine.pressureIndex(1.0))
+        XCTAssertEqual(profile.lowest, StressEngine.pressureIndex(0.2))
+        XCTAssertNotEqual(profile.average, profile.highest, "Promedio y pico no pueden ser lo mismo")
+    }
+
+    /// Con menos de 3 horas medidas no se afirma un promedio del dia: la UI cae
+    /// al indice del dia en vez de inventar una media con dos puntos.
+    func testStressDayProfileNeedsThreeHours() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.date(from: DateComponents(year: 2026, month: 7, day: 27, hour: 12))!
+        let series = [
+            ActivationPoint(date: calendar.date(bySettingHour: 8, minute: 0, second: 0, of: today)!, value: 0.5),
+            ActivationPoint(date: calendar.date(bySettingHour: 9, minute: 0, second: 0, of: today)!, value: 0.7)
+        ]
+        let profile = StressEngine().dayProfile(activation: series, now: today, calendar: calendar)
+        XCTAssertEqual(profile.hours, 2)
+        XCTAssertFalse(profile.hasEnoughData)
+
+        let empty = StressEngine().dayProfile(activation: [], now: today, calendar: calendar)
+        XCTAssertNil(empty.average)
+        XCTAssertNil(empty.current)
+        XCTAssertFalse(empty.hasEnoughData)
+    }
+
+    /// El indice esta acotado y las bandas usan los mismos cortes que el
+    /// indice de estres del dia (para que el color no se contradiga).
+    func testStressPressureIndexAndBands() {
+        XCTAssertEqual(StressEngine.pressureIndex(0), 0)
+        XCTAssertEqual(StressEngine.pressureIndex(2.0), 100)
+        XCTAssertEqual(StressEngine.pressureIndex(3.0), 100, "Se satura, nunca pasa de 100")
+        XCTAssertEqual(StressEngine.pressureIndex(1.0), 50)
+
+        XCTAssertEqual(StressDayProfile.band(for: 10), .great)
+        XCTAssertEqual(StressDayProfile.band(for: 45), .normal)
+        XCTAssertEqual(StressDayProfile.band(for: 70), .attention)
+        XCTAssertEqual(StressDayProfile.band(for: 90), .overload)
+    }
+
     // MARK: - Reporte de la mañana
 
     private func morningSnapshot(daysAgo: Int, hrv: Double, rhr: Double, sleepHours: Double) -> DailyHealthSnapshot {
