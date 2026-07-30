@@ -199,6 +199,25 @@ private struct BreathingRequest: Identifiable {
     var id: Bool { autoStart }
 }
 
+private extension StressEmotion {
+    /// Color propio de cada emocion, en la paleta de las tarjetas Revel (los
+    /// mismos tonos que `StressTodayCard.color(for:)`). Va de frio a calido
+    /// siguiendo la valencia, sin usar el rojo de alarma: registrar que estas
+    /// agotado no es un fallo. Vive en la capa de vista a proposito — el modelo
+    /// no decide presentacion.
+    var tint: Color {
+        switch self {
+        case .motivated: Color(red: 0.42, green: 0.82, blue: 0.78)
+        case .calm: Color(red: 0.45, green: 0.76, blue: 0.95)
+        case .content: Color(red: 0.60, green: 0.58, blue: 0.96)
+        case .anxious: Color(red: 0.98, green: 0.76, blue: 0.42)
+        case .worried: Color(red: 0.97, green: 0.68, blue: 0.50)
+        case .irritable: Color(red: 0.98, green: 0.55, blue: 0.42)
+        case .exhausted: Color(red: 0.87, green: 0.53, blue: 0.63)
+        }
+    }
+}
+
 struct StressDetailView: View {
     let assessment: StressAssessment
     let snapshot: DailyHealthSnapshot
@@ -272,14 +291,14 @@ struct StressDetailView: View {
                 progress: heroProgress
             )
 
+            stressScale
+
             // Basta una lectura para mostrar "ahora": en la madrugada el
             // promedio del dia aun no existe, pero el valor actual si.
             if profile.current != nil {
-                IntelligenceSectionTitle(title: "Ahora", detail: "última hora medida")
+                IntelligenceSectionTitle(title: "Ahora", detail: "última hora medida · 100 = calma")
                 nowCard
             }
-
-            stressScale
 
             if !assessment.drivers.isEmpty {
                 IntelligenceSectionTitle(title: RecvelL10n.text("stress.factors.title"), detail: RecvelL10n.text("common.vsPersonalBaseline"))
@@ -394,21 +413,38 @@ struct StressDetailView: View {
         .accessibilityIdentifier("detail.stress.breathingEntry")
     }
 
+    /// Escala de bandas. Resalta **`displayLevel`**, la misma banda que anuncia el
+    /// hero: con `assessment.level` la barra marcaba el indice del dia (HRV/FC vs
+    /// baseline) mientras el hero ya hablaba del promedio horario, y el usuario
+    /// veia "Atencion" arriba y "Normal" resaltado abajo. Los rotulos salen del
+    /// enum (`displayName`, localizado) para no divergir del texto del hero.
     private var stressScale: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        let bands = PhysiologicalStressLevel.allCases.filter { $0 != .unavailable }
+        return VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 3) {
-                ForEach(PhysiologicalStressLevel.allCases.filter { $0 != .unavailable }, id: \.self) { level in
+                ForEach(bands, id: \.self) { level in
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(scaleColor(level))
-                        .frame(height: assessment.level == level ? 12 : 7)
+                        .fill(scaleColor(level).opacity(displayLevel == level ? 1 : 0.32))
+                        .frame(height: displayLevel == level ? 12 : 7)
                 }
             }
-            HStack { Text("Excelente"); Spacer(); Text("Normal"); Spacer(); Text("Atencion"); Spacer(); Text("Sobrecarga") }
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                ForEach(Array(bands.enumerated()), id: \.element) { index, level in
+                    Text(level.displayName)
+                        .foregroundStyle(displayLevel == level ? scaleColor(level) : .secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    if index < bands.count - 1 { Spacer(minLength: 0) }
+                }
+            }
+            .font(.system(size: 9, weight: .semibold))
         }
         .padding(16)
         .liquidGlass(cornerRadius: 8)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: displayLevel)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Escala de bandas, actual \(displayLevel.displayName)")
+        .accessibilityIdentifier("detail.stress.scale")
     }
 
     /// Barras por hora, en la linea de la referencia: capsulas redondeadas con
@@ -568,156 +604,361 @@ struct StressDetailView: View {
 
     // MARK: Log de emociones (multi-check-in, tope 6/dia)
 
+    /// Estilo Revel: superficie plana de `.revelCard()` (la misma que "Calma
+    /// ahora"), identidad de color **por emocion** en vez de cian uniforme,
+    /// chips circulares y transiciones con muelle. Antes era una lista gris
+    /// dentro de glass con tinte: no se distinguia de las tarjetas de datos y
+    /// nada indicaba el tono del dia sin leer registro a registro.
     private var emotionLogger: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if !todayEmotions.isEmpty {
-                emotionTodayChart
+        VStack(alignment: .leading, spacing: 15) {
+            emotionDayHeader
 
-                ForEach(todayEmotions.reversed(), id: \.id) { log in
-                    HStack(spacing: 9) {
-                        Text(log.stressEmotion?.emoji ?? "·")
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(log.stressEmotion?.label ?? log.emotion)
-                                .font(.caption.weight(.semibold))
-                            if !log.note.isEmpty {
-                                Text(log.note).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                            }
-                        }
-                        Spacer()
-                        Text(log.date.formatted(date: .omitted, time: .shortened))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .monospacedDigit()
-                    }
-                    .accessibilityIdentifier("detail.stress.emotion.entry")
-                }
+            if !todayEmotions.isEmpty {
+                emotionDayStrip
+                emotionTodayChart
+                emotionTodayList
             }
 
             if showEmotionForm && canAddEmotion {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                    ForEach(StressEmotion.allCases) { emotion in
-                        Button {
-                            selectedEmotion = selectedEmotion == emotion ? nil : emotion
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(emotion.emoji).font(.title3)
-                                Text(emotion.label)
-                                    .font(.system(size: 9, weight: .semibold))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 9)
-                            .background(
-                                selectedEmotion == emotion ? Color.cyan.opacity(0.18) : Color.white.opacity(0.05),
-                                in: RoundedRectangle(cornerRadius: 11)
-                            )
-                            .overlay {
-                                if selectedEmotion == emotion {
-                                    RoundedRectangle(cornerRadius: 11).strokeBorder(Color.cyan.opacity(0.5), lineWidth: 1)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(emotion.label)
-                        .accessibilityIdentifier("detail.stress.emotion.\(emotion.rawValue)")
-                    }
-                }
-
-                if selectedEmotion != nil {
-                    TextField("Nota (opcional): ¿que esta pasando?", text: $emotionNote, axis: .vertical)
-                        .lineLimit(1...3)
-                        .font(.subheadline)
-                        .padding(11)
-                        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
-                        .accessibilityIdentifier("detail.stress.emotion.note")
-
-                    Button {
-                        saveEmotion()
-                    } label: {
-                        Label("Guardar registro", systemImage: "checkmark.circle.fill")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity, minHeight: 42)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.cyan)
-                    .accessibilityIdentifier("detail.stress.emotion.save")
-                }
+                emotionPicker
             } else if canAddEmotion {
-                Button {
-                    showEmotionForm = true
-                    selectedEmotion = nil
-                    emotionNote = ""
-                } label: {
-                    Label("Anadir registro", systemImage: "plus.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity, minHeight: 42)
-                }
-                .buttonStyle(.bordered)
-                .tint(.cyan)
-                .accessibilityIdentifier("detail.stress.emotion.add")
+                emotionAddButton
             } else {
-                Text("Llegaste al tope de \(CheckInLimits.maxPerDay) registros hoy. Manana puedes seguir.")
-                    .font(.caption)
+                Text("Llegaste al tope de \(CheckInLimits.maxPerDay) registros hoy. Mañana puedes seguir.")
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 11)
+                    .padding(.horizontal, 13)
+                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .accessibilityIdentifier("detail.stress.emotion.cap")
             }
 
-            let recent = emotionLogs.filter { !Calendar.current.isDateInToday($0.date) }.prefix(5)
-            if !recent.isEmpty {
-                Divider().overlay(Color.white.opacity(0.08))
-                ForEach(Array(recent), id: \.id) { log in
-                    HStack(spacing: 9) {
-                        Text(log.stressEmotion?.emoji ?? "·")
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(log.stressEmotion?.label ?? log.emotion).font(.caption.weight(.semibold))
-                            if !log.note.isEmpty { Text(log.note).font(.caption2).foregroundStyle(.secondary).lineLimit(1) }
-                        }
-                        Spacer()
-                        Text(log.date.formatted(.relative(presentation: .named)))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            }
+            emotionRecentDays
 
             Text("Tu registro permanece en el dispositivo y aporta contexto. Recvel no infiere emociones a partir de tus señales. Es una herramienta de autoconocimiento, no de diagnóstico.")
-                .font(.caption2)
+                .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
         }
-        .padding(15)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .liquidGlass(cornerRadius: 8, tint: .cyan)
+        .revelCard()
+        .animation(.spring(response: 0.42, dampingFraction: 0.82), value: showEmotionForm)
+        .animation(.spring(response: 0.42, dampingFraction: 0.82), value: selectedEmotion)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: todayEmotions.count)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("detail.stress.emotion")
     }
 
-    private var emotionTodayChart: some View {
-        let points = todayEmotions.compactMap { log -> (date: Date, valence: Double)? in
-            guard let emotion = log.stressEmotion else { return nil }
-            return (log.date, emotion.valence)
-        }
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("Emociones de hoy")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+    /// Promedio de valencia del dia (-2...+2). Es lo que da color y titular a la
+    /// tarjeta: el tono del dia se ve antes de leer ningun registro.
+    private var emotionDayAverage: Double? {
+        StressEngine.averageEmotionValence(todayEmotions.compactMap(\.stressEmotion))
+    }
 
-            if points.count >= 1 {
+    /// Titular del tono del dia. En vacio NO repite "¿Como te sientes?" (ya lo
+    /// dice el titulo de seccion justo encima): anuncia lo que la tarjeta dara.
+    private var emotionMoodTitle: String {
+        guard let average = emotionDayAverage else { return "Tu ánimo de hoy" }
+        if average >= 1.25 { return "Día muy positivo" }
+        if average >= 0.35 { return "Día en buen tono" }
+        if average > -0.35 { return "Día neutro" }
+        if average > -1.25 { return "Día algo tenso" }
+        return "Día tenso"
+    }
+
+    private var emotionMoodEmoji: String {
+        guard let average = emotionDayAverage else { return "🫧" }
+        if average >= 1.25 { return "💪" }
+        if average >= 0.35 { return "🙂" }
+        if average > -0.35 { return "😐" }
+        if average > -1.25 { return "😟" }
+        return "😩"
+    }
+
+    private var emotionMoodColor: Color {
+        guard let average = emotionDayAverage else { return .cyan }
+        if average >= 0.35 { return StressEmotion.calm.tint }
+        if average > -0.35 { return StressEmotion.content.tint }
+        if average > -1.25 { return StressEmotion.anxious.tint }
+        return StressEmotion.irritable.tint
+    }
+
+    /// Cabecera: tono del dia + progreso de check-ins como puntos.
+    private var emotionDayHeader: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(emotionMoodColor.opacity(0.16))
+                    .frame(width: 46, height: 46)
+                Text(emotionMoodEmoji).font(.system(size: 22))
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(emotionMoodTitle)
+                    .font(.system(size: 19, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(todayEmotions.isEmpty
+                     ? "Aún no registras cómo te sientes hoy"
+                     : "\(todayEmotions.count) de \(CheckInLimits.maxPerDay) registros hoy")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 4)
+
+            VStack(spacing: 4) {
+                ForEach(0..<2, id: \.self) { row in
+                    HStack(spacing: 4) {
+                        ForEach(0..<3, id: \.self) { column in
+                            let index = row * 3 + column
+                            Circle()
+                                .fill(index < todayEmotions.count ? emotionMoodColor : Color.white.opacity(0.12))
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                }
+            }
+            .accessibilityHidden(true)
+        }
+    }
+
+    /// Tira del dia: una capsula por registro, en su color. Los huecos restantes
+    /// quedan apagados, asi el tope de 6 se entiende sin leer el contador.
+    private var emotionDayStrip: some View {
+        let remaining = max(0, CheckInLimits.maxPerDay - todayEmotions.count)
+        return HStack(spacing: 5) {
+            ForEach(todayEmotions, id: \.id) { log in
+                let tint = log.stressEmotion?.tint ?? .gray
+                Capsule()
+                    .fill(LinearGradient(colors: [tint, tint.opacity(0.55)], startPoint: .top, endPoint: .bottom))
+                    .frame(height: 8)
+            }
+            ForEach(0..<remaining, id: \.self) { _ in
+                Capsule()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(height: 8)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var emotionTodayList: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(todayEmotions.reversed().enumerated()), id: \.element.id) { index, log in
+                let tint = log.stressEmotion?.tint ?? .gray
+                HStack(spacing: 11) {
+                    ZStack {
+                        Circle().fill(tint.opacity(0.16)).frame(width: 34, height: 34)
+                        Text(log.stressEmotion?.emoji ?? "·").font(.system(size: 16))
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(log.stressEmotion?.label ?? log.emotion)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(tint)
+                        if !log.note.isEmpty {
+                            Text(log.note)
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    Text(log.date.formatted(date: .omitted, time: .shortened))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                        .monospacedDigit()
+                }
+                .padding(.vertical, 9)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("detail.stress.emotion.entry")
+
+                if index < todayEmotions.count - 1 {
+                    Divider().overlay(Color.white.opacity(0.07))
+                }
+            }
+        }
+    }
+
+    /// Selector: chips circulares con el color de cada emocion. El anillo y el
+    /// leve escalado marcan la seleccion sin depender solo del relleno.
+    private var emotionPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 9), count: 4), spacing: 11) {
+                ForEach(StressEmotion.allCases) { emotion in
+                    emotionChip(emotion)
+                }
+            }
+
+            if let selected = selectedEmotion {
+                TextField("Nota (opcional): ¿qué está pasando?", text: $emotionNote, axis: .vertical)
+                    .lineLimit(1...3)
+                    .font(.system(size: 15))
+                    .padding(12)
+                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(selected.tint.opacity(0.35), lineWidth: 1)
+                    )
+                    .accessibilityIdentifier("detail.stress.emotion.note")
+
+                HStack(spacing: 9) {
+                    Button {
+                        Haptics.soft()
+                        showEmotionForm = false
+                        selectedEmotion = nil
+                        emotionNote = ""
+                    } label: {
+                        Text("Cancelar")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("detail.stress.emotion.cancel")
+
+                    Button {
+                        Haptics.success()
+                        saveEmotion()
+                    } label: {
+                        Label("Guardar", systemImage: "checkmark.circle.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(
+                                LinearGradient(
+                                    colors: [selected.tint, selected.tint.opacity(0.78)],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                ),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("detail.stress.emotion.save")
+                }
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+    }
+
+    private func emotionChip(_ emotion: StressEmotion) -> some View {
+        let isSelected = selectedEmotion == emotion
+        return Button {
+            Haptics.selection()
+            selectedEmotion = isSelected ? nil : emotion
+        } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? emotion.tint.opacity(0.22) : Color.white.opacity(0.05))
+                    Circle()
+                        .strokeBorder(emotion.tint.opacity(isSelected ? 0.9 : 0), lineWidth: 1.5)
+                    Text(emotion.emoji).font(.system(size: 21))
+                }
+                .frame(width: 50, height: 50)
+                .shadow(color: emotion.tint.opacity(isSelected ? 0.35 : 0), radius: 8)
+
+                Text(emotion.label)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(isSelected ? emotion.tint : .secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+            .scaleEffect(isSelected ? 1.06 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(emotion.label)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityIdentifier("detail.stress.emotion.\(emotion.rawValue)")
+    }
+
+    private var emotionAddButton: some View {
+        Button {
+            Haptics.add()
+            showEmotionForm = true
+            selectedEmotion = nil
+            emotionNote = ""
+        } label: {
+            Label(todayEmotions.isEmpty ? "Registrar cómo me siento" : "Añadir otro registro",
+                  systemImage: "plus.circle.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(emotionMoodColor)
+                .frame(maxWidth: .infinity, minHeight: 46)
+                .background(emotionMoodColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("detail.stress.emotion.add")
+    }
+
+    @ViewBuilder
+    private var emotionRecentDays: some View {
+        let recent = emotionLogs.filter { !Calendar.current.isDateInToday($0.date) }.prefix(5)
+        if !recent.isEmpty {
+            VStack(alignment: .leading, spacing: 9) {
+                Text("DÍAS ANTERIORES")
+                    .font(.system(size: 9, weight: .heavy))
+                    .foregroundStyle(.tertiary)
+
+                ForEach(Array(recent), id: \.id) { log in
+                    let tint = log.stressEmotion?.tint ?? .gray
+                    HStack(spacing: 9) {
+                        Circle().fill(tint).frame(width: 6, height: 6)
+                        Text(log.stressEmotion?.emoji ?? "·").font(.system(size: 13))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(log.stressEmotion?.label ?? log.emotion)
+                                .font(.system(size: 13, weight: .semibold))
+                            if !log.note.isEmpty {
+                                Text(log.note).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: 4)
+                        Text(log.date.formatted(.relative(presentation: .named)))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    /// Curva del dia. Cada punto lleva **el color de su emocion** (antes todo era
+    /// cian) y la linea tiende al tono del dia, asi la forma y el color cuentan
+    /// lo mismo. El pie deja de mostrar la valencia cruda ("-1.3", que no
+    /// significa nada para quien lee) y la traduce a palabras.
+    private var emotionTodayChart: some View {
+        let points = todayEmotions.compactMap { log -> (date: Date, emotion: StressEmotion)? in
+            guard let emotion = log.stressEmotion else { return nil }
+            return (log.date, emotion)
+        }
+        // Con un solo registro la curva no dice nada y deja 116 pt de lienzo
+        // vacio con un punto suelto: la tira de color y la lista ya lo cuentan.
+        return VStack(alignment: .leading, spacing: 8) {
+            if points.count >= 2 {
                 Chart {
+                    RuleMark(y: .value("Neutro", 0.0))
+                        .foregroundStyle(Color.white.opacity(0.12))
+                        .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [3]))
+
                     ForEach(Array(points.enumerated()), id: \.offset) { _, point in
                         LineMark(
                             x: .value("Hora", point.date),
-                            y: .value("Valencia", point.valence)
+                            y: .value("Valencia", point.emotion.valence)
                         )
-                        .foregroundStyle(Color.cyan.opacity(0.7))
+                        .foregroundStyle(emotionMoodColor.opacity(0.55))
                         .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
 
                         PointMark(
                             x: .value("Hora", point.date),
-                            y: .value("Valencia", point.valence)
+                            y: .value("Valencia", point.emotion.valence)
                         )
-                        .foregroundStyle(Color.cyan)
-                        .symbolSize(48)
+                        .foregroundStyle(point.emotion.tint)
+                        .symbolSize(56)
                     }
                 }
                 .chartYScale(domain: -2.5...2.5)
@@ -727,25 +968,30 @@ struct StressDetailView: View {
                             if let v = value.as(Double.self) {
                                 Text(v > 0 ? "+" : v == 0 ? "0" : "−")
                                     .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(Color.white.opacity(0.35))
                             }
                         }
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3]))
+                            .foregroundStyle(Color.white.opacity(0.07))
                     }
                 }
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        // Color explicito: con `.tertiary` dentro de un Chart la
+                        // etiqueta hereda el tinte de la serie y salia verde.
                         AxisValueLabel(format: .dateTime.hour().minute())
+                            .foregroundStyle(Color.white.opacity(0.35))
                     }
                 }
-                .frame(height: 120)
+                .frame(height: 116)
                 .accessibilityIdentifier("detail.stress.emotion.chart")
 
-                if let avg = StressEngine.averageEmotionValence(todayEmotions.compactMap(\.stressEmotion)) {
-                    Text(String(format: "Promedio del dia: %.1f", avg))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .accessibilityIdentifier("detail.stress.emotion.average")
-                }
+                // El tono del dia ya lo dice la cabecera; aqui conviene explicar
+                // como se lee la grafica, que es lo que no es evidente.
+                Text("Cada punto es un registro · arriba, más positivo")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityIdentifier("detail.stress.emotion.average")
             }
         }
     }
@@ -764,10 +1010,13 @@ struct StressDetailView: View {
         showEmotionForm = false
     }
 
+    /// Consejo segun **`displayLevel`**, la banda que anuncia el hero. Con
+    /// `assessment.level` la pantalla decia "Atencion" arriba y recomendaba
+    /// "Protege este estado" (la rama de calma) unas tarjetas mas abajo.
     private var adviceCard: some View {
         let title: String
         let detail: String
-        switch assessment.level {
+        switch displayLevel {
         case .attention, .overload:
             title = "Haz una pausa para recuperarte"
             detail = "Prueba de 5 a 10 minutos de respiración tranquila o una caminata suave. Observa varias lecturas antes de modificar tu entrenamiento."
@@ -1369,14 +1618,21 @@ private extension View {
     }
 }
 
-/// Tarjeta "Estres ahora": replica la de la referencia (punto + titulo + hora,
+/// Tarjeta "Calma ahora": replica la de la referencia (punto + titulo + hora,
 /// tres cifras con divisores, dial de ticks con el valor actual dentro).
 ///
-/// Habla en **indice de estres** (0 = sin presion, 100 = presion maxima), no en
-/// calma: es la lectura del momento, no el resumen del dia que va en el hero.
+/// Habla en **calm score** (100 = relajado), igual que el hero, el anillo de Home
+/// y Recovery/Sleep: lleno = bueno (regla de presentacion de README_StressAndBio
+/// §4.5). Antes mostraba el indice de estres crudo y la misma jornada aparecia
+/// dos veces con numeros distintos —"promedio 62" aqui y "38" en el hero—, que se
+/// leia como un fallo de sincronizacion. Las **bandas** se siguen calculando
+/// sobre el indice interno (`StressDayProfile.band(for:)`), que no cambio.
 private struct StressTodayCard: View {
     let profile: StressDayProfile
     let updatedAt: Date?
+
+    /// Indice de estres → calma. Unica conversion de la tarjeta.
+    private static func calm(_ index: Int?) -> Int? { index.map { 100 - $0 } }
 
     private var currentBand: PhysiologicalStressLevel {
         profile.current.map(StressDayProfile.band(for:)) ?? .unavailable
@@ -1402,7 +1658,7 @@ private struct StressTodayCard: View {
                         Circle()
                             .fill(bandColor)
                             .frame(width: 9, height: 9)
-                        Text("Estrés ahora")
+                        Text("Calma ahora")
                             .font(.system(size: 19, weight: .semibold))
                     }
                     Text(updatedAt.map { "Actualizado a las \($0.formatted(date: .omitted, time: .shortened))" }
@@ -1411,12 +1667,14 @@ private struct StressTodayCard: View {
                         .foregroundStyle(.secondary)
                 }
 
+                // En calma se invierten: el minimo del indice es el momento MAS
+                // calmado del dia. El promedio es el mismo numero que el hero.
                 HStack(spacing: 0) {
-                    stat(profile.highest, "Más alto", tint: Color(red: 0.98, green: 0.55, blue: 0.42))
+                    stat(Self.calm(profile.lowest), "Más calmado", tint: Color(red: 0.42, green: 0.82, blue: 0.78))
                     divider
-                    stat(profile.lowest, "Más bajo", tint: Color(red: 0.42, green: 0.82, blue: 0.78))
+                    stat(Self.calm(profile.highest), "Menos calmado", tint: Color(red: 0.98, green: 0.55, blue: 0.42))
                     divider
-                    stat(profile.hasEnoughData ? profile.average : nil, "Promedio", tint: .white)
+                    stat(profile.hasEnoughData ? Self.calm(profile.average) : nil, "Promedio", tint: .white)
                 }
 
                 if !profile.hasEnoughData {
@@ -1428,7 +1686,7 @@ private struct StressTodayCard: View {
             }
 
             StressTickGauge(
-                value: profile.current,
+                value: Self.calm(profile.current),
                 band: currentBand.displayName,
                 color: bandColor
             )
@@ -1437,7 +1695,7 @@ private struct StressTodayCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .revelCard()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Estrés ahora \(profile.current.map(String.init) ?? "sin lectura"), \(currentBand.displayName)")
+        .accessibilityLabel("Calma ahora \(Self.calm(profile.current).map(String.init) ?? "sin lectura") de 100, \(currentBand.displayName)")
         .accessibilityIdentifier("detail.stress.now")
     }
 
@@ -1462,9 +1720,12 @@ private struct StressTodayCard: View {
     }
 }
 
-/// Dial de ticks radiales de la referencia: la escala completa va de frio a
-/// calido y solo se enciende hasta el valor; dentro, un disco elevado con la
+/// Dial de ticks radiales de la referencia: la escala completa va de calido a
+/// frio y solo se enciende hasta el valor; dentro, un disco elevado con la
 /// cifra y la banda.
+///
+/// `value` es **calma** (100 = relajado), asi que el dial llena hacia el verde:
+/// lleno = bueno, igual que los anillos de Recovery y Sleep.
 private struct StressTickGauge: View {
     let value: Int?
     let band: String
@@ -1488,9 +1749,10 @@ private struct StressTickGauge: View {
                     var path = Path()
                     path.move(to: CGPoint(x: center.x + dx * (radius - length), y: center.y + dy * (radius - length)))
                     path.addLine(to: CGPoint(x: center.x + dx * radius, y: center.y + dy * radius))
-                    // Escala frio → calido; apagada por encima del valor.
+                    // Escala calido → frio (0 calma = rojo, 100 = verde);
+                    // apagada por encima del valor.
                     let scale = Color(
-                        hue: 0.42 - 0.42 * fraction,
+                        hue: 0.42 * fraction,
                         saturation: 0.62,
                         brightness: 0.95
                     )
@@ -1518,6 +1780,11 @@ private struct StressTickGauge: View {
                     .font(.system(size: 28, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(.white.opacity(0.92))
+                // La unidad va explicita: sin ella la cifra se podia leer como
+                // indice de estres y volvia la ambiguedad de escala.
+                Text("CALMA")
+                    .font(.system(size: 8, weight: .heavy))
+                    .foregroundStyle(.tertiary)
                 Text(band)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(color)

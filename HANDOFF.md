@@ -100,12 +100,45 @@ como si fuera "ahora". Ahora:
   punteada y leyenda Tranquilo/Activo/Muy activo.
   **Ojo:** las dos barras de la misma hora usan `yStart:/yEnd:`; con `y:` Charts
   las APILA y la barra de color queda flotando sobre la pista.
-- **Tarjeta "Estres ahora"** (`StressTodayCard`, id `detail.stress.now`): copia la
+- **Hero de Recuperacion: rafaga radial** (`RadialBurstDial` en `DetailViews.swift`).
+  `DetailHero` lo comparten Sueno, Recuperacion, Carga y Energia, asi que el
+  indicador es un parametro `dial: DetailHeroDial` con default `.ring`: **solo
+  Recuperacion pasa `.burst`** y las otras tres siguen con el anillo sin tocar su
+  call site. Gramatica de la referencia: **barras gruesas separadas** (el dato,
+  encendidas hasta el score y muñones cortos y tenues despues) alternadas con
+  **agujas finas y largas** que son marco fijo de las 360 vueltas.
+  **Tiene que leerse como progreso, no como un sol, y lo que lo decide es la
+  densidad, no la longitud.** Dos intentos fallidos dibujaron 64 y 72 rayos: a
+  ese paso angular las lineas se tocan y se funden en una masa luminosa —sale
+  corona solar por mucho que se igualen las longitudes—. Con `bars = 24` (paso de
+  15°) hay hueco negro entre barra y barra, se cuentan de una en una y el relleno
+  se lee. **Si alguien sube ese numero, vuelve el sol.** La ondulacion de
+  longitud es un seno determinista, no `random()`: hay un redibujo por frame
+  durante la animacion de entrada y con aleatoriedad la corona hierve. El hueco
+  central (`RadialBurstDial.hubRatio`) lo reusa el disco del hero para que la
+  cifra nunca choque con las barras.
+- **Tarjeta "Calma ahora"** (`StressTodayCard`, id `detail.stress.now`): copia la
   gramatica de "Today's stress" de la referencia — punto de estado + titulo +
-  hora, tres cifras (mas alto / mas bajo / promedio) con divisores finos, y dial
-  de ticks a la derecha con el valor actual y su banda dentro. Habla en **indice
-  de estres** (0 = sin presion, 100 = maxima), no en calma: es la lectura del
-  momento, no el resumen del dia.
+  hora, tres cifras (mas calmado / menos calmado / promedio) con divisores finos,
+  y dial de ticks a la derecha con el valor actual y su banda dentro.
+  Habla en **calm score** (100 = relajado), igual que el hero, el anillo de Home
+  y Recovery/Sleep: lleno = bueno. **Ojo:** nacio hablando en indice de estres
+  crudo y eso ponia la misma jornada dos veces con numeros distintos ("promedio
+  62" en la tarjeta, "38" en el hero), que se leia como datos sin sincronizar.
+  Las **bandas** siguen calculandose sobre el indice interno
+  (`StressDayProfile.band(for:)`); solo cambia lo que se muestra. En calma los
+  extremos se invierten: el minimo del indice es el momento MAS calmado.
+- **La escala de bandas resalta `displayLevel`**, no `assessment.level`: el hero
+  anuncia la banda del promedio horario y con `assessment.level` la barra marcaba
+  el indice del dia (HRV/FC vs baseline), asi que decia "Normal" mientras el hero
+  decia "Atencion". Los rotulos salen de `PhysiologicalStressLevel.displayName`
+  (localizado) en vez de strings sueltos, que era la otra via de divergencia.
+  Va **encima** de la tarjeta de ahora (id `detail.stress.scale`).
+- Por lo mismo, `adviceCard` tambien conmuta sobre `displayLevel`: con
+  `assessment.level` la pantalla decia "Atencion" en el hero y recomendaba
+  "Protege este estado" (la rama de calma) unas tarjetas mas abajo. **Regla:
+  todo lo que hable de la banda del dia en `StressDetailView` usa
+  `displayLevel`**; `assessment.level` queda solo para el indice interno.
 - **Estilo de tarjeta de la referencia** (`RevelCardStyle` / `.revelCard()`):
   relleno plano un punto mas claro que el fondo, radio 28 y **sin borde ni
   degradado ni tinte**. Es lo que diferencia sus tarjetas de nuestro glass.
