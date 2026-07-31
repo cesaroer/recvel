@@ -32,7 +32,7 @@ struct JournalView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         header
                         weekStrip
@@ -47,7 +47,10 @@ struct JournalView: View {
                 }
                 .scrollIndicators(.hidden)
                 .trackTabBarScroll()
-                .refreshable { await reloadJournalHealth() }
+                // Sin `.refreshable`: desplazaba todo el contenido en bloque y
+                // se leia como que la tab entera era arrastrable. Solo Home lo
+                // conserva. `reloadJournalHealth()` se sigue llamando en
+                // `.task` y al volver a la tab.
             }
             .toolbar(.hidden, for: .navigationBar)
             .task {
@@ -84,7 +87,7 @@ struct JournalView: View {
                     presentedSheet = .calendar
                 } label: {
                     HStack(spacing: 6) {
-                        Text("Journal")
+                        Text("tab.journal")
                             .font(.system(size: 31, weight: .bold))
                         Image(systemName: "chevron.down")
                             .font(.caption.weight(.bold))
@@ -101,7 +104,7 @@ struct JournalView: View {
                 presentedSheet = .insights
                 Haptics.soft()
             } label: {
-                Label("Insights", systemImage: "sparkles")
+                Label("common.insights", systemImage: "sparkles")
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 12)
                     .frame(height: 38)
@@ -112,13 +115,13 @@ struct JournalView: View {
 
             Menu {
                 Button { presentedSheet = .customize } label: {
-                    Label("Personalizar Journal", systemImage: "slider.horizontal.3")
+                    Label("journal.customize", systemImage: "slider.horizontal.3")
                 }
                 Button { presentedSheet = .defaults } label: {
-                    Label("Entradas predeterminadas", systemImage: "checkmark.circle")
+                    Label("journal.defaults", systemImage: "checkmark.circle")
                 }
                 Button { presentedSheet = .pinned } label: {
-                    Label("Tags fijados", systemImage: "pin.fill")
+                    Label("journal.pinned", systemImage: "pin.fill")
                 }
                 Button { presentedSheet = .reminders } label: {
                     Label("Recordatorios", systemImage: "bell.fill")
@@ -289,13 +292,13 @@ struct JournalView: View {
             if health.permissionState == .unavailable {
                 automaticEmptyState(
                     title: "HealthKit no disponible",
-                    detail: "Este dispositivo no puede leer senales automaticas.",
+                    detail: "Este dispositivo no puede leer señales automáticas.",
                     showAuthorize: false
                 )
             } else if needsHealthAuthorization {
                 automaticEmptyState(
                     title: "Conecta Apple Health",
-                    detail: "Autoriza Apple Health para ver pasos, sueno, workouts y mas.",
+                    detail: "Autoriza Apple Health para consultar pasos, sueño, entrenamientos y otras señales.",
                     showAuthorize: true
                 )
             } else if health.isLoading && health.dataMode == .empty {
@@ -307,13 +310,13 @@ struct JournalView: View {
             } else if tags.isEmpty {
                 automaticEmptyState(
                     title: "Sin tags automaticos",
-                    detail: "Activa entradas automaticas en Personalizar Journal.",
+                    detail: RecvelL10n.text("journal.automatic.empty"),
                     showAuthorize: false
                 )
             } else if health.dataMode == .empty {
                 automaticEmptyState(
                     title: "Sin datos automaticos",
-                    detail: "Apple Health esta conectado, pero no hay senales para este dia todavia.",
+                    detail: "Apple Health está conectado, pero todavía no hay señales disponibles para este día.",
                     showAuthorize: false
                 )
             } else if automaticSignals.isEmpty && !JournalActivityEngine.hasAutomaticHealthData(selectedSnapshot) {
@@ -353,7 +356,7 @@ struct JournalView: View {
             return lhs.title < rhs.title
         }
         return VStack(alignment: .leading, spacing: 6) {
-            Text(period.rawValue.uppercased())
+            Text(period.displayName.uppercased())
                 .font(.system(size: 9, weight: .heavy))
                 .tracking(1)
                 .foregroundStyle(.tertiary)
@@ -406,7 +409,7 @@ struct JournalView: View {
                     Text(tag.title).font(.subheadline.weight(.medium))
                     if tag.isPinned { Image(systemName: "pin.fill").font(.system(size: 8)).foregroundStyle(.tertiary) }
                 }
-                Text(signal.map { "\($0.displayValue) · \($0.source)" } ?? tag.definition.subtitle)
+                Text(signal.map { "\($0.displayValue) · \($0.source)" } ?? tag.definition.localizedSubtitle)
                     .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer(minLength: 4)
@@ -463,7 +466,7 @@ struct JournalView: View {
     }
 
     private var methodology: some View {
-        Text("Los patrones comparan dias con Si y No. Son asociaciones locales, no prueban causa. Recvel espera al menos 5 registros de cada grupo antes de mostrar una diferencia.")
+        Text("Los patrones comparan días con respuestas Sí y No. Son asociaciones locales y no demuestran causalidad. Recvel necesita al menos 5 registros de cada grupo antes de mostrar una diferencia.")
             .font(.caption2).foregroundStyle(.tertiary).padding(.horizontal, 3)
     }
 
@@ -588,7 +591,9 @@ struct JournalView: View {
     private var insightPreviewCaption: String {
         let ready = JournalProImpactEngine.impacts(tags: enabledTags, logs: logs, scores: scores, metric: .recovery)
             .filter { $0.association.isReady }
-        return ready.isEmpty ? "Sigue registrando para comparar Recovery y Sleep" : "\(ready.count) asociaciones listas para revisar"
+        return ready.isEmpty
+            ? RecvelL10n.text("journal.insights.keepLogging")
+            : RecvelL10n.text("journal.insights.ready", values: ["count": "\(ready.count)"])
     }
 
     private func completionState(on day: Date) -> JournalCompletionState {
@@ -772,7 +777,7 @@ private struct JournalMonthCalendarView: View {
                 }
                 .padding(16)
             }
-            .navigationTitle("Calendario del Journal")
+            .navigationTitle("journal.calendar")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } } }
             .liquidGlassNavigationBar()
@@ -874,7 +879,7 @@ private struct JournalCustomizeView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         if mode == .all {
                             categoryPicker
@@ -900,7 +905,11 @@ private struct JournalCustomizeView: View {
     }
 
     private var title: String {
-        switch mode { case .all: "Personalizar Journal"; case .defaults: "Entradas predeterminadas"; case .pinned: "Tags fijados" }
+        switch mode {
+        case .all: RecvelL10n.text("journal.customize")
+        case .defaults: RecvelL10n.text("journal.defaults")
+        case .pinned: RecvelL10n.text("journal.pinned")
+        }
     }
 
     private var categoryPicker: some View {
@@ -921,7 +930,7 @@ private struct JournalCustomizeView: View {
     private var filteredDefinitions: [JournalTagDefinition] {
         JournalCatalog.builtIns.filter { definition in
             let categoryMatch = mode == .all ? definition.category == category : true
-            let searchMatch = search.isEmpty || definition.title.localizedCaseInsensitiveContains(search)
+            let searchMatch = search.isEmpty || definition.localizedTitle.localizedCaseInsensitiveContains(search)
             return categoryMatch && searchMatch && (mode == .all || effectiveEnabled(definition))
         }
     }
@@ -932,8 +941,8 @@ private struct JournalCustomizeView: View {
             HStack(spacing: 11) {
                 Image(systemName: definition.symbol).foregroundStyle(definition.sensitive ? .pink : .cyan).frame(width: 25)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(definition.title).font(.subheadline.weight(.semibold))
-                    Text(definition.subtitle).font(.caption2).foregroundStyle(.secondary)
+                    Text(definition.localizedTitle).font(.subheadline.weight(.semibold))
+                    Text(definition.localizedSubtitle).font(.caption2).foregroundStyle(.secondary)
                 }
                 Spacer()
                 if definition.sensitive { Image(systemName: "lock.fill").font(.caption2).foregroundStyle(.tertiary) }
@@ -1007,9 +1016,9 @@ private struct JournalInsightsView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Picker("Metrica", selection: $metric) { ForEach(JournalInsightMetric.allCases) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented)
+                        Picker("Metrica", selection: $metric) { ForEach(JournalInsightMetric.allCases) { Text($0.displayName).tag($0) } }.pickerStyle(.segmented)
                         impactSection("Asociaciones favorables", values: ready.filter { ($0.association.delta ?? 0) >= 0 }, color: ScoreKind.recovery.color)
                         impactSection("Asociaciones desfavorables", values: ready.filter { ($0.association.delta ?? 0) < 0 }, color: ScoreKind.strain.color)
                         impactSection("Reuniendo datos", values: pending, color: .secondary)
@@ -1017,7 +1026,7 @@ private struct JournalInsightsView: View {
                     }.padding(16).padding(.bottom, 24)
                 }.scrollIndicators(.hidden)
             }
-            .navigationTitle("Insights del Journal")
+            .navigationTitle("journal.insights.title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } } }
             .liquidGlassNavigationBar()

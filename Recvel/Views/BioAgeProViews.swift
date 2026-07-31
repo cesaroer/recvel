@@ -145,7 +145,7 @@ struct BioAgeDetailView: View {
             // Fondo Bevel: nebulosa gris neutra + bokeh, a pantalla completa.
             BioAgeBackdrop()
                 .ignoresSafeArea()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     BioAgeHero(report: report)
                     lensPicker
@@ -797,7 +797,7 @@ private struct BiomarkerCatalogView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     LazyVStack(spacing: 10) {
                         ForEach(filtered) { reading in
                             NavigationLink { BiomarkerDetailView(reading: reading) } label: {
@@ -832,7 +832,7 @@ private struct BiomarkerDetailView: View {
     var body: some View {
         ZStack {
             AppBackground()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         Label(reading.descriptor.title.uppercased(), systemImage: reading.descriptor.symbol).font(.system(size: 10, weight: .heavy)).foregroundStyle(.secondary)
@@ -879,7 +879,7 @@ private struct BiomarkerEntryView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Los nueve analitos deben pertenecer a un panel reciente. Recvel nunca completa valores faltantes.")
                             .font(.caption).foregroundStyle(.secondary).padding(14).liquidGlass(cornerRadius: 16)

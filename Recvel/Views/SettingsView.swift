@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject private var language: LanguageController
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var nutritionProfiles: [NutritionProfile]
     @StateObject private var health = HealthDataProvider()
@@ -23,21 +24,23 @@ struct SettingsView: View {
     var body: some View {
         ZStack {
             AppBackground()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Datos y privacidad")
+                    Text("settings.title")
                         .font(.system(size: 28, weight: .bold))
 
                     profileCard
 
+                    languageCard
+
                     nutritionSettingsCard
 
                     VStack(alignment: .leading, spacing: 14) {
-                        Label("Apple Health", systemImage: "heart.text.square.fill").font(.headline)
-                        Text("Recvel lee las categorias que autorizas y procesa scores, journal y nutricion en este dispositivo.")
+                        Label("common.appleHealth", systemImage: "heart.text.square.fill").font(.headline)
+                        Text("settings.health.detail")
                             .font(.subheadline).foregroundStyle(.secondary)
                         Button { Task { await health.requestAuthorization() } } label: {
-                            Label("Conectar o actualizar permisos", systemImage: "link")
+                            Label("settings.health.permissions", systemImage: "link")
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
@@ -48,8 +51,8 @@ struct SettingsView: View {
                     .liquidGlass(cornerRadius: 8, tint: ScoreKind.recovery.color)
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Label("Local por diseno", systemImage: "lock.shield.fill").font(.headline)
-                        Text("Sin cuenta, backend ni analytics externos. Puedes revocar HealthKit desde Ajustes de iOS.")
+                        Label("settings.privacy.title", systemImage: "lock.shield.fill").font(.headline)
+                        Text("settings.privacy.detail")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                     .padding(17)
@@ -60,7 +63,7 @@ struct SettingsView: View {
                     Button {
                         hasCompletedOnboarding = false
                     } label: {
-                        Label("Ver onboarding de nuevo", systemImage: "sparkles.rectangle.stack")
+                        Label("settings.onboarding.replay", systemImage: "sparkles.rectangle.stack")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -69,45 +72,102 @@ struct SettingsView: View {
                     Button(role: .destructive) {
                         showsDeleteConfirmation = true
                     } label: {
-                        Label("Borrar datos locales", systemImage: "trash")
+                        Label("settings.delete.local", systemImage: "trash")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
 
-                    Text("Recvel es una herramienta de bienestar, no un dispositivo medico ni un sustituto de atencion profesional.")
+                    Text("settings.wellness.disclaimer")
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
                 .padding(16)
             }
         }
         .confirmationDialog(
-            "Borrar comidas, journal y scores guardados?",
+            "settings.delete.confirm.title",
             isPresented: $showsDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Borrar datos locales", role: .destructive) {
+            Button("settings.delete.local", role: .destructive) {
                 LocalStore.deleteAll(in: modelContext)
             }
-            Button("Cancelar", role: .cancel) {}
+            Button("common.cancel", role: .cancel) {}
         } message: {
-            Text("Esto no borra datos de Apple Health ni cambia sus permisos.")
+            Text("settings.delete.confirm.detail")
         }
         .onAppear {
             nutritionAPIKey = KeychainStore.get("nutrition.gemini.apiKey") ?? ""
         }
     }
 
+    private var languageCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("language.section.title", systemImage: "globe")
+                .font(.headline)
+
+            Menu {
+                ForEach(AppLanguage.allCases) { option in
+                    Button {
+                        Haptics.selection()
+                        language.select(option)
+                    } label: {
+                        if language.selection == option {
+                            Label(languageName(option), systemImage: "checkmark")
+                        } else {
+                            Text(languageName(option))
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "character.bubble.fill")
+                        .foregroundStyle(ScoreKind.sleep.color)
+                        .frame(width: 32, height: 32)
+                        .background(ScoreKind.sleep.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("language.selector.title")
+                            .font(.subheadline.weight(.semibold))
+                        Text(languageName(language.selection))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("settings.language.menu")
+
+            Text("language.selector.detail")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(17)
+        .liquidGlass(cornerRadius: 8, tint: ScoreKind.sleep.color)
+    }
+
+    private func languageName(_ language: AppLanguage) -> String {
+        switch language {
+        case .system: RecvelL10n.text("language.system", language: self.language.resolvedLanguage)
+        case .esMX: RecvelL10n.text("language.esMX", language: self.language.resolvedLanguage)
+        case .english: RecvelL10n.text("language.english", language: self.language.resolvedLanguage)
+        }
+    }
+
     private var profileCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Perfil y horario", systemImage: "person.crop.circle")
+            Label("settings.profile.title", systemImage: "person.crop.circle")
                 .font(.headline)
-            TextField("Nombre opcional", text: $userName)
+            TextField("settings.profile.name", text: $userName)
                 .textInputAutocapitalization(.words)
                 .padding(12)
                 .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 7))
 
             DatePicker(
-                "Hora de despertar",
+                "settings.profile.wake",
                 selection: Binding(
                     get: { wakeDate },
                     set: {
@@ -121,7 +181,7 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 7) {
                 HStack {
-                    Text("Objetivo de sueno")
+                    Text("settings.profile.sleepGoal")
                     Spacer()
                     Text(String(format: "%.1f h", sleepGoalHours)).fontWeight(.bold).monospacedDigit()
                 }
@@ -141,9 +201,9 @@ struct SettingsView: View {
                         .frame(width: 30, height: 30)
                         .background(ScoreKind.energy.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Laboratorio")
+                        Text("settings.lab.title")
                             .font(.subheadline.weight(.medium))
-                        Text("Datos mock por feature y reset")
+                        Text("settings.lab.detail")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -163,20 +223,20 @@ struct SettingsView: View {
 
     private var notificationCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Recordatorios locales", systemImage: "bell.badge.fill")
+            Label("settings.notifications.title", systemImage: "bell.badge.fill")
                 .font(.headline)
-            Toggle("Briefing matutino", isOn: Binding(
+            Toggle("settings.notifications.morning", isOn: Binding(
                 get: { morningBriefingEnabled },
                 set: { updateMorning($0) }
             ))
-            Toggle("Prepararme para dormir", isOn: Binding(
+            Toggle("settings.notifications.bedtime", isOn: Binding(
                 get: { bedtimeReminderEnabled },
                 set: { updateBedtime($0) }
             ))
             if !notificationMessage.isEmpty {
                 Text(notificationMessage).font(.caption).foregroundStyle(.secondary)
             }
-            Text("Se programan en este dispositivo y no requieren servidor ni cuenta.")
+            Text("settings.notifications.detail")
                 .font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(17)
@@ -185,7 +245,7 @@ struct SettingsView: View {
 
     private var nutritionSettingsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Nutricion y estimacion", systemImage: "fork.knife.circle.fill")
+            Label("settings.nutrition.title", systemImage: "fork.knife.circle.fill")
                 .font(.headline)
 
             if let profile = nutritionProfiles.first {
@@ -199,8 +259,8 @@ struct SettingsView: View {
                             .frame(width: 32, height: 32)
                             .background(ScoreKind.recovery.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Editar perfil nutricional").font(.subheadline.weight(.semibold))
-                            Text("\(profile.goal) · \(profile.weeklyWorkouts) entrenamientos")
+                            Text("settings.nutrition.profile.edit").font(.subheadline.weight(.semibold))
+                            Text(nutritionProfileSummary(profile))
                                 .font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -214,7 +274,7 @@ struct SettingsView: View {
                     NutritionSetupView()
                         .hidesTabBar()
                 } label: {
-                    Label("Configurar perfil nutricional", systemImage: "plus.circle.fill")
+                    Label("settings.nutrition.profile.setup", systemImage: "plus.circle.fill")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.bordered)
@@ -224,8 +284,8 @@ struct SettingsView: View {
 
             Toggle(isOn: $nutritionExperimentalAPIEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("IA externa experimental").font(.subheadline.weight(.semibold))
-                    Text("Gemini free tier para uso personal").font(.caption2).foregroundStyle(.secondary)
+                    Text("settings.nutrition.external.title").font(.subheadline.weight(.semibold))
+                    Text("settings.nutrition.external.detail").font(.caption2).foregroundStyle(.secondary)
                 }
             }
             .tint(.cyan)
@@ -236,9 +296,9 @@ struct SettingsView: View {
                     HStack {
                         Group {
                             if revealNutritionAPIKey {
-                                TextField("API key de Gemini", text: $nutritionAPIKey)
+                                TextField("settings.nutrition.api.placeholder", text: $nutritionAPIKey)
                             } else {
-                                SecureField("API key de Gemini", text: $nutritionAPIKey)
+                                SecureField("settings.nutrition.api.placeholder", text: $nutritionAPIKey)
                             }
                         }
                         .textInputAutocapitalization(.never)
@@ -247,20 +307,20 @@ struct SettingsView: View {
                         Button { revealNutritionAPIKey.toggle() } label: {
                             Image(systemName: revealNutritionAPIKey ? "eye.slash" : "eye")
                         }
-                        .accessibilityLabel(revealNutritionAPIKey ? "Ocultar API key" : "Mostrar API key")
+                        .accessibilityLabel(RecvelL10n.text(revealNutritionAPIKey ? "settings.nutrition.api.hide" : "settings.nutrition.api.show"))
                     }
                     .padding(12)
                     .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 7))
 
                     HStack {
-                        Button("Guardar en Keychain") {
+                        Button("settings.nutrition.api.save") {
                             let key = nutritionAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
                             if key.isEmpty {
                                 KeychainStore.remove("nutrition.gemini.apiKey")
-                                nutritionAPIMessage = "Clave eliminada"
+                                nutritionAPIMessage = RecvelL10n.text("settings.nutrition.api.removed")
                             } else {
                                 KeychainStore.set(key, forKey: "nutrition.gemini.apiKey")
-                                nutritionAPIMessage = "Clave guardada solo en este dispositivo"
+                                nutritionAPIMessage = RecvelL10n.text("settings.nutrition.api.saved")
                             }
                         }
                         .buttonStyle(.bordered)
@@ -271,7 +331,7 @@ struct SettingsView: View {
                     }
 
                     Label(
-                        "Cada envio requiere confirmacion. Texto y foto salen del dispositivo; las comidas guardadas siguen siendo locales.",
+                        "settings.nutrition.external.warning",
                         systemImage: "exclamationmark.shield.fill"
                     )
                     .font(.caption2)
@@ -289,6 +349,14 @@ struct SettingsView: View {
         Calendar.current.date(byAdding: .minute, value: wakeMinutes, to: Calendar.current.startOfDay(for: .now)) ?? .now
     }
 
+    private func nutritionProfileSummary(_ profile: NutritionProfile) -> String {
+        let goal = NutritionGoal(rawValue: profile.goal)?.displayName ?? profile.goal
+        return RecvelL10n.text(
+            "settings.nutrition.profile.summary",
+            values: ["goal": goal, "count": profile.weeklyWorkouts]
+        )
+    }
+
     private func updateMorning(_ enabled: Bool) {
         Task {
             let allowed: Bool
@@ -299,7 +367,7 @@ struct SettingsView: View {
             }
             morningBriefingEnabled = enabled && allowed
             await notifications.scheduleMorning(enabled: morningBriefingEnabled, wakeMinutes: wakeMinutes)
-            notificationMessage = allowed ? "Horarios actualizados" : "Activa notificaciones desde Ajustes de iOS"
+            notificationMessage = RecvelL10n.text(allowed ? "notification.updated" : "notification.permission")
         }
     }
 
@@ -317,7 +385,7 @@ struct SettingsView: View {
                 wakeMinutes: wakeMinutes,
                 sleepGoalHours: sleepGoalHours
             )
-            notificationMessage = allowed ? "Horarios actualizados" : "Activa notificaciones desde Ajustes de iOS"
+            notificationMessage = RecvelL10n.text(allowed ? "notification.updated" : "notification.permission")
         }
     }
 

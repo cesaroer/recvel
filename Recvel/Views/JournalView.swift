@@ -17,7 +17,7 @@ struct LegacyJournalView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         header
                         todayOverview
@@ -44,7 +44,7 @@ struct LegacyJournalView: View {
                 .font(.caption2.weight(.heavy))
                 .tracking(1.2)
                 .foregroundStyle(.cyan)
-            Text("Journal")
+            Text("tab.journal")
                 .font(.system(size: 31, weight: .bold))
             Text("Lo que registraste hoy, las asociaciones que empiezan a aparecer y tu siguiente paso.")
                 .font(.subheadline)
@@ -180,7 +180,7 @@ struct LegacyJournalView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Patrones emergentes").font(.headline)
-                    Text("Recovery en dias con Si frente a dias con No")
+                    Text("\(ScoreKind.recovery.displayName) en días con Sí frente a días con No")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -241,7 +241,7 @@ struct LegacyJournalView: View {
     }
 
     private var methodology: some View {
-        Text("Las diferencias son asociaciones locales, no prueban causalidad. Se muestran solo con al menos 5 Si y 5 No unidos a Recovery del mismo dia. Un dato sin registrar queda como desconocido, no como No.")
+        Text("Las diferencias son asociaciones locales y no prueban causalidad. Solo aparecen con al menos 5 registros Sí y 5 No vinculados a la Recuperación del mismo día. Un dato sin registrar permanece como desconocido.")
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 3)
@@ -354,7 +354,7 @@ struct MentalJournalView: View {
     var body: some View {
         ZStack {
             AppBackground()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     mentalHeader
                     sessionChooser

@@ -188,7 +188,7 @@ struct HomeMonthCalendarSheet: View {
                 Color(red: 0.07, green: 0.075, blue: 0.09).ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    ScrollView {
+                    WidthLockedScrollView {
                         VStack(alignment: .leading, spacing: 14) {
                             monthHeader
                             categoryChips
@@ -510,7 +510,7 @@ struct HomeWeekWorkoutsCard: View {
         Button(action: onOpenFitness) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("Entrenos de la semana", systemImage: "figure.run")
+                    Label(RecvelL10n.text("home.trainingWeek.title"), systemImage: "figure.run")
                         .font(.headline)
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -580,9 +580,15 @@ struct HomeWeekWorkoutsCard: View {
 
     private var accessibilityLabel: String {
         if summary.hasSessions {
-            return "Entrenos de la semana: \(summary.sessionCount) sesiones, \(durationText(summary.totalMinutes)). Abrir Fitness."
+            return RecvelL10n.text(
+                "home.trainingWeek.accessibility.summary",
+                values: [
+                    "count": "\(summary.sessionCount)",
+                    "duration": durationText(summary.totalMinutes)
+                ]
+            )
         }
-        return "Sin entrenamientos esta semana. Abrir Fitness."
+        return RecvelL10n.text("home.trainingWeek.accessibility.empty")
     }
 
     private func durationText(_ minutes: Double) -> String {

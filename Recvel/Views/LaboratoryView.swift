@@ -17,16 +17,16 @@ enum MockFeature: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .recovery: "Recovery"
-        case .strain: "Strain"
-        case .sleep: "Sueno"
-        case .energy: "Energia"
-        case .activation: "Activacion fisiologica"
+        case .recovery: ScoreKind.recovery.displayName
+        case .strain: ScoreKind.strain.displayName
+        case .sleep: ScoreKind.sleep.displayName
+        case .energy: ScoreKind.energy.displayName
+        case .activation: RecvelL10n.text("score.stress.title")
         case .plan: "Plan adaptativo"
-        case .journal: "Journal"
-        case .nutrition: "Nutricion"
-        case .trends: "Tendencias"
-        case .workouts: "Workouts"
+        case .journal: RecvelL10n.text("tab.journal")
+        case .nutrition: RecvelL10n.text("tab.nutrition")
+        case .trends: RecvelL10n.text("home.trends.title")
+        case .workouts: RecvelL10n.text("tab.training")
         case .notifications: "Notificaciones"
         }
     }
@@ -103,7 +103,7 @@ struct LaboratoryView: View {
     var body: some View {
         ZStack {
             AppBackground()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     explanation
@@ -372,7 +372,7 @@ enum OnboardingDemoProfile {
         LaboratoryView()
     }
     .modelContainer(
-        for: [MealLog.self, HabitLog.self, DailyScoreRecord.self, NutritionProfile.self, FitnessActivityLog.self, WorkoutTemplate.self, EmotionLog.self, FastingFeelingLog.self, MentalJournalEntry.self, SleepRoutineStep.self, PlannedSleepNight.self, JournalTagConfiguration.self, BiomarkerSample.self, BioAgeReportRecord.self],
+        for: [MealLog.self, HabitLog.self, DailyScoreRecord.self, NutritionProfile.self, FitnessActivityLog.self, WorkoutTemplate.self, EmotionLog.self, FastingFeelingLog.self, MentalJournalEntry.self, SleepRoutineStep.self, PlannedSleepNight.self, JournalTagConfiguration.self, BiomarkerSample.self, BioAgeReportRecord.self, ExerciseSetLog.self, TrainingReadinessCheckIn.self],
         inMemory: true
     )
 }

@@ -19,13 +19,13 @@ struct TrendsView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("TENDENCIAS PERSONALES")
                                 .font(.caption2.weight(.heavy))
                                 .foregroundStyle(ScoreKind.recovery.color)
-                            Text("7 dias")
+                            Text("7 días")
                                 .font(.system(size: 30, weight: .bold))
                             Text("Tu semana contra el rango que Recvel esta aprendiendo de ti.")
                                 .font(.subheadline)
@@ -60,7 +60,7 @@ struct TrendsView: View {
         LiquidGlassCard {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Label("Recovery", systemImage: ScoreKind.recovery.icon)
+                    Label(ScoreKind.recovery.displayName, systemImage: ScoreKind.recovery.icon)
                         .font(.headline)
                         .foregroundStyle(ScoreKind.recovery.color)
                     Spacer()
@@ -72,7 +72,7 @@ struct TrendsView: View {
                 Chart(recoveryWeek, id: \.date) { day in
                     BarMark(
                         x: .value("Dia", day.date, unit: .day),
-                        y: .value("Recovery", day.value),
+                        y: .value(ScoreKind.recovery.displayName, day.value),
                         width: .fixed(14)
                     )
                     .foregroundStyle(
@@ -97,7 +97,7 @@ struct TrendsView: View {
     private var sleepCard: some View {
         LiquidGlassCard(tint: ScoreKind.sleep.color) {
             VStack(alignment: .leading, spacing: 14) {
-                Label("Sueno", systemImage: "moon.stars.fill")
+                Label("Sueño", systemImage: "moon.stars.fill")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.sleep.color)
                 Chart(week) { day in
@@ -125,7 +125,7 @@ struct TrendsView: View {
 
         return LiquidGlassCard {
             VStack(alignment: .leading, spacing: 14) {
-                Label("HRV y baseline", systemImage: "waveform.path.ecg")
+                Label("HRV y referencia personal", systemImage: "waveform.path.ecg")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.recovery.color)
                 Chart(week) { day in

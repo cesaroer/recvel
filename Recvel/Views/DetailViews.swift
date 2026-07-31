@@ -48,7 +48,7 @@ private struct DetailScaffold<Content: View>: View {
                 .opacity(0.75)
                 .ignoresSafeArea()
 
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     content
                 }
@@ -2067,7 +2067,7 @@ struct MetricDetailView: View {
                     .opacity(0.7)
                     .ignoresSafeArea()
 
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         header
                         if descriptors.count > 1 { siblingChips }
@@ -2446,7 +2446,7 @@ private struct MetricResourceView: View {
         ZStack {
             AppBackground()
             StardustField(count: 50).opacity(0.6).ignoresSafeArea()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Image(systemName: resource.symbol)
                         .font(.system(size: 34))
@@ -3102,7 +3102,7 @@ struct FitnessClassDetailView: View {
                     .ignoresSafeArea()
                 StardustField(count: 60).opacity(0.7).ignoresSafeArea()
 
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         hero
                         scaleCard

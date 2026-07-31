@@ -43,7 +43,7 @@ struct NutritionSetupView: View {
             AppBackground()
             VStack(spacing: 0) {
                 setupHeader
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         stepContent
                             .id(step)
@@ -119,7 +119,7 @@ struct NutritionSetupView: View {
             VStack(spacing: 9) {
                 ForEach(NutritionGoal.allCases) { item in
                     selectionRow(
-                        title: item.rawValue,
+                        title: item.displayName,
                         icon: goalIcon(item),
                         selected: goal == item
                     ) { goal = item }
@@ -170,13 +170,13 @@ struct NutritionSetupView: View {
                                 Haptics.menuSelect()
                                 sex = item
                             } label: {
-                                if sex == item { Label(item.rawValue, systemImage: "checkmark") }
-                                else { Text(item.rawValue) }
+                                if sex == item { Label(item.displayName, systemImage: "checkmark") }
+                                else { Text(item.displayName) }
                             }
                         }
                     } label: {
                         HStack {
-                            Text(sex.rawValue).font(.subheadline.weight(.medium))
+                            Text(sex.displayName).font(.subheadline.weight(.medium))
                             Spacer()
                             Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(.secondary)
                         }
@@ -230,12 +230,12 @@ struct NutritionSetupView: View {
                             Haptics.menuSelect()
                             diet = item
                         } label: {
-                            if diet == item { Label(item.rawValue, systemImage: "checkmark") }
-                            else { Text(item.rawValue) }
+                            if diet == item { Label(item.displayName, systemImage: "checkmark") }
+                            else { Text(item.displayName) }
                         }
                     }
                 } label: {
-                    setupMenuLabel(title: "Estilo de alimentacion", value: diet.rawValue, icon: "leaf.fill")
+                    setupMenuLabel(title: RecvelL10n.text("nutrition.diet.title"), value: diet.displayName, icon: "leaf.fill")
                 }
                 .hapticMenuLabel()
 
@@ -243,7 +243,7 @@ struct NutritionSetupView: View {
                 inputField(title: "Alimentos que no te gustan", placeholder: "Ej. atun, champiñones", text: $dislikedFoods, icon: "hand.thumbsdown.fill")
 
                 Picker("Unidades", selection: $units) {
-                    ForEach(PreferredUnits.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(PreferredUnits.allCases) { Text($0.displayName).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .onChange(of: units) { _, _ in Haptics.selection() }

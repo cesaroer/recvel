@@ -307,6 +307,12 @@ extension View {
             .tappableCircle()
     }
 
+    /// Fija el ancho del contenido de un ScrollView vertical al del viewport.
+    /// Normalmente no se usa directo: `WidthLockedScrollView` ya lo aplica.
+    func scrollContentLockedToViewportWidth() -> some View {
+        containerRelativeFrame(.horizontal, alignment: .leading)
+    }
+
     @ViewBuilder
     func liquidGlassNavigationBar() -> some View {
 #if compiler(>=6.2)
@@ -325,6 +331,30 @@ extension View {
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
 #endif
+    }
+}
+
+/// `ScrollView` vertical con el contenido fijado al ancho del viewport.
+///
+/// Sustituye al `ScrollView { … }` de las superficies a pantalla completa. Un
+/// scroll vertical se vuelve **arrastrable en horizontal** (con rebote y
+/// vuelta) en cuanto UN hijo rigido —texto con `fixedSize`/`lineLimit(1)` que
+/// crece con el idioma o con datos reales— reporta mas ancho que el viewport:
+/// toda la pantalla se desplaza en bloque manteniendo el dedo y arrastrando.
+/// Visto en dispositivo (app en ingles + datos reales) en Entrenamiento, Ayuno
+/// y Estres; el simulador (español + demo) no lo reproduce porque el desborde
+/// depende de las cadenas. Con el candado, un hijo desbordado se recorta en
+/// vez de habilitar el paneo. Los `ScrollView(.horizontal)` no se tocan.
+struct WidthLockedScrollView<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ScrollView {
+            // .center replica donde un ScrollView normal coloca el contenido
+            // mas estrecho que el viewport; los VStack raiz de ancho completo
+            // no notan la diferencia.
+            content.containerRelativeFrame(.horizontal, alignment: .center)
+        }
     }
 }
 
@@ -453,7 +483,7 @@ struct HeroScoreRing: View {
             .frame(width: 92, height: 92)
 
             HStack(spacing: 3) {
-                Text(score.kind.rawValue)
+                Text(score.kind.displayName)
                     .font(.footnote.weight(.semibold))
                 Image(systemName: "chevron.right")
                     .font(.caption2.weight(.bold))
@@ -472,7 +502,7 @@ struct HeroScoreRing: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(score.kind.rawValue), \(score.value) de 100. Confianza \(score.confidence.rawValue)")
+        .accessibilityLabel("\(score.kind.displayName), \(score.value) de 100. \(RecvelL10n.text("common.confidence")) \(score.confidence.displayName)")
     }
 }
 
@@ -610,11 +640,11 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .today: "Hoy"
-        case .journal: "Journal"
-        case .fitness: "Fitness"
-        case .nutrition: "Nutricion"
-        case .fasting: "Ayuno"
+        case .today: RecvelL10n.text("tab.today")
+        case .journal: RecvelL10n.text("tab.journal")
+        case .fitness: RecvelL10n.text("tab.training")
+        case .nutrition: RecvelL10n.text("tab.nutrition")
+        case .fasting: RecvelL10n.text("tab.fasting")
         }
     }
 }
@@ -627,12 +657,12 @@ enum TabQuickAction: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .meal: "Comida"
-        case .journal: "Journal"
-        case .fasting: "Ayuno"
-        case .fitness: "Actividad"
-        case .plan: "Plan"
-        case .settings: "Ajustes"
+        case .meal: RecvelL10n.text("quick.meal")
+        case .journal: RecvelL10n.text("tab.journal")
+        case .fasting: RecvelL10n.text("tab.fasting")
+        case .fitness: RecvelL10n.text("tab.training")
+        case .plan: RecvelL10n.text("quick.plan")
+        case .settings: RecvelL10n.text("quick.settings")
         }
     }
 

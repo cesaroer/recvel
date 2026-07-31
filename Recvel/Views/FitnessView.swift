@@ -167,14 +167,24 @@ struct FitnessView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("tab.training")
-                                .font(.largeTitle.weight(.bold))
-                            Text("Últimos 30 días")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                        // Cabecera propia, como Hoy / Diario / Nutricion. El
+                        // `addMenu` vivia en la toolbar; al quitar la barra de
+                        // navegacion (ver la nota del `.toolbar(.hidden…)` abajo)
+                        // se muda aqui, y de paso desaparece el titulo duplicado:
+                        // antes se veia "Entrenamiento" dos veces, el de la barra
+                        // y este.
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("tab.training")
+                                    .font(.largeTitle.weight(.bold))
+                                Text("Últimos 30 días")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            addMenu
                         }
                         .padding(.top, 4)
 
@@ -227,14 +237,24 @@ struct FitnessView: View {
                 }
                 .scrollIndicators(.hidden)
                 .trackTabBarScroll()
-                .refreshable { await health.refresh() }
+                // Sin `.refreshable`: tirar hacia abajo desplazaba TODO el
+                // contenido del scroll en bloque y aqui el spinner queda detras
+                // de la barra de navegacion (`.liquidGlassNavigationBar()` la
+                // pinta opaca), asi que se veia el movimiento sin la señal que
+                // lo explica y parecia que la tab entera se podia arrastrar.
+                // Home si lo conserva: alli la barra esta oculta y el spinner
+                // se ve. Los datos ya se recargan en `.task` y desde HealthKit.
             }
-            .navigationTitle("tab.training")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { addMenu }
-            }
-            .liquidGlassNavigationBar()
+            // Barra de navegacion FUERA, como Hoy / Diario / Nutricion: el
+            // titulo salia dos veces (el de la barra y el de la cabecera del
+            // contenido) y esta era la unica tab con esa doble cabecera. El
+            // titulo y el `addMenu` los pinta ahora el propio contenido.
+            //
+            // Nota historica: esto se probo primero como arreglo del "arrastre
+            // horizontal de toda la pantalla" y NO era la causa — la causa real
+            // era contenido mas ancho que el viewport; ver
+            // `scrollContentLockedToViewportWidth()` arriba.
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $selectedDetail) { route in
                 FitnessDetailSheet(
                     route: route,
@@ -1106,7 +1126,7 @@ private struct FitnessDetailSheet: View {
     var body: some View {
         ZStack {
             AppBackground()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     HStack {
                         Button {
@@ -1583,7 +1603,7 @@ struct WorkoutTemplateEditor: View {
         ZStack {
             Color(red: 0.09, green: 0.095, blue: 0.11).ignoresSafeArea()
 
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     WorkoutEditorHeader(
                         draft: draft,
@@ -2267,7 +2287,7 @@ struct ExerciseLibrarySheet: View {
 
                 VStack(spacing: 0) {
                     filterChips
-                    ScrollView {
+                    WidthLockedScrollView {
                         VStack(alignment: .leading, spacing: 10) {
                             customSection
                             ForEach(alphabetical, id: \.0) { letter, items in
@@ -4161,7 +4181,7 @@ private struct TrainingReadinessCheckInView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("¿Cómo llegas a la sesión?")
@@ -4363,7 +4383,7 @@ struct TemplatePreviewSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
 
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(exercises) { exercise in
                             let visual = ExerciseLibrary.thumbnail(for: exercise.name)
@@ -4464,7 +4484,7 @@ private struct ActiveTimedRoutineView: View {
                 }
                 .padding(16)
 
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         Text(template.name)
                             .font(.largeTitle.weight(.bold))
@@ -4571,7 +4591,7 @@ struct ActiveWorkoutSessionView: View {
                         dismiss()
                     }
                 )
-                ScrollView {
+                WidthLockedScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(exercises) { exercise in
                             ActiveSessionExerciseCard(exercise: exercise) {

@@ -205,7 +205,7 @@ struct FastingStats: Equatable {
     let longestHours: Double
 }
 
-/// Asociacion personal entre ayunar y el Recovery del dia siguiente.
+/// Asociación personal entre ayunar y la Recuperación del día siguiente.
 /// Mismo espiritu que los "Impactos personales" del Journal: asociacion, no causalidad.
 struct FastingImpact: Equatable {
     let delta: Double?
@@ -480,7 +480,7 @@ struct FastingView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         entrance(0) { header }
                         if let session = activeSession {
@@ -508,16 +508,45 @@ struct FastingView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("fasting.scroll")
             }
-            .toolbarBackground(.hidden, for: .navigationBar)
+            // Barra de navegacion fuera del todo, como Hoy / Diario / Nutricion
+            // (antes solo se ocultaba el fondo con `.toolbarBackground(.hidden)`
+            // y la barra seguia viva). La cabecera la pinta el propio contenido.
+            //
+            // Nota historica: esto se probo primero como arreglo del "arrastre
+            // horizontal de toda la pantalla" y NO era la causa — la causa real
+            // era contenido mas ancho que el viewport; ver
+            // `scrollContentLockedToViewportWidth()` arriba.
+            .toolbar(.hidden, for: .navigationBar)
             .onReceive(timer) { tick in
                 now = tick
                 detectPhaseChange()
+            }
+            .onChange(of: activeSession?.startDate) { _, _ in
+                guard let session = activeSession else { return }
+                Task {
+                    await FastingLiveActivityManager.synchronize(
+                        sessionID: session.id,
+                        startDate: session.startDate,
+                        targetDate: session.estimatedEndDate,
+                        protocolName: session.fastingProtocol.title
+                    )
+                }
             }
             .onAppear {
                 withAnimation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.82)) {
                     appeared = true
                 }
                 startGlowAnimation()
+                if let session = activeSession {
+                    Task {
+                        await FastingLiveActivityManager.synchronize(
+                            sessionID: session.id,
+                            startDate: session.startDate,
+                            targetDate: session.estimatedEndDate,
+                            protocolName: session.fastingProtocol.title
+                        )
+                    }
+                }
             }
             .sheet(isPresented: $showScreening) {
                 FastingScreeningView(engine: engine) { passed in
@@ -793,7 +822,7 @@ struct FastingView: View {
                     Image(systemName: "face.smiling")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(ScoreKind.energy.color)
-                    Text("Como te sientes en este ayuno")
+                    Text("Cómo te sientes durante este ayuno")
                         .font(.headline)
                     Spacer()
                     Text("\(logs.count)/\(CheckInLimits.maxPerDay)")
@@ -1311,7 +1340,7 @@ struct FastingView: View {
         if data.contains(where: { $0.hours > 0 }) {
             LiquidGlassCard(tint: ScoreKind.strain.color) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Ultimos 7 dias")
+                    Text("Últimos 7 días")
                         .font(.headline)
                     Chart(data, id: \.date) { day in
                         BarMark(
@@ -1336,7 +1365,7 @@ struct FastingView: View {
         }
     }
 
-    // MARK: Asociacion con Recovery (el diferenciador de Recvel, ver 10.7)
+    // MARK: Asociación con Recuperación
 
     private var impactCard: some View {
         let impact = engine.recoveryImpact(
@@ -1347,7 +1376,7 @@ struct FastingView: View {
         )
         return LiquidGlassCard(tint: ScoreKind.recovery.color) {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Ayuno y tu Recovery", systemImage: "heart.text.square")
+                Label("Ayuno y Recuperación", systemImage: "heart.text.square")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.recovery.color)
 
@@ -1357,18 +1386,18 @@ struct FastingView: View {
                             .font(.system(size: 30, weight: .heavy, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(delta >= 0 ? ScoreKind.recovery.color : ScoreKind.strain.color)
-                        Text("pts de Recovery en promedio tras ayunos de 14 h o mas")
+                        Text("pts de Recuperación en promedio después de ayunos de 14 h o más")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    Text("Comparado en \(impact.fastingDays) dias con ayuno vs \(impact.otherDays) sin. Es una asociacion personal, no demuestra causalidad.")
+                    Text("Compara \(impact.fastingDays) días con ayuno y \(impact.otherDays) sin ayuno. Es una asociación personal y no demuestra causalidad.")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 } else {
                     Text("EN PROCESO")
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(.tertiary)
-                    Text("Cuando acumules al menos 3 dias con ayuno de 14 h o mas y 3 sin (con Recovery registrado), Recvel comparara como responde tu cuerpo. Ninguna app de ayuno hace esto con tus datos reales.")
+                    Text("Necesitas al menos 3 días con ayuno de 14 h o más y 3 sin ayuno, todos con Recuperación disponible. Después podrás comparar la asociación en tus propios datos.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1394,7 +1423,7 @@ struct FastingView: View {
             LiquidGlassCard {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Ultimos 30 dias")
+                        Text("Últimos 30 días")
                             .font(.headline)
                         Spacer()
                         HStack(spacing: 12) {
@@ -1495,7 +1524,7 @@ struct FastingView: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 16) {
-                        detailChip(icon: "timer", label: "Duracion", value: elapsedText(elapsed))
+                        detailChip(icon: "timer", label: "Duración", value: elapsedText(elapsed))
                         detailChip(icon: "scope", label: "Fase", value: phase.name)
                     }
                     HStack(spacing: 16) {
@@ -1505,7 +1534,7 @@ struct FastingView: View {
                         detailChip(icon: "target", label: "Objetivo", value: reachedTarget ? "Cumplido ✓" : "No alcanzado")
                     }
 
-                    // Recovery del dia siguiente, si hay dato
+                    // Recuperación del día siguiente, si hay dato
                     let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: session.startDate))
                     if let nextDay,
                        let record = scoreRecords.first(where: { Calendar.current.isDate($0.date, inSameDayAs: nextDay) }) {
@@ -1513,7 +1542,7 @@ struct FastingView: View {
                             Image(systemName: "heart.fill")
                                 .font(.caption2)
                                 .foregroundStyle(ScoreKind.recovery.color)
-                            Text("Recovery dia siguiente: \(record.recovery)%")
+                            Text("\(ScoreKind.recovery.displayName) · \(RecvelL10n.text("fasting.nextDay")): \(record.recovery)%")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -1542,7 +1571,7 @@ struct FastingView: View {
     private var educationCard: some View {
         LiquidGlassCard {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Que pasa durante el ayuno")
+                Text("Qué ocurre durante el ayuno")
                     .font(.headline)
                 ForEach(FastingEngine.phases) { phase in
                     HStack(alignment: .top, spacing: 10) {
@@ -1588,14 +1617,21 @@ struct FastingView: View {
         let proto = selectedProtocol
         let target = selectedTargetHours
         haptic(.medium)
-        modelContext.insert(
-            FastingSession(
-                startDate: .now,
-                protocolRaw: proto.rawValue,
-                targetHours: target
-            )
+        let session = FastingSession(
+            startDate: .now,
+            protocolRaw: proto.rawValue,
+            targetHours: target
         )
+        modelContext.insert(session)
         try? modelContext.save()
+        Task {
+            await FastingLiveActivityManager.start(
+                sessionID: session.id,
+                startDate: session.startDate,
+                targetDate: session.estimatedEndDate,
+                protocolName: proto.title
+            )
+        }
         if notifyOnTarget {
             scheduleTargetNotification(after: target)
         }
@@ -1604,6 +1640,7 @@ struct FastingView: View {
     private func endFast(_ session: FastingSession) {
         session.endDate = .now
         try? modelContext.save()
+        Task { await FastingLiveActivityManager.end(sessionID: session.id) }
         cancelTargetNotification()
     }
 
@@ -1754,7 +1791,7 @@ struct FastingScreeningView: View {
         NavigationStack {
             ZStack {
                 AppBackground()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Antes de empezar")
                             .font(.system(size: 28, weight: .bold, design: .rounded))

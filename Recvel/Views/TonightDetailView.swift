@@ -229,7 +229,7 @@ struct TonightDetailView: View {
                 .opacity(0.75)
                 .ignoresSafeArea()
 
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     tonightContent
                 }
@@ -639,7 +639,7 @@ struct TonightDetailView: View {
                let night = disciplineNight(on: selectedSleepNight) {
                 sleepNightExplanation(night)
             } else {
-                Text("\(disciplineSummary.measuredNights)/\(SleepDisciplineEngine.minimumMeasuredNights) noches medidas para mostrar score. Los dias sin sesion de sueno no cuentan como fallo.")
+                Text("\(disciplineSummary.measuredNights)/\(SleepDisciplineEngine.minimumMeasuredNights) noches medidas para mostrar la puntuación. Los días sin sesión de sueño no cuentan como incumplimiento.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
 
@@ -662,7 +662,7 @@ struct TonightDetailView: View {
                 Text("\(Int(delta.rounded())) min de diferencia · \(Int((night.points ?? 0).rounded()))/100 esa noche")
                     .font(.caption2).foregroundStyle(.secondary)
             } else {
-                Text("No hay una sesion Apple Health para comparar; esta noche se excluye del score.")
+                Text("No hay una sesión de Apple Health para comparar; esta noche no se incluye en la puntuación.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }

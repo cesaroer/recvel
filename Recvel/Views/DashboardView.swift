@@ -110,7 +110,7 @@ struct DashboardView: View {
             ZStack {
                 AppBackground()
 
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         entrance(0) { header }
                         if health.isLoading && health.dataMode == .empty {

@@ -73,7 +73,7 @@ struct NutritionView: View {
     private func dashboard(profile: NutritionProfile) -> some View {
         ZStack {
             AppBackground()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     pageHeader(profile: profile)
                     dailyHero(profile: profile)
@@ -143,7 +143,7 @@ struct NutritionView: View {
                 Text("NUTRICION ADAPTATIVA")
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(ScoreKind.recovery.color)
-                Text("Nutricion")
+                Text(RecvelL10n.text("tab.nutrition"))
                     .font(.system(size: 31, weight: .bold))
                 Text(profile.goal)
                     .font(.subheadline)
@@ -232,11 +232,11 @@ struct NutritionView: View {
         let plan = dayPlan(profile)
         return VStack(alignment: .leading, spacing: 13) {
             HStack {
-                Label("Siguiente mejor comida", systemImage: "sparkles")
+                Label("nutrition.nextMeal.title", systemImage: "sparkles")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.recovery.color)
                 Spacer()
-                Text(plan.nextMeal.mealType.rawValue.uppercased())
+                Text(plan.nextMeal.mealType.displayName.uppercased())
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.secondary)
             }
@@ -259,7 +259,7 @@ struct NutritionView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(estimate.title).font(.headline).lineLimit(2)
-                    Label("Confianza \(estimate.confidence.rawValue.lowercased())", systemImage: confidenceIcon(estimate.confidence))
+                    Label("\(RecvelL10n.text("common.confidence")) \(estimate.confidence.displayName.lowercased())", systemImage: confidenceIcon(estimate.confidence))
                         .font(.caption)
                         .foregroundStyle(confidenceColor(estimate.confidence))
                 }
@@ -272,14 +272,14 @@ struct NutritionView: View {
             }
 
             HStack {
-                MacroValue(name: "Proteina", value: adjusted.protein, color: .cyan)
-                MacroValue(name: "Carbs", value: adjusted.carbohydrates, color: .orange)
-                MacroValue(name: "Grasa", value: adjusted.fat, color: .pink)
+                MacroValue(name: RecvelL10n.text("nutrition.macro.protein"), value: adjusted.protein, color: .cyan)
+                MacroValue(name: RecvelL10n.text("nutrition.macro.carbohydrates"), value: adjusted.carbohydrates, color: .orange)
+                MacroValue(name: RecvelL10n.text("nutrition.macro.fat"), value: adjusted.fat, color: .pink)
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Label("Porcion", systemImage: "scalemass.fill").font(.subheadline)
+                    Label("nutrition.portion", systemImage: "scalemass.fill").font(.subheadline)
                     Spacer()
                     Text(String(format: "%.1fx", portionMultiplier)).font(.subheadline.weight(.bold)).monospacedDigit()
                 }
@@ -299,7 +299,7 @@ struct NutritionView: View {
             }
 
             HStack {
-                Text("Tipo de comida").font(.subheadline)
+                Text("nutrition.mealType").font(.subheadline)
                 Spacer()
                 Menu {
                     ForEach(MealType.allCases) { type in
@@ -307,13 +307,13 @@ struct NutritionView: View {
                             Haptics.menuSelect()
                             mealType = type
                         } label: {
-                            if mealType == type { Label(type.rawValue, systemImage: "checkmark") }
-                            else { Text(type.rawValue) }
+                            if mealType == type { Label(type.displayName, systemImage: "checkmark") }
+                            else { Text(type.displayName) }
                         }
                     }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(mealType.rawValue).font(.subheadline.weight(.semibold))
+                        Text(mealType.displayName).font(.subheadline.weight(.semibold))
                         Image(systemName: "chevron.up.chevron.down").font(.caption2)
                     }
                     .padding(.horizontal, 12).frame(height: 36)
@@ -392,7 +392,7 @@ struct NutritionView: View {
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Plan de mañana").font(.title3.weight(.bold))
+                    Text("nutrition.tomorrow.title").font(.title3.weight(.bold))
                     Text(plan.tomorrowReason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
@@ -406,7 +406,7 @@ struct NutritionView: View {
                         .frame(width: 25, height: 25)
                         .background(planColor(index), in: Circle())
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(suggestion.mealType.rawValue.uppercased()).font(.system(size: 9, weight: .heavy)).foregroundStyle(.secondary)
+                        Text(suggestion.mealType.displayName.uppercased()).font(.system(size: 9, weight: .heavy)).foregroundStyle(.secondary)
                         Text(suggestion.title).font(.subheadline.weight(.semibold))
                         Text(suggestion.detail).font(.caption2).foregroundStyle(.secondary)
                     }
@@ -832,10 +832,10 @@ private struct MealEditorView: View {
                     get: { MealType(rawValue: meal.mealType ?? "") ?? .lunch },
                     set: { meal.mealType = $0.rawValue }
                 )) {
-                    ForEach(MealType.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(MealType.allCases) { Text($0.displayName).tag($0) }
                 }
             }
-            Section("Energia y macros") {
+            Section("Energía y macronutrientes") {
                 Stepper("\(meal.calories) kcal", value: $meal.calories.hapticStep(), in: 0...5_000, step: 10)
                 Stepper("Proteina · \(meal.protein) g", value: $meal.protein.hapticStep(), in: 0...500)
                 Stepper("Carbohidratos · \(meal.carbohydrates) g", value: $meal.carbohydrates.hapticStep(), in: 0...800)

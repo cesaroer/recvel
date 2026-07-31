@@ -1192,7 +1192,7 @@ private struct IntelligenceDetailScaffold<Content: View>: View {
             StardustField(count: 70)
                 .opacity(0.75)
                 .ignoresSafeArea()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 18) { content }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 36)
@@ -1330,7 +1330,7 @@ struct BreathingExerciseView: View {
         ZStack {
             AppBackground()
             StardustField(count: 40).opacity(0.5).ignoresSafeArea()
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(spacing: 22) {
                     if running || finished { session } else { setup }
                 }

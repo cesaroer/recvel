@@ -45,7 +45,7 @@ struct MorningReportView: View {
             LabBackdrop()
                 .ignoresSafeArea()
 
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     DualDialHero(report: report)
 

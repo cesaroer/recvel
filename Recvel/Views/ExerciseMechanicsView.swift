@@ -25,7 +25,7 @@ struct ExerciseMechanicsSheet: View {
         NavigationStack {
             ZStack {
                 Color(red: 0.07, green: 0.075, blue: 0.09).ignoresSafeArea()
-                ScrollView {
+                WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         ExerciseMechanicsPlayer(
                             frames: mechanics?.frameNames ?? [],

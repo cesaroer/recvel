@@ -114,13 +114,13 @@ struct OnboardingView: View {
 
             Spacer(minLength: 16)
 
-            Text("Entiende tu cuerpo.\nDecide mejor cada dia.")
+            Text("onboarding.welcome.title")
                 .font(.system(size: 38, weight: .black, design: .rounded))
                 .lineSpacing(-1)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("onboarding.welcomeTitle")
 
-            Text("Recvel transforma tus senales de Apple Watch en recuperacion, carga y sueno que puedes usar hoy.")
+            Text("onboarding.welcome.detail")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .lineSpacing(4)
@@ -135,9 +135,9 @@ struct OnboardingView: View {
 
     private var goalStep: some View {
         OnboardingPageHeader(
-            eyebrow: "TU NORTE",
-            title: "¿Que quieres mejorar primero?",
-            detail: "Esto define el tono de tus objetivos diarios. Puedes cambiarlo despues."
+            eyebrow: RecvelL10n.text("onboarding.goal.eyebrow"),
+            title: RecvelL10n.text("onboarding.goal.title"),
+            detail: RecvelL10n.text("onboarding.goal.detail")
         ) {
             VStack(spacing: 10) {
                 ForEach(OnboardingGoal.allCases) { item in
@@ -158,9 +158,9 @@ struct OnboardingView: View {
 
     private var prioritiesStep: some View {
         OnboardingPageHeader(
-            eyebrow: "PERSONALIZACION",
-            title: "¿Que senales importan para ti?",
-            detail: "Elige hasta tres. Recvel las priorizara en tu briefing."
+            eyebrow: RecvelL10n.text("onboarding.priority.eyebrow"),
+            title: RecvelL10n.text("onboarding.priority.title"),
+            detail: RecvelL10n.text("onboarding.priority.detail")
         ) {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(OnboardingPriority.allCases) { item in
@@ -194,16 +194,16 @@ struct OnboardingView: View {
 
     private var scheduleStep: some View {
         OnboardingPageHeader(
-            eyebrow: "TU RITMO",
-            title: "Construyamos tu noche",
-            detail: "Usaremos tu hora de despertar para calcular una ventana de sueno realista."
+            eyebrow: RecvelL10n.text("onboarding.schedule.eyebrow"),
+            title: RecvelL10n.text("onboarding.schedule.title"),
+            detail: RecvelL10n.text("onboarding.schedule.detail")
         ) {
             VStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("¿Como te llamamos?")
+                    Text("onboarding.name.title")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.secondary)
-                    TextField("Nombre opcional", text: $name)
+                    TextField("onboarding.name.placeholder", text: $name)
                         .focused($nameFocused)
                         .font(.title3.weight(.semibold))
                         .snappyTextInput()
@@ -216,13 +216,13 @@ struct OnboardingView: View {
 
                 HStack(spacing: 10) {
                     scheduleValue(
-                        title: "Despertar",
+                        title: RecvelL10n.text("onboarding.schedule.wake"),
                         value: wakeDate.formatted(date: .omitted, time: .shortened),
                         icon: "sun.max.fill",
                         color: ScoreKind.energy.color
                     )
                     scheduleValue(
-                        title: "Objetivo",
+                        title: RecvelL10n.text("onboarding.schedule.goal"),
                         value: String(format: "%.1f h", sleepGoalHours),
                         icon: "moon.stars.fill",
                         color: ScoreKind.sleep.color
@@ -231,7 +231,7 @@ struct OnboardingView: View {
 
                 VStack(spacing: 15) {
                     DatePicker(
-                        "Hora de despertar",
+                        "onboarding.schedule.wakeTime",
                         selection: Binding(
                             get: { wakeDate },
                             set: { wakeMinutes = Calendar.current.component(.hour, from: $0) * 60 + Calendar.current.component(.minute, from: $0) }
@@ -244,7 +244,7 @@ struct OnboardingView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Horas de sueno")
+                            Text("onboarding.schedule.sleepHours")
                             Spacer()
                             Text(String(format: "%.1f", sleepGoalHours)).fontWeight(.bold).monospacedDigit()
                         }
@@ -277,17 +277,17 @@ struct OnboardingView: View {
 
     private var healthStep: some View {
         OnboardingPageHeader(
-            eyebrow: "TU INFORMACION, TUYA",
-            title: "Conecta Apple Health",
-            detail: "Recvel procesa tus senales en este dispositivo. Sin cuenta, backend ni venta de datos."
+            eyebrow: RecvelL10n.text("onboarding.health.eyebrow"),
+            title: RecvelL10n.text("onboarding.health.title"),
+            detail: RecvelL10n.text("onboarding.health.detail")
         ) {
             VStack(spacing: 12) {
                 VStack(spacing: 0) {
-                    healthDataRow(icon: "waveform.path.ecg", title: "Recuperacion", detail: "HRV, FC en reposo y respiracion", color: ScoreKind.recovery.color)
+                    healthDataRow(icon: "waveform.path.ecg", title: ScoreKind.recovery.displayName, detail: RecvelL10n.text("onboarding.health.recovery"), color: ScoreKind.recovery.color)
                     Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 46)
-                    healthDataRow(icon: "moon.stars.fill", title: "Sueno", detail: "Duracion y fases disponibles", color: ScoreKind.sleep.color)
+                    healthDataRow(icon: "moon.stars.fill", title: ScoreKind.sleep.displayName, detail: RecvelL10n.text("onboarding.health.sleep"), color: ScoreKind.sleep.color)
                     Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 46)
-                    healthDataRow(icon: "figure.run", title: "Carga", detail: "Workouts, energia, pasos y FC", color: ScoreKind.strain.color)
+                    healthDataRow(icon: "figure.run", title: ScoreKind.strain.displayName, detail: RecvelL10n.text("onboarding.health.load"), color: ScoreKind.strain.color)
                 }
                 .padding(16)
                 .platformGlass()
@@ -297,8 +297,8 @@ struct OnboardingView: View {
                         .font(.title2)
                         .foregroundStyle(ScoreKind.recovery.color)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Procesamiento local").font(.subheadline.weight(.bold))
-                        Text("Puedes revocar permisos cuando quieras.").font(.caption).foregroundStyle(.secondary)
+                        Text("onboarding.health.local").font(.subheadline.weight(.bold))
+                        Text("onboarding.health.revoke").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -311,7 +311,7 @@ struct OnboardingView: View {
                 } label: {
                     HStack {
                         Image(systemName: "heart.text.square.fill")
-                        Text(health.isRequestingAuthorization ? "Solicitando acceso" : "Conectar Apple Health")
+                        Text(health.isRequestingAuthorization ? RecvelL10n.text("onboarding.health.requesting") : RecvelL10n.text("onboarding.health.connect"))
                         Spacer()
                         if health.dataMode != .demo { Image(systemName: "checkmark.circle.fill") }
                     }
@@ -352,7 +352,7 @@ struct OnboardingView: View {
                 advance()
             } label: {
                 HStack {
-                    Text(step == stepCount - 1 ? "Entrar a Recvel" : (step == 0 ? "Comenzar" : "Continuar"))
+                    Text(step == stepCount - 1 ? RecvelL10n.text("onboarding.action.enter") : (step == 0 ? RecvelL10n.text("onboarding.action.start") : RecvelL10n.text("onboarding.action.continue")))
                     Spacer()
                     Image(systemName: step == stepCount - 1 ? "checkmark" : "arrow.right")
                 }
@@ -369,7 +369,7 @@ struct OnboardingView: View {
             .accessibilityIdentifier("onboarding.primaryAction")
 
             if step == stepCount - 1 {
-                Text("Puedes conectar Apple Health mas tarde desde Ajustes")
+                Text("onboarding.health.later")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -436,7 +436,7 @@ private struct OnboardingPageHeader<Content: View>: View {
     }
 
     var body: some View {
-        ScrollView {
+        WidthLockedScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Spacer().frame(height: 22)
                 Text(eyebrow)
@@ -571,18 +571,18 @@ private enum OnboardingGoal: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .perform: "Rendir mejor"
-        case .recover: "Recuperarme mejor"
-        case .sleep: "Dormir con consistencia"
-        case .balance: "Sentirme con mas energia"
+        case .perform: RecvelL10n.text("onboarding.goal.perform.title")
+        case .recover: RecvelL10n.text("onboarding.goal.recover.title")
+        case .sleep: RecvelL10n.text("onboarding.goal.sleep.title")
+        case .balance: RecvelL10n.text("onboarding.goal.balance.title")
         }
     }
     var detail: String {
         switch self {
-        case .perform: "Entrenar con la carga adecuada"
-        case .recover: "Entender cuando bajar el ritmo"
-        case .sleep: "Construir horarios que si funcionan"
-        case .balance: "Equilibrar actividad, descanso y habitos"
+        case .perform: RecvelL10n.text("onboarding.goal.perform.detail")
+        case .recover: RecvelL10n.text("onboarding.goal.recover.detail")
+        case .sleep: RecvelL10n.text("onboarding.goal.sleep.detail")
+        case .balance: RecvelL10n.text("onboarding.goal.balance.detail")
         }
     }
     var icon: String {
@@ -608,12 +608,12 @@ private enum OnboardingPriority: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .recovery: "Recovery"
-        case .sleep: "Sueno"
-        case .training: "Entrenamiento"
-        case .stress: "Activacion"
-        case .nutrition: "Nutricion"
-        case .heart: "Salud cardiaca"
+        case .recovery: RecvelL10n.text("score.recovery.title")
+        case .sleep: RecvelL10n.text("score.sleep.title")
+        case .training: RecvelL10n.text("tab.training")
+        case .stress: RecvelL10n.text("score.stress.title")
+        case .nutrition: RecvelL10n.text("tab.nutrition")
+        case .heart: RecvelL10n.text("onboarding.priority.heart")
         }
     }
     var icon: String {

@@ -115,7 +115,7 @@ struct PlanView: View {
         return min(sum / Double(parts.count), 1)
     }
 
-    /// Dias consecutivos hacia atras con al menos una meta diaria tocada (entreno, sueno o calma).
+    /// Días consecutivos hacia atrás con al menos una meta diaria registrada.
     private var softStreak: Int {
         var streak = 0
         var day = calendar.startOfDay(for: .now)
@@ -199,7 +199,7 @@ struct PlanView: View {
             )
             .ignoresSafeArea()
 
-            ScrollView {
+            WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     pageHeader
                     weekPulse
@@ -296,13 +296,13 @@ struct PlanView: View {
                     .foregroundStyle(.secondary)
                 if softStreak > 0 {
                     Label(
-                        softStreak == 1 ? "1 dia con senal util" : "\(softStreak) dias con senal util",
+                        softStreak == 1 ? "1 día con una señal útil" : "\(softStreak) días con una señal útil",
                         systemImage: "flame.fill"
                     )
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(ScoreKind.strain.color)
                 } else {
-                    Text("Marca un entreno, noche o check-in calmado para empezar el ritmo.")
+                    Text(RecvelL10n.text("plan.week.empty"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -381,7 +381,7 @@ struct PlanView: View {
             }
 
             weekStrip(
-                title: "Entrenos 20+ min",
+                title: RecvelL10n.text("plan.goal.training20"),
                 icon: "figure.run",
                 color: ScoreKind.strain.color,
                 current: workoutDays,
@@ -431,12 +431,12 @@ struct PlanView: View {
 
     private var weekRangeCaption: String {
         guard let first = weekDaySlots.first, let last = weekDaySlots.last else {
-            return "Cuenta solo dias de esta semana desde Apple Health y tus registros"
+            return "Cuenta únicamente los días de esta semana con datos de Apple Health o registros propios"
         }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "es_ES")
         formatter.setLocalizedDateFormatFromTemplate("Md")
-        let remaining = daysLeftInWeek == 0 ? "ultimo dia" : "quedan \(daysLeftInWeek) dias"
+        let remaining = daysLeftInWeek == 0 ? "último día" : "quedan \(daysLeftInWeek) días"
         return "\(formatter.string(from: first)) – \(formatter.string(from: last)) · \(remaining)"
     }
 
@@ -474,7 +474,7 @@ struct PlanView: View {
         let remaining = max(goal - current, 0)
         let status = remaining == 0
             ? "Meta alcanzada"
-            : (remaining == 1 ? "Falta 1 dia" : "Faltan \(remaining) dias")
+            : (remaining == 1 ? "Falta 1 día" : "Faltan \(remaining) días")
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -525,19 +525,19 @@ struct PlanView: View {
     private var goalEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Ajustar metas de la semana").font(.headline)
-            Text("Cambian solo el conteo de arriba (esta semana). No mueven el sueno ni la carga sugerida de hoy.")
+            Text("Estas metas solo modifican el seguimiento semanal. No cambian la recomendación de Sueño ni la Carga sugerida para hoy.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            goalStepper("Entrenos de 20+ min", value: $workoutGoal, range: 1...7)
+            goalStepper(RecvelL10n.text("plan.goal.training20"), value: $workoutGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
             goalStepper("Noches de 7.5+ h", value: $sleepGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
-            goalStepper("Dias de carga equilibrada", value: $balancedGoal, range: 1...7)
+            goalStepper("Días con Carga equilibrada", value: $balancedGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
-            goalStepper("Dias con nutricion", value: $nutritionGoal, range: 1...7)
+            goalStepper("Días con Nutrición registrada", value: $nutritionGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
-            goalStepper("Check-ins calmados", value: $calmGoal, range: 1...7)
+            goalStepper(RecvelL10n.text("plan.goal.calmLogs"), value: $calmGoal, range: 1...7)
         }
         .padding(17)
         .liquidGlass(cornerRadius: 8)
@@ -558,7 +558,7 @@ struct PlanView: View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Recordatorios del plan", systemImage: "bell.badge.fill")
                 .font(.headline)
-            Toggle("Recordar ventana de entreno", isOn: Binding(
+            Toggle(RecvelL10n.text("plan.reminder.trainingWindow"), isOn: Binding(
                 get: { workoutReminderEnabled },
                 set: { updateWorkoutReminder($0) }
             ))
@@ -581,7 +581,7 @@ struct PlanView: View {
     }
 
     private var methodology: some View {
-        Text("El enfoque y la carga de hoy salen de tu Recovery. La noche combina base, deuda reciente y strain; la hora de cama se alinea al conteo de ciclos (~90 min) mas cercano a esa necesidad, mas ~15 min para dormirte. La rutina previa es opcional (wind-down tipico 30-60 min). Nutricion cuenta dias con comida registrada (cerca de tu meta si tienes perfil). Calma cuenta meditacion Si o un check-in emocional. Estimaciones de bienestar, no prescripcion clinica.")
+        Text("El enfoque y la Carga de hoy consideran tu Recuperación. El plan nocturno combina necesidad base, deuda reciente y Carga; la hora sugerida se aproxima a ciclos de 90 min y contempla 15 min para conciliar el sueño. La rutina previa es opcional. Nutrición cuenta días con comidas registradas y Calma considera mindfulness o un registro emocional. Son estimaciones de bienestar, no indicaciones clínicas.")
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 3)
@@ -713,12 +713,12 @@ struct PlanHomeCard: View {
 
             VStack(spacing: 10) {
                 goalProgressRow(
-                    title: "Entrenos",
+                    title: RecvelL10n.text("tab.training"),
                     progress: weekProgressLine(
                         current: workoutCurrent,
                         goal: workoutGoal,
-                        unitSingular: "entreno",
-                        unitPlural: "entrenos"
+                        unitSingular: "entrenamiento",
+                        unitPlural: "entrenamientos"
                     ),
                     remaining: remainingCaption(current: workoutCurrent, goal: workoutGoal),
                     fraction: progressFraction(current: workoutCurrent, goal: workoutGoal),
@@ -742,7 +742,7 @@ struct PlanHomeCard: View {
                         current: balancedCurrent,
                         goal: balancedGoal,
                         unitSingular: "dia",
-                        unitPlural: "dias"
+                        unitPlural: "días"
                     ),
                     remaining: remainingCaption(current: balancedCurrent, goal: balancedGoal),
                     fraction: progressFraction(current: balancedCurrent, goal: balancedGoal),
@@ -761,7 +761,7 @@ struct PlanHomeCard: View {
     }
 
     private var accessibilitySummary: String {
-        "Metas semanales. \(focusTitle). \(weekProgressLine(current: workoutCurrent, goal: workoutGoal, unitSingular: "entreno", unitPlural: "entrenos")). \(weekProgressLine(current: sleepCurrent, goal: sleepGoal, unitSingular: "noche", unitPlural: "noches")). \(weekProgressLine(current: balancedCurrent, goal: balancedGoal, unitSingular: "dia", unitPlural: "dias"))."
+        "Metas semanales. \(focusTitle). \(weekProgressLine(current: workoutCurrent, goal: workoutGoal, unitSingular: "entrenamiento", unitPlural: "entrenamientos")). \(weekProgressLine(current: sleepCurrent, goal: sleepGoal, unitSingular: "noche", unitPlural: "noches")). \(weekProgressLine(current: balancedCurrent, goal: balancedGoal, unitSingular: "día", unitPlural: "días"))."
     }
 
     private func weekProgressLine(current: Int, goal: Int, unitSingular: String, unitPlural: String) -> String {
