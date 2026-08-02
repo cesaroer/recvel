@@ -13,6 +13,14 @@ final class HealthDataProvider: ObservableObject {
     @Published private(set) var isRequestingAuthorization = false
     @Published private(set) var isLoading = false
 
+    /// Fase del nucleo: snapshot del dia + historial. La consumen las tarjetas
+    /// de puntuaciones, tendencias y drivers.
+    @Published private(set) var corePhase: LoadPhase = .loading
+    /// Fase de la curva de activacion horaria. Va aparte porque se consulta
+    /// DESPUES del historial: sin separarla, el resto de la pantalla esperaba
+    /// por ella sin necesidad.
+    @Published private(set) var activationPhase: LoadPhase = .loading
+
     private let healthStore = HKHealthStore()
     private let calendar = Calendar.autoupdatingCurrent
     private let useDemoData: Bool
@@ -27,6 +35,12 @@ final class HealthDataProvider: ObservableObject {
             dataMode = .demo
             permissionState = .requested
             authorizationMessage = "Modo demo"
+            // Demo trae los datos ya puestos: las fases nacen resueltas. Sin
+            // esto quedaban en `.loading` hasta el primer `refresh()`, y con
+            // `-skipHealthKitRefresh` (que lo salta) las tarjetas se quedaban
+            // en esqueleto para siempre.
+            corePhase = .ready
+            activationPhase = .ready
         } else {
             snapshot = .empty
             history = []
@@ -35,6 +49,7 @@ final class HealthDataProvider: ObservableObject {
             permissionState = HKHealthStore.isHealthDataAvailable() ? .notRequested : .unavailable
             authorizationMessage = HKHealthStore.isHealthDataAvailable() ? "Conecta Apple Health" : "HealthKit no disponible"
         }
+        SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
     }
 
     var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
@@ -62,10 +77,14 @@ final class HealthDataProvider: ObservableObject {
         guard isHealthDataAvailable, !isLoading else { return }
         if useDemoData && !forceHealthKit {
             dataMode = .demo
+            corePhase = .ready
+            activationPhase = activation.isEmpty ? .empty : .ready
             return
         }
 
         isLoading = true
+        corePhase = .loading
+        activationPhase = .loading
         defer { isLoading = false }
         await updatePermissionRequestState()
 
@@ -81,9 +100,12 @@ final class HealthDataProvider: ObservableObject {
             history = []
             activation = []
             dataMode = .empty
+            corePhase = .empty
+            activationPhase = .empty
             authorizationMessage = permissionState == .notRequested
                 ? "Autoriza Apple Health para comenzar"
                 : "No encontramos datos en las categorias autorizadas"
+            SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
             return
         }
 
@@ -110,9 +132,14 @@ final class HealthDataProvider: ObservableObject {
                 )
             }
         }
+        // El nucleo se publica AQUI, antes de pedir la activacion: las tarjetas
+        // de puntuaciones dejan de esperar por una consulta que no necesitan.
         snapshot = days.last ?? latest
         history = days
+        corePhase = .ready
+
         activation = await loadActivation(restingHeartRate: snapshot.restingHeartRate)
+        activationPhase = activation.isEmpty ? .empty : .ready
 
         if days.count < 7 {
             dataMode = .buildingBaseline
@@ -124,6 +151,7 @@ final class HealthDataProvider: ObservableObject {
             dataMode = .healthKit
             authorizationMessage = "Apple Health · \(snapshot.sourceNames.count) fuente(s)"
         }
+        SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
     }
 
     private var readTypes: Set<HKObjectType> {
@@ -148,6 +176,16 @@ final class HealthDataProvider: ObservableObject {
             HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
             HKObjectType.categoryType(forIdentifier: .mindfulSession),
             HKObjectType.workoutType()
+        ].compactMap { $0 }).union(effortReadTypes)
+    }
+
+    /// Tipos de esfuerzo de entrenamiento (iOS 18). Se añaden aparte por el
+    /// gate de disponibilidad.
+    private var effortReadTypes: Set<HKObjectType> {
+        guard #available(iOS 18.0, *) else { return [] }
+        return Set([
+            HKObjectType.quantityType(forIdentifier: .workoutEffortScore),
+            HKObjectType.quantityType(forIdentifier: .estimatedWorkoutEffortScore)
         ].compactMap { $0 })
     }
 
@@ -442,6 +480,7 @@ final class HealthDataProvider: ObservableObject {
             let estimatedMaximum = max((maximum ?? 175) * 1.03, 180)
             let zones = trainingLoadEngine.zones(observations: observations, estimatedMaximumHeartRate: estimatedMaximum)
             let load = trainingLoadEngine.cardiovascularLoad(zones: zones)
+            let effort = await workoutEffort(for: workout)
 
             summaries.append(
                 WorkoutSummary(
@@ -456,11 +495,35 @@ final class HealthDataProvider: ObservableObject {
                     heartRateRecoveryOneMinute: heartRateRecovery,
                     zones: zones,
                     cardiovascularLoad: load,
-                    sourceName: workout.sourceRevision.source.name
+                    sourceName: workout.sourceRevision.source.name,
+                    effortScore: effort?.score,
+                    effortIsEstimated: effort?.isEstimated ?? false
                 )
             )
         }
         return summaries
+    }
+
+    /// Lee el esfuerzo (HKWorkoutEffortScore, iOS 18) asociado a un workout.
+    /// Prefiere el manual del usuario sobre el estimado por Apple. Devuelve
+    /// `nil` en iOS<18 o cuando no hay muestra.
+    private func workoutEffort(for workout: HKWorkout) async -> (score: Double, isEstimated: Bool)? {
+        guard #available(iOS 18.0, *) else { return nil }
+        let manual = await effortSample(for: workout, identifier: .workoutEffortScore)
+        if let manual { return (manual, false) }
+        if let estimated = await effortSample(for: workout, identifier: .estimatedWorkoutEffortScore) {
+            return (estimated, true)
+        }
+        return nil
+    }
+
+    @available(iOS 18.0, *)
+    private func effortSample(for workout: HKWorkout, identifier: HKQuantityTypeIdentifier) async -> Double? {
+        guard let type = HKObjectType.quantityType(forIdentifier: identifier) else { return nil }
+        let predicate = HKQuery.predicateForWorkoutEffortSamplesRelated(workout: workout, activity: nil)
+        let samples: [HKQuantitySample] = await sampleQuery(type: type, predicate: predicate)
+        // La escala de effort es adimensional (appleEffortScore 0-10).
+        return samples.last?.quantity.doubleValue(for: .appleEffortScore())
     }
 
     private func loadActivation(restingHeartRate: Double?) async -> [ActivationPoint] {
@@ -573,19 +636,22 @@ final class HealthDataProvider: ObservableObject {
         return value < 12 * 60 ? value + 24 * 60 : value
     }
 
+    /// Nombre visible del tipo de entrenamiento, en el idioma de la app.
+    /// Estaba escrito solo en español y se colaba tal cual en la UI inglesa.
     private func workoutName(_ type: HKWorkoutActivityType) -> String {
-        switch type {
-        case .running: "Carrera"
-        case .walking: "Caminata"
-        case .cycling: "Ciclismo"
-        case .traditionalStrengthTraining, .functionalStrengthTraining: "Fuerza"
-        case .highIntensityIntervalTraining: "HIIT"
-        case .yoga: "Yoga"
-        case .swimming: "Natacion"
-        case .rowing: "Remo"
-        case .hiking: "Senderismo"
-        default: "Entrenamiento"
+        let key = switch type {
+        case .running: "workout.type.running"
+        case .walking: "workout.type.walking"
+        case .cycling: "workout.type.cycling"
+        case .traditionalStrengthTraining, .functionalStrengthTraining: "workout.type.strength"
+        case .highIntensityIntervalTraining: "workout.type.hiit"
+        case .yoga: "workout.type.yoga"
+        case .swimming: "workout.type.swimming"
+        case .rowing: "workout.type.rowing"
+        case .hiking: "workout.type.hiking"
+        default: "workout.type.generic"
         }
+        return RecvelL10n.text(key)
     }
 
     private static var demoActivation: [ActivationPoint] {

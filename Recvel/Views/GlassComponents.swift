@@ -334,6 +334,93 @@ extension View {
     }
 }
 
+/// Superficie plana del lenguaje Revel: relleno un punto por encima del fondo,
+/// radio amplio y **sin degradado, tinte ni sombra**; solo un hairline muy
+/// tenue para separarla del fondo.
+///
+/// Es la alternativa sobria a `.liquidGlass()`: donde hay muchas tarjetas
+/// seguidas, el cristal con tinte y sus tres capas de overlay compiten entre si
+/// y la pantalla se ve ruidosa. Aqui manda el contenido.
+struct RevelSurface: ViewModifier {
+    var cornerRadius: CGFloat = 22
+    /// Acento opcional: se usa MUY diluido, solo para teñir el relleno.
+    var accent: Color?
+    /// Destaca la tarjeta sobre sus vecinas: borde en el color de acento,
+    /// relleno algo mas teñido y un halo suave.
+    ///
+    /// Es para las tarjetas que **aconsejan**, no las que informan. Con todas
+    /// las superficies iguales, un banner de consejo se perdia entre las
+    /// tarjetas de datos que tiene encima y debajo. Usar con moderacion: si se
+    /// destaca todo, no se destaca nada.
+    var emphasized: Bool = false
+
+    private var borderColor: Color {
+        guard emphasized, let accent else { return Color.white.opacity(0.06) }
+        return accent.opacity(0.42)
+    }
+
+    private var borderWidth: CGFloat { emphasized && accent != nil ? 1.2 : 0.5 }
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        return content
+            .background {
+                shape
+                    .fill(Color(red: 0.098, green: 0.104, blue: 0.121))
+                    .overlay {
+                        if let accent {
+                            shape.fill(accent.opacity(emphasized ? 0.10 : 0.055))
+                        }
+                    }
+            }
+            .overlay {
+                shape
+                    .strokeBorder(borderColor, lineWidth: borderWidth)
+                    .allowsHitTesting(false)
+            }
+            .clipShape(shape)
+            // El halo va FUERA del clip para que no lo recorte la propia forma.
+            .shadow(
+                color: emphasized ? (accent ?? .clear).opacity(0.22) : .clear,
+                radius: 14,
+                y: 3
+            )
+    }
+}
+
+extension View {
+    /// Tarjeta plana Revel. Ver `RevelSurface`.
+    func revelSurface(
+        cornerRadius: CGFloat = 22,
+        accent: Color? = nil,
+        emphasized: Bool = false
+    ) -> some View {
+        modifier(RevelSurface(cornerRadius: cornerRadius, accent: accent, emphasized: emphasized))
+    }
+}
+
+/// Cabecera de seccion: eyebrow tenue en mayusculas sobre un titulo grande.
+/// Da jerarquia sin recurrir a mas cajas.
+struct RevelSectionHeader: View {
+    let eyebrow: String
+    let title: String
+    var accent: Color = .white
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(eyebrow.uppercased())
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(0.8)
+                .foregroundStyle(accent.opacity(0.85))
+            Text(title)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 10)
+    }
+}
+
 /// `ScrollView` vertical con el contenido fijado al ancho del viewport.
 ///
 /// Sustituye al `ScrollView { … }` de las superficies a pantalla completa. Un
@@ -444,6 +531,11 @@ extension ButtonStyle where Self == LiquidGlassButtonStyle {
 // MARK: - Anillo hero circular con gradiente angular
 
 struct HeroScoreRing: View {
+    /// Bajo esqueleto el anillo NO dibuja progreso: un arco a medias se lee
+    /// como un valor real y estariamos enseñando un dato que aun no existe.
+    @Environment(\.redactionReasons) private var redactionReasons
+    private var isRedacted: Bool { redactionReasons.contains(.placeholder) }
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let score: WellnessScore
     var valueText: String?
@@ -459,7 +551,7 @@ struct HeroScoreRing: View {
                     .stroke(Color.white.opacity(0.07), lineWidth: 10)
 
                 Circle()
-                    .trim(from: 0, to: animatedProgress)
+                    .trim(from: 0, to: isRedacted ? 0 : animatedProgress)
                     .stroke(
                         AngularGradient(
                             colors: [score.kind.color.opacity(0.55), score.kind.color],
@@ -1093,5 +1185,425 @@ struct StardustField: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Grafica neon (lenguaje Revel para tendencias)
+
+/// Tendencia con estetica neon: linea gruesa con halo, matriz de puntos bajo la
+/// curva, relleno degradado tenue y anillo hueco en el ultimo dato.
+///
+/// Sustituye a los `Chart` de Swift Charts de las tarjetas de Entrenamiento.
+/// Se dibuja en un solo `Canvas` porque la matriz de puntos va **recortada al
+/// area bajo la curva**, algo que Swift Charts no expresa; ademas evita montar
+/// un motor de graficas entero para una sparkline sin ejes ni etiquetas.
+///
+/// El color lo pone quien la usa: cada metrica conserva su identidad (carga en
+/// ambar, cardio en morado…) y solo se comparte el estilo.
+struct NeonTrendChart: View {
+    /// Valores en orden cronologico. Con menos de 2 no se dibuja nada.
+    let values: [Double]
+    let color: Color
+    /// Escala fija opcional. Si es `nil` se ajusta a los datos.
+    var domain: ClosedRange<Double>?
+    /// Anillo en el ultimo punto, como en la referencia.
+    var showsEndMarker: Bool = true
+
+    private let dotSpacing: CGFloat = 9
+    private let lineWidth: CGFloat = 3.4
+
+    var body: some View {
+        Canvas { context, size in
+            guard size.width > 1, size.height > 1 else { return }
+
+            // Fantasma de carga: un `Canvas` se dibuja a mano, asi que
+            // `.redacted` no lo afecta y sin esto la tarjeta en esqueleto
+            // dejaba un hueco vacio. Con menos de 2 datos pintamos la matriz y
+            // una linea base tenues, que bajo el barrido del esqueleto se leen
+            // como grafica cargando.
+            guard values.count >= 2 else {
+                var y = dotSpacing / 2
+                while y < size.height {
+                    var x = dotSpacing / 2
+                    while x < size.width {
+                        context.fill(
+                            Path(ellipseIn: CGRect(x: x - 0.8, y: y - 0.8, width: 1.6, height: 1.6)),
+                            with: .color(.white.opacity(0.05))
+                        )
+                        x += dotSpacing
+                    }
+                    y += dotSpacing
+                }
+                var baseline = Path()
+                baseline.move(to: CGPoint(x: 0, y: size.height * 0.72))
+                baseline.addLine(to: CGPoint(x: size.width, y: size.height * 0.72))
+                context.stroke(baseline, with: .color(.white.opacity(0.08)),
+                               style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                return
+            }
+
+            let lower: Double
+            let upper: Double
+            if let domain {
+                lower = domain.lowerBound
+                upper = domain.upperBound
+            } else {
+                let minimum = values.min() ?? 0
+                let maximum = values.max() ?? 1
+                // Aire arriba y abajo para que la curva no toque los bordes.
+                let padding = max((maximum - minimum) * 0.18, 0.5)
+                lower = minimum - padding
+                upper = maximum + padding
+            }
+            let span = max(upper - lower, 0.0001)
+
+            // El trazo tiene grosor: se reserva su radio para que no se recorte.
+            let inset = lineWidth / 2 + 2
+            let usableHeight = max(size.height - inset * 2, 1)
+            // Y a la derecha, el radio del anillo final: sin esto se dibujaba
+            // justo en el borde y salia cortado por la mitad.
+            let trailingInset: CGFloat = showsEndMarker ? 9 : inset
+            let usableWidth = max(size.width - trailingInset, 1)
+            let points: [CGPoint] = values.enumerated().map { index, value in
+                let x = usableWidth * CGFloat(index) / CGFloat(values.count - 1)
+                let normalized = (value - lower) / span
+                let y = inset + usableHeight * CGFloat(1 - min(max(normalized, 0), 1))
+                return CGPoint(x: x, y: y)
+            }
+
+            let line = Self.smoothPath(through: points)
+            var area = line
+            area.addLine(to: CGPoint(x: points[points.count - 1].x, y: size.height))
+            area.addLine(to: CGPoint(x: points[0].x, y: size.height))
+            area.closeSubpath()
+
+            // 1. Matriz de puntos, recortada bajo la curva. Se apaga hacia la
+            //    izquierda y hacia abajo para dar profundidad.
+            var matrix = context
+            matrix.clip(to: area)
+            var y = dotSpacing / 2
+            while y < size.height {
+                var x = dotSpacing / 2
+                while x < size.width {
+                    let horizontal = x / size.width
+                    let vertical = 1 - (y / size.height)
+                    let intensity = (0.22 + 0.55 * horizontal) * (0.35 + 0.65 * vertical)
+                    matrix.fill(
+                        Path(ellipseIn: CGRect(x: x - 0.8, y: y - 0.8, width: 1.6, height: 1.6)),
+                        with: .color(color.opacity(intensity * 0.85))
+                    )
+                    x += dotSpacing
+                }
+                y += dotSpacing
+            }
+
+            // 2. Relleno degradado, muy tenue: da cuerpo sin tapar la matriz.
+            context.fill(
+                area,
+                with: .linearGradient(
+                    Gradient(colors: [color.opacity(0.20), color.opacity(0.02)]),
+                    startPoint: CGPoint(x: 0, y: 0),
+                    endPoint: CGPoint(x: 0, y: size.height)
+                )
+            )
+
+            // 3. Halo: el mismo trazo desenfocado debajo del principal.
+            var glow = context
+            glow.addFilter(.blur(radius: 7))
+            glow.stroke(line, with: .color(color.opacity(0.75)),
+                        style: StrokeStyle(lineWidth: lineWidth + 3, lineCap: .round, lineJoin: .round))
+
+            // 4. Trazo principal, con el centro aclarado (efecto tubo de neon).
+            context.stroke(line, with: .color(color),
+                           style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+            context.stroke(line, with: .color(.white.opacity(0.35)),
+                           style: StrokeStyle(lineWidth: lineWidth * 0.35, lineCap: .round, lineJoin: .round))
+
+            // 5. Anillo del ultimo dato: hueco, como en la referencia.
+            if showsEndMarker, let end = points.last {
+                let outer = CGRect(x: end.x - 6.5, y: end.y - 6.5, width: 13, height: 13)
+                var ringGlow = context
+                ringGlow.addFilter(.blur(radius: 6))
+                ringGlow.stroke(Path(ellipseIn: outer), with: .color(color), lineWidth: 3)
+                context.fill(Path(ellipseIn: outer), with: .color(.black.opacity(0.85)))
+                context.stroke(Path(ellipseIn: outer), with: .color(color), lineWidth: 3)
+            }
+        }
+        .drawingGroup()
+        .accessibilityHidden(true)
+    }
+
+    /// Catmull-Rom a Bezier cubica: curva suave que **pasa por** los datos, a
+    /// diferencia de suavizar con puntos de control inventados.
+    private static func smoothPath(through points: [CGPoint]) -> Path {
+        var path = Path()
+        guard let first = points.first else { return path }
+        path.move(to: first)
+        guard points.count > 2 else {
+            for point in points.dropFirst() { path.addLine(to: point) }
+            return path
+        }
+        for index in 0..<(points.count - 1) {
+            let p0 = points[max(index - 1, 0)]
+            let p1 = points[index]
+            let p2 = points[index + 1]
+            let p3 = points[min(index + 2, points.count - 1)]
+            let control1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
+            let control2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
+            path.addCurve(to: p2, control1: control1, control2: control2)
+        }
+        return path
+    }
+}
+
+// MARK: - Estado de carga unificado
+
+/// Fase de carga de un componente.
+///
+/// Es el vocabulario compartido de toda la app: cada tarjeta declara la suya y
+/// se pinta en consecuencia. **Deliberadamente por componente y no por
+/// pantalla**: antes Home cambiaba TODO el contenido por un cartel de "Leyendo
+/// Apple Health", asi que una sola consulta lenta escondia datos que ya
+/// estaban listos. Ahora cada tarjeta que ya tiene lo suyo lo pinta, y solo las
+/// que siguen esperando muestran esqueleto.
+enum LoadPhase: Equatable {
+    /// Sin datos todavia: se muestra el esqueleto.
+    case loading
+    /// Hay datos que pintar.
+    case ready
+    /// Termino de cargar y no hay nada que mostrar (estado vacio, no esqueleto).
+    case empty
+
+    var isLoading: Bool { self == .loading }
+
+    /// Combina dependencias: una tarjeta que necesita varias fuentes sigue en
+    /// `.loading` mientras cualquiera lo este, y solo esta vacia si todas lo estan.
+    static func combined(_ phases: [LoadPhase]) -> LoadPhase {
+        if phases.contains(.loading) { return .loading }
+        return phases.contains(.ready) ? .ready : .empty
+    }
+}
+
+/// Componente que sabe declarar su propia fase de carga.
+///
+/// Implementarlo obliga a cada tarjeta a responder "¿tengo ya mis datos?" sin
+/// consultar un estado global, que es lo que permite que carguen a ritmos
+/// distintos sin bloquearse entre si.
+protocol LoadableComponent: View {
+    var phase: LoadPhase { get }
+}
+
+extension LoadableComponent {
+    /// Aplica el esqueleto segun la fase declarada por el componente.
+    func withSkeleton() -> some View { skeleton(phase) }
+}
+
+/// Barrido de brillo del esqueleto. Se para con Reduce Motion.
+private struct SkeletonShimmer: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var sweep = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            LinearGradient(
+                colors: [.clear, Color.white.opacity(0.16), .clear],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(width: max(width * 0.5, 40))
+            .offset(x: sweep ? width : -width * 0.5)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                    sweep = true
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct SkeletonModifier: ViewModifier {
+    let phase: LoadPhase
+
+    func body(content: Content) -> some View {
+        content
+            // `.redacted` reutiliza el layout REAL como esqueleto: los bloques
+            // grises salen con el tamaño y la posicion definitivos, asi que no
+            // hay una vista-esqueleto paralela que mantener sincronizada.
+            .redacted(reason: phase.isLoading ? .placeholder : [])
+            .overlay {
+                if phase.isLoading {
+                    SkeletonShimmer().clipped()
+                }
+            }
+            // Un esqueleto no se toca: evita navegar a una tarjeta aun sin datos.
+            .disabled(phase.isLoading)
+            .accessibilityHidden(phase.isLoading)
+            .animation(.easeOut(duration: 0.32), value: phase)
+    }
+}
+
+extension View {
+    /// Muestra este componente como esqueleto mientras `phase` sea `.loading`.
+    func skeleton(_ phase: LoadPhase) -> some View {
+        modifier(SkeletonModifier(phase: phase))
+    }
+}
+
+/// Bloque de esqueleto explicito.
+///
+/// Para lo que `.redacted` no puede cubrir: un `Canvas` (las graficas neon) se
+/// dibuja a mano y la redaccion no lo toca, asi que ahi hace falta un
+/// marcador con la altura real del grafico.
+struct SkeletonBlock: View {
+    var cornerRadius: CGFloat = 10
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(Color.white.opacity(0.06))
+    }
+}
+
+// MARK: - Superficie "inteligente" (borde iridiscente animado)
+
+/// Superficie con borde iridiscente animado, en la linea de como Apple destaca
+/// sus componentes de Apple Intelligence.
+///
+/// Se reserva para lo que **interpreta o estima**, no para lo que informa: en
+/// Nutricion la lleva "Registrar comida", donde la app estima macros a partir
+/// de texto, foto, voz o codigo de barras. Igual que `emphasized` en
+/// `RevelSurface`, pierde todo su valor si se usa en mas de un sitio por
+/// pantalla.
+///
+/// La tecnica: varios trazos de un `AngularGradient` con distintos grosores y
+/// desenfoques —eso da la profundidad del halo— y el degradado girando
+/// lentamente. Con Reduce Motion se queda quieto: el borde sigue ahi, solo deja
+/// de rotar.
+struct IntelligenceSurface: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var cornerRadius: CGFloat = 22
+    @State private var angle: Double = 0
+
+    /// Secuencia iridiscente violeta → azul → cian → rosa → naranja → dorado.
+    /// El primer tono se repite al final para que el ciclo cierre sin costura.
+    private static let spectrum: [Color] = [
+        Color(red: 0.60, green: 0.35, blue: 0.96),
+        Color(red: 0.30, green: 0.56, blue: 0.98),
+        Color(red: 0.26, green: 0.82, blue: 0.90),
+        Color(red: 0.95, green: 0.45, blue: 0.72),
+        Color(red: 0.98, green: 0.60, blue: 0.33),
+        Color(red: 0.98, green: 0.78, blue: 0.30),
+        Color(red: 0.60, green: 0.35, blue: 0.96)
+    ]
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let gradient = AngularGradient(
+            gradient: Gradient(colors: Self.spectrum),
+            center: .center,
+            angle: .degrees(angle)
+        )
+
+        return content
+            .background {
+                ZStack {
+                    shape.fill(Color(red: 0.098, green: 0.104, blue: 0.121))
+                    // Tinte del relleno: muy desenfocado y muy diluido, solo
+                    // para que el interior no quede gris muerto junto al borde.
+                    shape.fill(gradient)
+                        .blur(radius: 34)
+                        .opacity(0.16)
+                }
+                .clipShape(shape)
+            }
+            .overlay {
+                ZStack {
+                    // Capa difusa: el halo.
+                    shape.strokeBorder(gradient, lineWidth: 3.5)
+                        .blur(radius: 8)
+                        .opacity(0.6)
+                    // Capa nitida: el filo del borde.
+                    shape.strokeBorder(gradient, lineWidth: 1.4)
+                        .opacity(0.95)
+                }
+                .allowsHitTesting(false)
+            }
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                    angle = 360
+                }
+            }
+    }
+}
+
+extension View {
+    /// Borde iridiscente animado. Ver `IntelligenceSurface` antes de usarlo:
+    /// es para componentes que estiman o interpretan, uno por pantalla.
+    func intelligenceSurface(cornerRadius: CGFloat = 22) -> some View {
+        modifier(IntelligenceSurface(cornerRadius: cornerRadius))
+    }
+}
+
+/// Cabecera de seccion del lenguaje "laboratorio": titulo en mayusculas con
+/// kerning, filete que ocupa el hueco y una nota a la derecha.
+///
+/// Es la firma tipografica del Reporte del dia. Se extrajo aqui para que otras
+/// pantallas puedan hablar ese idioma sin copiar la maquetacion.
+struct LabSectionHeader: View {
+    let title: String
+    var caption: String?
+    var tint: Color = .secondary
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .black))
+                .kerning(1.4)
+                .foregroundStyle(tint)
+            Rectangle()
+                .fill(Color.white.opacity(0.075))
+                .frame(height: 1)
+            if let caption {
+                Text(caption.uppercased())
+                    .font(.system(size: 9, weight: .heavy))
+                    .kerning(0.8)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+}
+
+/// Fondo del lenguaje "laboratorio" **en version contenida**: el degradado casi
+/// negro y UNA nebulosa tenue, sin el campo de estrellas ni el polvo animado del
+/// Reporte del dia. Da el mismo aire sin robar atencion a una pantalla donde el
+/// usuario viene a escribir.
+struct LabBackdropLite: View {
+    var tint: Color = Color(red: 0.98, green: 0.80, blue: 0.35)
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(red: 0.105, green: 0.110, blue: 0.125),
+                         Color(red: 0.043, green: 0.046, blue: 0.056)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            RadialGradient(
+                colors: [tint.opacity(0.16), .clear],
+                center: .init(x: 0.85, y: 0.02),
+                startRadius: 8,
+                endRadius: 420
+            )
+            RadialGradient(
+                colors: [Color(red: 0.36, green: 0.92, blue: 0.66).opacity(0.07), .clear],
+                center: .init(x: 0.08, y: 0.18),
+                startRadius: 8,
+                endRadius: 360
+            )
+        }
+        .ignoresSafeArea()
     }
 }

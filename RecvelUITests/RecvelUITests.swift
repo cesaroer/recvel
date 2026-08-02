@@ -9,6 +9,7 @@ final class RecvelUITests: XCTestCase {
     private func launchApp() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
+            "-uiTestEphemeralStore",
             "-hasCompletedOnboarding", "YES",
             "-skipMorningReport", "YES",
             "-useDemoData", "YES",
@@ -45,6 +46,7 @@ final class RecvelUITests: XCTestCase {
     func testOnboardingStartsAndAdvances() throws {
         let app = XCUIApplication()
         app.launchArguments = [
+            "-uiTestEphemeralStore",
             "-hasCompletedOnboarding", "NO",
             "-useDemoData", "YES",
             "-recvel.appLanguage", "es-MX"
@@ -144,7 +146,7 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Private by design"].exists)
 
         app.terminate()
-        app.launchArguments = ["-hasCompletedOnboarding", "YES",
+        app.launchArguments = ["-uiTestEphemeralStore", "-hasCompletedOnboarding", "YES",
             "-skipMorningReport", "YES", "-useDemoData", "YES"]
         app.launch()
         let todayTab = app.buttons["tab.today"]
@@ -156,6 +158,7 @@ final class RecvelUITests: XCTestCase {
     func testPhysiologicalAgeUsesTheSelectedSpanishLanguage() throws {
         let app = XCUIApplication()
         app.launchArguments = [
+            "-uiTestEphemeralStore",
             "-hasCompletedOnboarding", "YES",
             "-skipMorningReport", "YES",
             "-useDemoData", "YES",
@@ -370,6 +373,7 @@ final class RecvelUITests: XCTestCase {
     func testEmptyHealthStateDoesNotInventScores() throws {
         let app = XCUIApplication()
         app.launchArguments = [
+            "-uiTestEphemeralStore",
             "-hasCompletedOnboarding", "YES",
             "-skipMorningReport", "YES",
             "-useDemoData", "NO",
@@ -658,6 +662,7 @@ final class RecvelUITests: XCTestCase {
     private func launchAppForFasting(screeningCompleted: Bool, under18Fixture: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
+            "-uiTestEphemeralStore",
             "-hasCompletedOnboarding", "YES",
             "-skipMorningReport", "YES",
             "-useDemoData", "YES",

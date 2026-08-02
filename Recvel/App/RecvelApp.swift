@@ -11,10 +11,20 @@ struct RecvelApp: App {
         NotificationRouter.shared.register()
     }
 
+    /// Los UITests corren contra la app real, asi que sin esto escriben en el
+    /// MISMO store de SwiftData que usa el usuario: cada pasada dejaba
+    /// plantillas, logs y sesiones que despues aparecian en la app de verdad
+    /// (el usuario se encontro 24 plantillas que nunca creo). Con el flag el
+    /// store es efimero y muere con el proceso, asi que los tests no necesitan
+    /// limpiar nada al terminar: no llegan a escribir en disco.
+    private static var usesEphemeralStore: Bool {
+        ProcessInfo.processInfo.arguments.contains("-uiTestEphemeralStore")
+    }
+
     private let modelContainer: ModelContainer = {
         do {
-            return try ModelContainer(
-                for: MealLog.self,
+            let schema = Schema([
+                MealLog.self,
                 HabitLog.self,
                 DailyScoreRecord.self,
                 NutritionProfile.self,
@@ -31,6 +41,13 @@ struct RecvelApp: App {
                 BioAgeReportRecord.self,
                 ExerciseSetLog.self,
                 TrainingReadinessCheckIn.self
+            ])
+            return try ModelContainer(
+                for: schema,
+                configurations: ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: RecvelApp.usesEphemeralStore
+                )
             )
         } catch {
             fatalError("Unable to create local store: \(error)")

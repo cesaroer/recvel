@@ -309,7 +309,7 @@ struct DailyHealthSnapshot: Identifiable {
                 id: UUID(),
                 startDate: Calendar.current.date(byAdding: .hour, value: -4, to: .now) ?? .now,
                 endDate: Calendar.current.date(byAdding: .minute, value: -188, to: .now) ?? .now,
-                activityName: "Carrera",
+                activityName: RecvelL10n.text("workout.type.running"),
                 durationMinutes: 52,
                 activeEnergy: 486,
                 averageHeartRate: 148,

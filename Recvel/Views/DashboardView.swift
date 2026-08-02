@@ -113,27 +113,36 @@ struct DashboardView: View {
                 WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         entrance(0) { header }
-                        if health.isLoading && health.dataMode == .empty {
-                            loadingState
-                        } else if health.dataMode == .empty {
+                        // Solo se sustituye la pantalla cuando NO hay nada que
+                        // cargar (sin permisos / sin datos). Mientras carga, la
+                        // estructura real se mantiene y cada tarjeta se pinta
+                        // como esqueleto hasta que llegan SUS datos: antes un
+                        // cartel de "Leyendo Apple Health" tapaba la pantalla
+                        // entera y escondia lo que ya estaba listo.
+                        if health.dataMode == .empty && !health.isLoading {
                             emptyHealthState
                         } else {
-                            entrance(1) { dayStrip }
-                            entrance(2) { recoveryHero }
-                            entrance(3) { scoreRail }
+                            entrance(1) { dayStrip.skeleton(corePhase) }
+                            entrance(2) { recoveryHero.skeleton(corePhase) }
+                            entrance(3) { scoreRail.skeleton(corePhase) }
                             if isShowingToday {
-                                entrance(4) { prescription }
+                                entrance(4) { prescription.skeleton(corePhase) }
                             } else {
-                                entrance(4) { historicalContext }
+                                entrance(4) { historicalContext.skeleton(corePhase) }
                             }
                             if isShowingToday {
+                                // Plan y rutinas viven en SwiftData, no en
+                                // HealthKit: ya estan listos y no se esqueletan.
                                 entrance(5) { weekWorkoutsSection }
                                 entrance(6) { planWeekSection }
                             }
-                            entrance(7) { stressSection }
-                            entrance(8) { cardioBiologySection }
-                            entrance(9) { recoveryDrivers }
-                            entrance(10) { trendsHomeSection }
+                            // Estres depende de la curva de activacion, que se
+                            // consulta despues del historial: puede seguir en
+                            // esqueleto cuando el resto ya muestra datos.
+                            entrance(7) { stressSection.skeleton(stressPhase) }
+                            entrance(8) { cardioBiologySection.skeleton(corePhase) }
+                            entrance(9) { recoveryDrivers.skeleton(corePhase) }
+                            entrance(10) { trendsHomeSection.skeleton(corePhase) }
                             disclaimer
                         }
                     }
@@ -523,17 +532,21 @@ struct DashboardView: View {
         }
     }
 
-    private var loadingState: some View {
-        VStack(spacing: 16) {
-            ProgressView().tint(ScoreKind.recovery.color).scaleEffect(1.2)
-            Text("Leyendo Apple Health").font(.headline)
-            Text("Estamos organizando tus fuentes y preparando los últimos 14 días.")
-                .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 70)
-        .liquidGlass(cornerRadius: 8)
+    // MARK: Fases de carga de la pantalla
+
+    /// Fase del nucleo de HealthKit (snapshot + historial).
+    private var corePhase: LoadPhase { health.corePhase }
+
+    /// Estres necesita nucleo **y** curva de activacion: sigue en esqueleto
+    /// mientras cualquiera de las dos falte.
+    private var stressPhase: LoadPhase {
+        LoadPhase.combined([health.corePhase, health.activationPhase])
     }
+
+    // El antiguo `loadingState` ("Leyendo Apple Health") se elimino: sustituia
+    // toda la pantalla por un cartel y escondia las tarjetas que ya tenian sus
+    // datos. Ahora cada tarjeta se pinta como esqueleto por separado con
+    // `.skeleton(_:)`.
 
     private var emptyHealthState: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -1042,6 +1055,11 @@ struct DashboardView: View {
 }
 
 private struct FluidRecoveryHero: View {
+    /// Bajo esqueleto el anillo NO dibuja progreso: un arco a medias se lee
+    /// como un valor real y estariamos enseñando un dato que aun no existe.
+    @Environment(\.redactionReasons) private var redactionReasons
+    private var isRedacted: Bool { redactionReasons.contains(.placeholder) }
+
     let score: WellnessScore
     let mode: HealthDataMode
     let date: Date
@@ -1104,7 +1122,7 @@ private struct FluidRecoveryHero: View {
                         ZStack {
                             Circle().stroke(Color.white.opacity(0.07), lineWidth: 10)
                             Circle()
-                                .trim(from: 0, to: progress)
+                                .trim(from: 0, to: isRedacted ? 0 : progress)
                                 .stroke(
                                     AngularGradient(colors: [ScoreKind.recovery.color.opacity(0.55), ScoreKind.recovery.color], center: .center),
                                     style: StrokeStyle(lineWidth: 10, lineCap: .round)
@@ -1163,6 +1181,11 @@ private struct FluidRecoveryHero: View {
 }
 
 private struct DashboardScoreInstrument: View {
+    /// Bajo esqueleto el anillo NO dibuja progreso: un arco a medias se lee
+    /// como un valor real y estariamos enseñando un dato que aun no existe.
+    @Environment(\.redactionReasons) private var redactionReasons
+    private var isRedacted: Bool { redactionReasons.contains(.placeholder) }
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let score: WellnessScore
     @State private var animatedProgress = 0.0
@@ -1178,7 +1201,7 @@ private struct DashboardScoreInstrument: View {
             ZStack {
                 Circle().stroke(Color.white.opacity(0.07), lineWidth: 6)
                 Circle()
-                    .trim(from: 0, to: animatedProgress)
+                    .trim(from: 0, to: isRedacted ? 0 : animatedProgress)
                     .stroke(score.kind.color.gradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 HStack(alignment: .lastTextBaseline, spacing: 1) {

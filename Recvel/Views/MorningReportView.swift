@@ -19,7 +19,11 @@ import SwiftUI
 //
 // Todo lo de abajo esta escrito desde cero para esta pantalla; no importa nada
 // de `BioAgeProViews.swift` ni de `RevelInspiredComponents/`.
-private enum LabInk {
+/// Tinta de la superficie "laboratorio". Nacio en el Reporte del dia y ahora la
+/// comparte tambien `RecordFoodView`, en una version mas contenida (sin campo de
+/// estrellas ni polvo animado). Es internal para que exista UNA sola definicion
+/// de estos valores.
+enum LabInk {
     static let baseTop = Color(red: 0.105, green: 0.110, blue: 0.125)
     static let baseBottom = Color(red: 0.043, green: 0.046, blue: 0.056)
     static let panel = Color.white.opacity(0.045)

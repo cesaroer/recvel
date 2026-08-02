@@ -11,24 +11,12 @@ struct NutritionView: View {
     @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var profiles: [NutritionProfile]
     @Query(sort: \DailyScoreRecord.date, order: .reverse) private var scoreRecords: [DailyScoreRecord]
-    @AppStorage(NutritionFeatureFlags.experimentalAPIKey) private var experimentalAPIEnabled = NutritionFeatureFlags.experimentalAPIEnabledByDefault
 
-    @StateObject private var voiceCapture = NutritionVoiceCapture()
-    @State private var composer = NutritionTextComposer()
-    @State private var estimate: NutritionEstimate?
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var selectedBarcodePhoto: PhotosPickerItem?
-    @State private var selectedPhotoData: Data?
-    @State private var isAnalyzing = false
-    @State private var portionMultiplier = 1.0
-    @State private var selectedCorrections: Set<String> = []
-    @State private var mealType: MealType = .lunch
     @State private var editingMeal: MealLog?
-    @State private var message: String?
-    @State private var showExternalConsent = false
+    /// Peticion abierta de la pantalla de registro (vacia o con texto reutilizado).
+    @State private var recordRequest: RecordFoodRequest?
     @State private var completedSetupProfile: NutritionProfile?
 
-    private let estimator = NutritionEstimator()
     private let planner = NutritionPlanEngine()
 
     private var profile: NutritionProfile? {
@@ -57,16 +45,9 @@ struct NutritionView: View {
                         .hidesTabBar()
                 }
             }
-        }
-        .onChange(of: voiceCapture.transcript) { _, transcript in
-            guard !transcript.isEmpty else { return }
-            composer.text = transcript
-        }
-        .alert("Usar IA externa experimental", isPresented: $showExternalConsent) {
-            Button("Cancelar", role: .cancel) {}
-            Button("Enviar") { Task { await estimateWithExternalAI() } }
-        } message: {
-            Text("La descripcion y, si existe, la foto saldran de este dispositivo hacia Gemini. El resultado seguira siendo editable antes de guardarse.")
+            .navigationDestination(item: $recordRequest) { request in
+                RecordFoodView(initialText: request.text)
+            }
         }
     }
 
@@ -78,26 +59,7 @@ struct NutritionView: View {
                     pageHeader(profile: profile)
                     dailyHero(profile: profile)
                     nextMealCard(profile: profile)
-                    NutritionQuickEstimateCard(
-                        composer: composer,
-                        voiceCapture: voiceCapture,
-                        experimentalAPIEnabled: experimentalAPIEnabled,
-                        isAnalyzing: isAnalyzing,
-                        selectedPhotoData: selectedPhotoData,
-                        selectedPhoto: $selectedPhoto,
-                        selectedBarcodePhoto: $selectedBarcodePhoto,
-                        showExternalConsent: $showExternalConsent,
-                        onEstimateLocal: estimateLocally,
-                        onAnalyzePhoto: { item in Task { await analyzePhoto(item) } },
-                        onAnalyzeBarcode: { item in Task { await analyzeBarcode(item) } }
-                    )
-
-                    if let message { messageBanner(message) }
-                    if let estimate {
-                        estimateCard(estimate)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
+                    recordFoodEntry
                     tomorrowPlan(profile: profile)
                     recentMeals
                 }
@@ -108,8 +70,6 @@ struct NutritionView: View {
             .scrollDismissesKeyboard(.interactively)
             .trackTabBarScroll()
         }
-        .animation(.snappy, value: estimate?.calories)
-        .animation(.snappy, value: selectedCorrections)
         .toolbar(.hidden, for: .navigationBar)
     }
 
@@ -139,14 +99,18 @@ struct NutritionView: View {
 
     private func pageHeader(profile: NutritionProfile) -> some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("NUTRICION ADAPTATIVA")
-                    .font(.caption2.weight(.heavy))
-                    .foregroundStyle(ScoreKind.recovery.color)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(RecvelL10n.text("nutrition.header.eyebrow").uppercased())
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(0.8)
+                    .foregroundStyle(ScoreKind.recovery.color.opacity(0.85))
                 Text(RecvelL10n.text("tab.nutrition"))
-                    .font(.system(size: 31, weight: .bold))
-                Text(profile.goal)
-                    .font(.subheadline)
+                    .font(.system(size: 34, weight: .bold))
+                // `profile.goal` guarda el rawValue en español; se resuelve por
+                // el enum para usar su `displayName` localizado. Sin esto la
+                // cabecera decia "Mantener" con la app en ingles.
+                Text(NutritionGoal(rawValue: profile.goal)?.displayName ?? profile.goal)
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -160,7 +124,7 @@ struct NutritionView: View {
                     .platformGlass(tint: ScoreKind.recovery.color, interactive: true, shape: .circle)
             }
             .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
-            .accessibilityLabel("Editar perfil nutricional")
+            .accessibilityLabel(RecvelL10n.text("nutrition.profile.edit"))
         }
         .padding(.top, 8)
     }
@@ -172,8 +136,7 @@ struct NutritionView: View {
         let carbs = todayMeals.reduce(0) { $0 + $1.carbohydrates }
         let fat = todayMeals.reduce(0) { $0 + $1.fat }
 
-        return LiquidGlassCard(tint: ScoreKind.energy.color) {
-            VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .center, spacing: 18) {
                     MacroRings(
                         protein: Double(protein), proteinTarget: Double(target.protein),
@@ -183,8 +146,9 @@ struct NutritionView: View {
                     .frame(width: 112, height: 112)
 
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("ENERGIA HOY")
-                            .font(.caption2.weight(.heavy))
+                        Text(RecvelL10n.text("nutrition.today.eyebrow").uppercased())
+                            .font(.system(size: 10, weight: .heavy))
+                            .tracking(0.6)
                             .foregroundStyle(.secondary)
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
                             Text("\(kcal)")
@@ -193,7 +157,7 @@ struct NutritionView: View {
                                 .contentTransition(.numericText())
                             Text("kcal").font(.caption).foregroundStyle(.secondary)
                         }
-                        Text("Rango \(target.calorieLower)-\(target.calorieUpper)")
+                        Text(RecvelL10n.text("nutrition.today.range", values: ["lower": "\(target.calorieLower)", "upper": "\(target.calorieUpper)"]))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(kcal > target.calorieUpper ? ScoreKind.strain.color : ScoreKind.recovery.color)
                         ProgressView(value: min(Double(kcal) / Double(max(target.calories, 1)), 1.15))
@@ -201,14 +165,15 @@ struct NutritionView: View {
                     }
                 }
 
-                Divider().overlay(Color.white.opacity(0.08))
+                Divider().overlay(Color.white.opacity(0.07))
                 HStack(spacing: 12) {
-                    macroProgress(name: "Proteina", value: protein, target: target.protein, color: .cyan)
-                    macroProgress(name: "Carbs", value: carbs, target: target.carbohydrates, color: ScoreKind.energy.color)
-                    macroProgress(name: "Grasa", value: fat, target: target.fat, color: .pink)
+                    macroProgress(name: RecvelL10n.text("nutrition.macro.protein"), value: protein, target: target.protein, color: MacroPalette.protein.tip)
+                    macroProgress(name: RecvelL10n.text("nutrition.macro.carbs"), value: carbs, target: target.carbohydrates, color: MacroPalette.carbs.tip)
+                    macroProgress(name: RecvelL10n.text("nutrition.macro.fat"), value: fat, target: target.fat, color: MacroPalette.fat.tip)
                 }
-            }
         }
+        .padding(18)
+        .revelSurface(accent: ScoreKind.energy.color)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("nutrition.today")
     }
@@ -228,163 +193,131 @@ struct NutritionView: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Banner de consejo de la siguiente comida.
+    ///
+    /// Antes apilaba SEIS niveles de texto —eyebrow, titulo de tarjeta, chip de
+    /// comida, nombre del platillo, detalle, razon y estado del dia— y los tres
+    /// ultimos en 9-11 pt, asi que se leia como un volcado de datos ilegible en
+    /// vez de un consejo. Ahora son tres bloques:
+    ///
+    /// 1. Una linea de contexto (icono + "lo siguiente" + chip de la comida).
+    /// 2. La recomendacion: nombre del platillo grande y su detalle.
+    /// 3. El porque, separado por un divisor y en cuerpo legible.
+    ///
+    /// El titulo "Siguiente comida recomendada" desaparece como linea propia
+    /// —vive en el eyebrow— y ningun texto baja de 13 pt.
     private func nextMealCard(profile: NutritionProfile) -> some View {
         let plan = dayPlan(profile)
-        return VStack(alignment: .leading, spacing: 13) {
-            HStack {
-                Label("nutrition.nextMeal.title", systemImage: "sparkles")
-                    .font(.headline)
-                    .foregroundStyle(ScoreKind.recovery.color)
-                Spacer()
-                Text(plan.nextMeal.mealType.displayName.uppercased())
-                    .font(.system(size: 9, weight: .heavy))
+        let accent = ScoreKind.recovery.color
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(accent)
+                Text(RecvelL10n.text("nutrition.nextMeal.title"))
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(accent)
+                Spacer(minLength: 8)
+                Text(plan.nextMeal.mealType.displayName)
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.07), in: Capsule())
             }
-            Text(plan.nextMeal.title).font(.title3.weight(.bold))
-            Text(plan.nextMeal.detail).font(.subheadline).foregroundStyle(.secondary)
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "scope").font(.caption).foregroundStyle(.cyan)
-                Text(plan.nextMeal.reason).font(.caption).foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(plan.nextMeal.title)
+                    .font(.system(size: 23, weight: .bold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(plan.nextMeal.detail)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(plan.status).font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
+
+            // El "porque": lo que justifica la recomendacion. Separado del
+            // consejo para que se lea como nota al pie, no como mas contenido.
+            VStack(alignment: .leading, spacing: 7) {
+                Divider().overlay(Color.white.opacity(0.07))
+                HStack(alignment: .top, spacing: 9) {
+                    Image(systemName: "target")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(accent.opacity(0.9))
+                    Text(nextMealRationale(plan))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
-        .padding(17)
-        .liquidGlass(cornerRadius: 8, tint: ScoreKind.recovery.color)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Destacada: es la unica tarjeta de la pantalla que ACONSEJA; el resto
+        // informa. Sin el borde se perdia entre sus vecinas identicas.
+        .revelSurface(accent: accent, emphasized: true)
         .accessibilityIdentifier("nutrition.nextMeal")
     }
 
-    private func estimateCard(_ estimate: NutritionEstimate) -> some View {
-        let adjusted = adjustedEstimate(estimate)
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(estimate.title).font(.headline).lineLimit(2)
-                    Label("\(RecvelL10n.text("common.confidence")) \(estimate.confidence.displayName.lowercased())", systemImage: confidenceIcon(estimate.confidence))
-                        .font(.caption)
-                        .foregroundStyle(confidenceColor(estimate.confidence))
+    /// Une la razon de la comida y el estado del dia en un solo parrafo.
+    ///
+    /// Eran dos lineas casi identicas en tono, una encima de otra y en dos
+    /// tamaños diminutos distintos; juntas leen como una sola nota. Se descarta
+    /// la duplicada cuando el motor devuelve el mismo texto en ambas.
+    /// Punto de entrada al registro de comida.
+    ///
+    /// Antes el flujo entero (cuatro entradas, campo, estimacion, correcciones,
+    /// porcion y guardado) vivia aqui dentro y empujaba el resto del dashboard
+    /// hacia abajo cuando aparecia un resultado. Ahora esto solo invita, y el
+    /// trabajo ocurre en `RecordFoodView`.
+    private var recordFoodEntry: some View {
+        Button {
+            Haptics.soft()
+            recordRequest = RecordFoodRequest()
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(ScoreKind.energy.color)
+                    .frame(width: 46, height: 46)
+                    .background(Color.white.opacity(0.05), in: Circle())
+                    .overlay(Circle().strokeBorder(Color.white.opacity(0.07), lineWidth: 1))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(RecvelL10n.text("nutrition.record.eyebrow").uppercased())
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(0.6)
+                        .foregroundStyle(ScoreKind.energy.color.opacity(0.85))
+                    Text(RecvelL10n.text("nutrition.record.title"))
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(RecvelL10n.text("nutrition.record.entryDetail"))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text("\(adjusted.calories)").font(.title.weight(.bold)).monospacedDigit().contentTransition(.numericText())
-                    Text("\(adjusted.kcalLower)-\(adjusted.kcalUpper) kcal")
-                        .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
-                }
-            }
 
-            HStack {
-                MacroValue(name: RecvelL10n.text("nutrition.macro.protein"), value: adjusted.protein, color: .cyan)
-                MacroValue(name: RecvelL10n.text("nutrition.macro.carbohydrates"), value: adjusted.carbohydrates, color: .orange)
-                MacroValue(name: RecvelL10n.text("nutrition.macro.fat"), value: adjusted.fat, color: .pink)
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.tertiary)
             }
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Label("nutrition.portion", systemImage: "scalemass.fill").font(.subheadline)
-                    Spacer()
-                    Text(String(format: "%.1fx", portionMultiplier)).font(.subheadline.weight(.bold)).monospacedDigit()
-                }
-                Slider(value: $portionMultiplier.hapticStep(), in: 0.5...3, step: 0.25)
-                    .tint(ScoreKind.recovery.color)
-                    .accessibilityIdentifier("nutrition.portion")
-                HStack {
-                    Text("Media").font(.caption2).foregroundStyle(.tertiary)
-                    Spacer()
-                    Text("Triple").font(.caption2).foregroundStyle(.tertiary)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 9) {
-                Text("Corrige lo que la IA no puede ver").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                correctionChips
-            }
-
-            HStack {
-                Text("nutrition.mealType").font(.subheadline)
-                Spacer()
-                Menu {
-                    ForEach(MealType.allCases) { type in
-                        Button {
-                            Haptics.menuSelect()
-                            mealType = type
-                        } label: {
-                            if mealType == type { Label(type.displayName, systemImage: "checkmark") }
-                            else { Text(type.displayName) }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(mealType.displayName).font(.subheadline.weight(.semibold))
-                        Image(systemName: "chevron.up.chevron.down").font(.caption2)
-                    }
-                    .padding(.horizontal, 12).frame(height: 36)
-                    .platformGlass(interactive: true, shape: .capsule)
-                }
-                .hapticMenuLabel()
-            }
-
-            NutritionFlowLayout(spacing: 6) {
-                ForEach(Array(Set(adjusted.uncertainties)).sorted(), id: \.self) { item in
-                    Label(item, systemImage: "questionmark.circle")
-                        .font(.caption2.weight(.medium))
-                        .padding(.horizontal, 9).padding(.vertical, 6)
-                        .background(Color.white.opacity(0.07), in: Capsule())
-                }
-            }
-
-            Button {
-                Haptics.success()
-                LocalStore.save(
-                    adjusted,
-                    mealType: mealType,
-                    notes: selectedCorrections.sorted().joined(separator: ", "),
-                    in: modelContext
-                )
-                resetEstimate()
-            } label: {
-                Label("Confirmar y guardar", systemImage: "checkmark.circle.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.white.opacity(0.16))
-
-            Text("Las calorias son un rango asistido. Revisa porciones, aceites y bebidas antes de guardar.")
-                .font(.caption2).foregroundStyle(.secondary)
+            .padding(17)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .intelligenceSurface()
+            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .padding(17)
-        .liquidGlass(cornerRadius: 8, tint: confidenceColor(estimate.confidence))
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("nutrition.recordEntry")
     }
 
-    private var correctionChips: some View {
-        NutritionFlowLayout(spacing: 7) {
-            ForEach(CorrectionOption.all) { option in
-                Button {
-                    Haptics.selection()
-                    if option.id == "double" {
-                        portionMultiplier = portionMultiplier == 2 ? 1 : 2
-                    } else if option.id == "remove" {
-                        resetEstimate()
-                    } else if selectedCorrections.contains(option.id) {
-                        selectedCorrections.remove(option.id)
-                    } else {
-                        selectedCorrections.insert(option.id)
-                    }
-                } label: {
-                    Label(option.label, systemImage: option.icon)
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 10).frame(height: 34)
-                        .foregroundStyle(isCorrectionSelected(option) ? .black : .primary)
-                        .background(
-                            isCorrectionSelected(option) ? ScoreKind.energy.color : Color.white.opacity(0.07),
-                            in: Capsule()
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func isCorrectionSelected(_ option: CorrectionOption) -> Bool {
-        option.id == "double" ? portionMultiplier == 2 : selectedCorrections.contains(option.id)
+    private func nextMealRationale(_ plan: NutritionDayPlan) -> String {
+        let reason = plan.nextMeal.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        let status = plan.status.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !status.isEmpty, status != reason else { return reason }
+        guard !reason.isEmpty else { return status }
+        return "\(reason) \(status)"
     }
 
     private func tomorrowPlan(profile: NutritionProfile) -> some View {
@@ -392,8 +325,12 @@ struct NutritionView: View {
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("nutrition.tomorrow.title").font(.title3.weight(.bold))
-                    Text(plan.tomorrowReason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(RecvelL10n.text("nutrition.tomorrow.eyebrow").uppercased())
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(0.6)
+                        .foregroundStyle(ScoreKind.sleep.color.opacity(0.85))
+                    Text(RecvelL10n.text("nutrition.tomorrow.title")).font(.system(size: 19, weight: .semibold))
+                    Text(plan.tomorrowReason).font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 Image(systemName: "calendar.badge.clock").foregroundStyle(ScoreKind.sleep.color)
@@ -415,8 +352,8 @@ struct NutritionView: View {
                 if index < plan.tomorrow.count - 1 { Divider().overlay(Color.white.opacity(0.08)) }
             }
         }
-        .padding(17)
-        .liquidGlass(cornerRadius: 8, tint: ScoreKind.sleep.color)
+        .padding(18)
+        .revelSurface(accent: ScoreKind.sleep.color)
         .accessibilityIdentifier("nutrition.tomorrowPlan")
     }
 
@@ -426,19 +363,22 @@ struct NutritionView: View {
 
     @ViewBuilder
     private var recentMeals: some View {
-        Text("Timeline").font(.title3.weight(.semibold))
+        RevelSectionHeader(
+            eyebrow: RecvelL10n.text("nutrition.timeline.eyebrow"),
+            title: RecvelL10n.text("nutrition.timeline.title"),
+            accent: ScoreKind.energy.color
+        )
         if meals.isEmpty {
             VStack(spacing: 10) {
                 Image(systemName: "fork.knife.circle").font(.system(size: 30)).foregroundStyle(.tertiary)
-                Text("Sin comidas registradas").font(.headline)
-                Text("Tu primera comida confirmada aparecera aqui con rango, macros y fuente.")
+                Text(RecvelL10n.text("nutrition.timeline.empty")).font(.headline)
+                Text(RecvelL10n.text("nutrition.timeline.emptyDetail"))
                     .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
-            .frame(maxWidth: .infinity).padding(.vertical, 26).liquidGlass(cornerRadius: 8)
+            .frame(maxWidth: .infinity).padding(.vertical, 30).revelSurface()
         } else {
             ForEach(meals.prefix(8)) { meal in
-                GlassCard {
-                    HStack(spacing: 12) {
+                HStack(spacing: 12) {
                         Image(systemName: mealIcon(meal))
                             .foregroundStyle(ScoreKind.energy.color)
                             .frame(width: 34, height: 34)
@@ -446,7 +386,7 @@ struct NutritionView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(meal.title).font(.subheadline.weight(.semibold)).lineLimit(1)
                             HStack(spacing: 5) {
-                                Text(meal.createdAt.formatted(date: .abbreviated, time: .shortened))
+                                Text(meal.createdAt.formatted(.dateTime.day().month(.abbreviated).hour().minute().locale(RecvelL10n.locale)))
                                 if let type = meal.mealType { Text("· \(type)") }
                             }
                             .font(.caption2).foregroundStyle(.secondary)
@@ -454,7 +394,7 @@ struct NutritionView: View {
                         Spacer()
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("\(meal.calories) kcal").font(.subheadline.weight(.semibold)).monospacedDigit()
-                            Button("Usar de nuevo") {
+                            Button(RecvelL10n.text("nutrition.meal.reuse")) {
                             Haptics.soft()
                             reuse(meal)
                         }
@@ -464,16 +404,16 @@ struct NutritionView: View {
                             Button {
                                 Haptics.menuSelect()
                                 reuse(meal)
-                            } label: { Label("Usar de nuevo", systemImage: "arrow.counterclockwise") }
+                            } label: { Label(RecvelL10n.text("nutrition.meal.reuse"), systemImage: "arrow.counterclockwise") }
                             Button {
                                 Haptics.menuSelect()
                                 editingMeal = meal
-                            } label: { Label("Editar", systemImage: "pencil") }
+                            } label: { Label(RecvelL10n.text("nutrition.meal.edit"), systemImage: "pencil") }
                             Button(role: .destructive) {
                                 Haptics.warning()
                                 modelContext.delete(meal)
                                 try? modelContext.save()
-                            } label: { Label("Eliminar", systemImage: "trash") }
+                            } label: { Label(RecvelL10n.text("nutrition.meal.delete"), systemImage: "trash") }
                         } label: {
                             Image(systemName: "ellipsis")
                                 .font(.caption.weight(.bold)).foregroundStyle(.secondary)
@@ -483,180 +423,19 @@ struct NutritionView: View {
                         .menuOrder(.fixed)
                         .hapticMenuLabel()
                         .accessibilityLabel("Acciones de \(meal.title)")
-                    }
                 }
+                .padding(14)
+                .revelSurface(cornerRadius: 18)
             }
         }
     }
 
-    private func messageBanner(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle.fill").foregroundStyle(.cyan)
-            Text(text).font(.caption).foregroundStyle(.secondary)
-            Spacer()
-            Button {
-                Haptics.soft()
-                message = nil
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Cerrar")
-        }
-        .padding(13)
-        .liquidGlass(cornerRadius: 8, tint: .cyan)
-    }
-
-    private func estimateLocally() {
-        guard let value = estimator.estimate(from: composer.text) else { return }
-        estimate = value
-        prepareEstimate()
-    }
-
-    @MainActor
-    private func analyzePhoto(_ item: PhotosPickerItem) async {
-        isAnalyzing = true
-        defer { isAnalyzing = false }
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data), let cgImage = image.cgImage else {
-            message = "No se pudo leer la foto."
-            return
-        }
-        selectedPhotoData = data
-        let classifications: [String] = await Task.detached {
-            let request = VNClassifyImageRequest()
-            let handler = VNImageRequestHandler(cgImage: cgImage)
-            try? handler.perform([request])
-            return (request.results ?? []).filter { $0.confidence >= 0.08 }.prefix(10).map(\.identifier)
-        }.value
-
-        if let foods = estimator.foodDescription(from: classifications), let local = estimator.estimate(from: foods) {
-            composer.text = foods
-            estimate = NutritionEstimate(
-                title: local.title,
-                calories: local.calories,
-                protein: local.protein,
-                carbohydrates: local.carbohydrates,
-                fat: local.fat,
-                confidence: .low,
-                uncertainties: ["Clasificacion visual generica", "Porcion no medida", "Confirma ingredientes"],
-                source: "photo-local"
-            )
-            prepareEstimate()
-        } else {
-            composer.text = "Describe los alimentos y la porcion que aparecen en la foto"
-            message = "La clasificacion local no identifico suficientes alimentos. Agrega una descripcion o usa la IA experimental."
-        }
-    }
-
-    @MainActor
-    private func analyzeBarcode(_ item: PhotosPickerItem) async {
-        isAnalyzing = true
-        defer { isAnalyzing = false }
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data), let cgImage = image.cgImage else {
-            message = "No se pudo leer la imagen del codigo."
-            return
-        }
-        let payload: String? = await Task.detached {
-            let request = VNDetectBarcodesRequest()
-            let handler = VNImageRequestHandler(cgImage: cgImage)
-            try? handler.perform([request])
-            return request.results?.first?.payloadStringValue
-        }.value
-        guard let payload else {
-            message = "No encontramos un codigo legible. Prueba con una foto mas cercana y bien iluminada."
-            return
-        }
-        do {
-            estimate = try await OpenFoodFactsClient().estimate(barcode: payload)
-            composer.text = "Codigo \(payload)"
-            prepareEstimate()
-        } catch {
-            message = error.localizedDescription
-        }
-    }
-
-    @MainActor
-    private func estimateWithExternalAI() async {
-        guard let key = KeychainStore.get("nutrition.gemini.apiKey"), !key.isEmpty else {
-            message = "Agrega tu API key de Gemini en Ajustes para usar el modo experimental."
-            return
-        }
-        isAnalyzing = true
-        defer { isAnalyzing = false }
-        do {
-            estimate = try await GeminiNutritionAIClient(apiKey: key).estimate(text: composer.text, imageData: selectedPhotoData)
-            prepareEstimate()
-        } catch {
-            message = error.localizedDescription
-        }
-    }
-
-    private func prepareEstimate() {
-        portionMultiplier = 1
-        selectedCorrections = []
-        mealType = inferredMealType()
-        message = nil
-    }
-
-    private func adjustedEstimate(_ estimate: NutritionEstimate) -> NutritionEstimate {
-        let additions = CorrectionOption.all.filter { selectedCorrections.contains($0.id) }
-        func total(_ base: Int, _ keyPath: KeyPath<CorrectionOption, Int>) -> Int {
-            Int((Double(base) * portionMultiplier).rounded()) + additions.reduce(0) { $0 + $1[keyPath: keyPath] }
-        }
-        let addedKcal = additions.reduce(0) { $0 + $1.calories }
-        return NutritionEstimate(
-            title: estimate.title,
-            calories: total(estimate.calories, \.calories),
-            protein: total(estimate.protein, \.protein),
-            carbohydrates: total(estimate.carbohydrates, \.carbohydrates),
-            fat: total(estimate.fat, \.fat),
-            confidence: estimate.confidence,
-            kcalLower: Int((Double(estimate.kcalLower) * portionMultiplier).rounded()) + addedKcal,
-            kcalUpper: Int((Double(estimate.kcalUpper) * portionMultiplier).rounded()) + addedKcal,
-            uncertainties: estimate.uncertainties + additions.map(\.label),
-            source: estimate.source
-        )
-    }
-
-    private func resetEstimate() {
-        estimate = nil
-        composer.text = ""
-        selectedPhoto = nil
-        selectedPhotoData = nil
-        selectedCorrections = []
-        portionMultiplier = 1
-    }
-
+    /// Reutilizar una comida ya no rellena un campo del dashboard: abre la
+    /// pantalla de registro con el texto puesto.
     private func reuse(_ meal: MealLog) {
-        estimate = NutritionEstimate(
-            title: meal.title,
-            calories: meal.calories,
-            protein: meal.protein,
-            carbohydrates: meal.carbohydrates,
-            fat: meal.fat,
-            confidence: DataConfidence(rawValue: meal.confidence ?? "") ?? .high,
-            kcalLower: meal.kcalLower,
-            kcalUpper: meal.kcalUpper,
-            uncertainties: ["Reutilizado del historial"],
-            source: "reuse"
-        )
-        composer.text = meal.title
-        prepareEstimate()
-        mealType = MealType(rawValue: meal.mealType ?? "") ?? inferredMealType()
+        recordRequest = RecordFoodRequest(text: meal.title)
     }
 
-    private func inferredMealType() -> MealType {
-        let hour = Calendar.current.component(.hour, from: .now)
-        if hour < 11 { return .breakfast }
-        if hour < 16 { return .lunch }
-        if hour < 21 { return .dinner }
-        return .snack
-    }
 
     private func mealIcon(_ meal: MealLog) -> String {
         switch MealType(rawValue: meal.mealType ?? "") {
@@ -668,134 +447,12 @@ struct NutritionView: View {
         }
     }
 
-    private func confidenceIcon(_ confidence: DataConfidence) -> String {
-        switch confidence { case .low: "exclamationmark.triangle.fill"; case .medium: "circle.lefthalf.filled"; case .high: "checkmark.seal.fill" }
-    }
 
-    private func confidenceColor(_ confidence: DataConfidence) -> Color {
-        switch confidence { case .low: ScoreKind.strain.color; case .medium: ScoreKind.energy.color; case .high: ScoreKind.recovery.color }
-    }
 }
 
 @Observable
 private final class NutritionTextComposer {
     var text = ""
-}
-
-private struct NutritionQuickEstimateCard: View {
-    @Bindable var composer: NutritionTextComposer
-    @ObservedObject var voiceCapture: NutritionVoiceCapture
-    let experimentalAPIEnabled: Bool
-    let isAnalyzing: Bool
-    let selectedPhotoData: Data?
-    @Binding var selectedPhoto: PhotosPickerItem?
-    @Binding var selectedBarcodePhoto: PhotosPickerItem?
-    @Binding var showExternalConsent: Bool
-    let onEstimateLocal: () -> Void
-    let onAnalyzePhoto: (PhotosPickerItem) -> Void
-    let onAnalyzeBarcode: (PhotosPickerItem) -> Void
-
-    @FocusState private var isInputFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Registrar comida").font(.headline)
-                    Text("Elige la entrada mas rapida y confirma la porcion.").font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isAnalyzing { ProgressView().controlSize(.small) }
-            }
-
-            HStack(spacing: 9) {
-                PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    quickAction(icon: "camera.fill", title: "Foto", color: .cyan)
-                }
-                .onChange(of: selectedPhoto) { _, item in
-                    guard let item else { return }
-                    onAnalyzePhoto(item)
-                }
-
-                Button {
-                    isInputFocused = true
-                } label: {
-                    quickAction(icon: "text.cursor", title: "Texto", color: ScoreKind.recovery.color)
-                }
-
-                Button {
-                    Task {
-                        if voiceCapture.isRecording { voiceCapture.stop() }
-                        else { await voiceCapture.start() }
-                    }
-                } label: {
-                    quickAction(
-                        icon: voiceCapture.isRecording ? "stop.fill" : "waveform",
-                        title: voiceCapture.isRecording ? "Parar" : "Voz",
-                        color: .pink
-                    )
-                }
-
-                PhotosPicker(selection: $selectedBarcodePhoto, matching: .images) {
-                    quickAction(icon: "barcode.viewfinder", title: "Codigo", color: ScoreKind.energy.color)
-                }
-                .onChange(of: selectedBarcodePhoto) { _, item in
-                    guard let item else { return }
-                    onAnalyzeBarcode(item)
-                }
-            }
-            .disabled(isAnalyzing)
-
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "fork.knife").foregroundStyle(.secondary)
-                TextField("Ej. 2 tacos de pollo, frijoles y agua", text: $composer.text, axis: .vertical)
-                    .focused($isInputFocused)
-                    .lineLimit(2...4)
-                    .snappyTextInput()
-                    .accessibilityIdentifier("nutrition.description")
-            }
-            .padding(12)
-            .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 7))
-
-            HStack(spacing: 10) {
-                Button {
-                    Haptics.medium()
-                    isInputFocused = false
-                    onEstimateLocal()
-                } label: {
-                    Label("Estimar local", systemImage: "iphone.and.arrow.forward")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(ScoreKind.recovery.color)
-                .foregroundStyle(.black)
-                .disabled(composer.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityIdentifier("nutrition.estimate")
-
-                if experimentalAPIEnabled {
-                    Button { showExternalConsent = true } label: {
-                        Image(systemName: "sparkles")
-                            .frame(width: 42, height: 42)
-                            .platformGlass(tint: .cyan, interactive: true, shape: .circle)
-                    }
-                    .accessibilityLabel("Probar IA externa")
-                    .disabled(composer.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedPhotoData == nil)
-                }
-            }
-        }
-        .padding(17)
-        .liquidGlass(cornerRadius: 8)
-    }
-
-    private func quickAction(icon: String, title: String, color: Color) -> some View {
-        VStack(spacing: 7) {
-            Image(systemName: icon).font(.headline).foregroundStyle(color)
-            Text(title).font(.system(size: 10, weight: .bold)).foregroundStyle(.primary).lineLimit(1)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 66)
-        .platformGlass(tint: color, interactive: true)
-    }
 }
 
 private struct CorrectionOption: Identifiable {
@@ -876,6 +533,30 @@ private struct MacroValue: View {
     }
 }
 
+/// Paleta de los macros.
+///
+/// Es una escala **categorica** (tres identidades, no una magnitud), validada
+/// con el script de la guia de dataviz contra la superficie de tarjeta
+/// (#191A1F) en modo oscuro y con `--pairs all`, porque los tres anillos se ven
+/// simultaneamente: banda de luminosidad OK, contraste >= 3:1, y separacion
+/// para daltonismo ΔE 14.4 (objetivo >= 8) / vision normal 20.1 (piso 15).
+///
+/// Antes eran `.cyan` y `.pink` **del sistema iOS**, que no pertenecen a la
+/// familia Tailwind del resto de la app (#34D399, #FB923C, #A855F7, #FBBF24) y
+/// por eso desentonaban.
+///
+/// `base` es el color validado —vive en la banda oscura— y `tip` es un paso mas
+/// claro de la MISMA familia para el degradado. Asi el anillo tiene la vida de
+/// los acentos brillantes de la app sin sacar el color medido de su banda.
+private enum MacroPalette {
+    static let protein = (base: Color(red: 0.231, green: 0.510, blue: 0.965),  // #3B82F6
+                          tip: Color(red: 0.376, green: 0.647, blue: 0.980))   // #60A5FA
+    static let carbs = (base: Color(red: 0.851, green: 0.467, blue: 0.024),    // #D97706
+                        tip: Color(red: 0.984, green: 0.749, blue: 0.141))     // #FBBF24
+    static let fat = (base: Color(red: 0.925, green: 0.282, blue: 0.600),      // #EC4899
+                      tip: Color(red: 0.957, green: 0.447, blue: 0.714))       // #F472B6
+}
+
 private struct MacroRings: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let protein: Double, proteinTarget: Double
@@ -885,10 +566,12 @@ private struct MacroRings: View {
 
     var body: some View {
         ZStack {
-            ring(progress: protein / max(proteinTarget, 1), color: .cyan, padding: 0)
-            ring(progress: carbs / max(carbsTarget, 1), color: ScoreKind.energy.color, padding: 14)
-            ring(progress: fat / max(fatTarget, 1), color: .pink, padding: 28)
-            Image(systemName: "fork.knife").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            ring(progress: protein / max(proteinTarget, 1), palette: MacroPalette.protein, padding: 0)
+            ring(progress: carbs / max(carbsTarget, 1), palette: MacroPalette.carbs, padding: 14)
+            ring(progress: fat / max(fatTarget, 1), palette: MacroPalette.fat, padding: 28)
+            Image(systemName: "fork.knife")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.tertiary)
         }
         .onAppear {
             withAnimation(reduceMotion ? nil : .spring(response: 0.9, dampingFraction: 0.75).delay(0.1)) { animated = true }
@@ -897,13 +580,26 @@ private struct MacroRings: View {
         .accessibilityLabel("Macros de hoy: proteina \(Int(protein)) de \(Int(proteinTarget)) gramos, carbohidratos \(Int(carbs)) de \(Int(carbsTarget)), grasa \(Int(fat)) de \(Int(fatTarget))")
     }
 
-    private func ring(progress: Double, color: Color, padding: CGFloat) -> some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.15), lineWidth: 9)
+    private func ring(progress: Double, palette: (base: Color, tip: Color), padding: CGFloat) -> some View {
+        let value = animated ? min(max(progress, 0), 1) : 0
+        return ZStack {
+            // Pista NEUTRA, no teñida. Con `color.opacity(0.15)` un dia sin
+            // comidas mostraba tres circulos de colores apagados que parecian
+            // datos sucios; en gris leen como lo que son: huecos por llenar.
+            Circle().stroke(Color.white.opacity(0.07), lineWidth: 9)
             Circle()
-                .trim(from: 0, to: animated ? min(progress, 1) : 0)
-                .stroke(color.gradient, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                .trim(from: 0, to: value)
+                .stroke(
+                    AngularGradient(
+                        colors: [palette.base, palette.tip],
+                        center: .center,
+                        startAngle: .degrees(0),
+                        endAngle: .degrees(360)
+                    ),
+                    style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: palette.base.opacity(value > 0 ? 0.45 : 0), radius: 6)
         }
         .padding(padding)
     }
@@ -1018,5 +714,615 @@ private final class NutritionVoiceCapture: NSObject, ObservableObject {
         await withCheckedContinuation { continuation in
             AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
         }
+    }
+}
+
+// MARK: - Pantalla de registro de comida
+
+/// Peticion de registro. Lleva el texto inicial para poder reutilizar una
+/// comida del historial sin que la pantalla tenga que consultarla.
+struct RecordFoodRequest: Identifiable, Hashable {
+    let id = UUID()
+    var text: String = ""
+}
+
+/// Pantalla dedicada a registrar una comida.
+///
+/// Antes todo esto vivia en una tarjeta dentro del dashboard de Nutricion: la
+/// pantalla cargaba con el estado de la estimacion (foto, transcripcion,
+/// correcciones, porcion) aunque el usuario solo estuviera consultando sus
+/// macros, y el resultado se desplegaba empujando el resto del contenido hacia
+/// abajo. Ahora el dashboard solo tiene el punto de entrada y este flujo es
+/// **una pantalla empujada, no un modal**: se puede volver con el gesto de
+/// siempre y el resultado tiene la altura completa.
+struct RecordFoodView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var profiles: [NutritionProfile]
+    @AppStorage(NutritionFeatureFlags.experimentalAPIKey) private var experimentalAPIEnabled = NutritionFeatureFlags.experimentalAPIEnabledByDefault
+
+    /// Texto con el que abre (reutilizar una comida del registro).
+    var initialText: String = ""
+
+    @StateObject private var voiceCapture = NutritionVoiceCapture()
+    @State private var composer = NutritionTextComposer()
+    @State private var estimate: NutritionEstimate?
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var selectedBarcodePhoto: PhotosPickerItem?
+    @State private var selectedPhotoData: Data?
+    @State private var isAnalyzing = false
+    @State private var portionMultiplier = 1.0
+    @State private var selectedCorrections: Set<String> = []
+    @State private var mealType: MealType = .lunch
+    @State private var message: String?
+    @State private var showExternalConsent = false
+    @FocusState private var isInputFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
+
+    private let estimator = NutritionEstimator()
+
+    var body: some View {
+        ZStack {
+            // Version contenida del fondo del Reporte del dia: degradado casi
+            // negro y dos nebulosas, SIN campo de estrellas ni polvo animado.
+            // Aqui el usuario viene a escribir; el fondo acompaña, no compite.
+            LabBackdropLite(tint: LabInk.energy)
+
+            WidthLockedScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    header
+
+                    module(0, RecvelL10n.text("nutrition.record.section.input"),
+                           RecvelL10n.text("nutrition.record.section.inputCaption")) {
+                        inputSection
+                    }
+
+                    module(1, RecvelL10n.text("nutrition.record.section.describe"),
+                           RecvelL10n.text("nutrition.record.section.describeCaption")) {
+                        describeSection
+                    }
+
+                    if let message {
+                        module(2, RecvelL10n.text("nutrition.record.section.note"), nil) {
+                            messageBanner(message)
+                        }
+                    }
+
+                    if let estimate {
+                        module(3, RecvelL10n.text("nutrition.record.section.estimate"),
+                               RecvelL10n.text("nutrition.record.section.estimateCaption")) {
+                            estimateCard(estimate)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 40)
+            }
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .preferredColorScheme(.dark)
+        .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
+        .animation(.snappy, value: estimate?.calories)
+        .animation(.snappy, value: selectedCorrections)
+        .onAppear {
+            if composer.text.isEmpty { composer.text = initialText }
+            mealType = inferredMealType()
+            guard !reduceMotion else { appeared = true; return }
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.85).delay(0.08)) { appeared = true }
+        }
+        .onChange(of: voiceCapture.transcript) { _, transcript in
+            guard !transcript.isEmpty else { return }
+            composer.text = transcript
+        }
+        .alert("Usar IA externa experimental", isPresented: $showExternalConsent) {
+            Button("Cancelar", role: .cancel) {}
+            Button("Enviar") { Task { await estimateWithExternalAI() } }
+        } message: {
+            Text("La descripcion y, si existe, la foto saldran de este dispositivo hacia Gemini. El resultado seguira siendo editable antes de guardarse.")
+        }
+        .accessibilityIdentifier("nutrition.record")
+    }
+
+    /// Modulo con micro-encabezado rotulado, como en el Reporte del dia: el
+    /// "instrumento" es la linea, no una caja alrededor de todo.
+    private func module<Content: View>(
+        _ index: Int,
+        _ title: String,
+        _ caption: String?,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LabSectionHeader(title: title, caption: caption)
+            content()
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared || reduceMotion ? 0 : 18)
+        .animation(
+            reduceMotion ? nil : .spring(response: 0.65, dampingFraction: 0.88)
+                .delay(0.14 + Double(index) * 0.06),
+            value: appeared
+        )
+    }
+
+    /// Cabecera en dos filas.
+    ///
+    /// El boton de volver estaba en la MISMA fila que el titulo: le robaba
+    /// ancho —el subtitulo partia en dos lineas sin necesidad— y su circulo no
+    /// se alineaba con ninguna linea base del texto. Ahora ocupa su propia fila
+    /// de navegacion y el bloque de titulo dispone del ancho completo.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Button {
+                    Haptics.soft()
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(width: 36, height: 36)
+                        .background(.white.opacity(0.08), in: Circle())
+                        .overlay(Circle().strokeBorder(LabInk.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(RecvelL10n.text("common.back"))
+
+                Spacer(minLength: 0)
+
+                if isAnalyzing {
+                    HStack(spacing: 7) {
+                        ProgressView().controlSize(.small)
+                        Text(RecvelL10n.text("nutrition.record.analyzing"))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .transition(.opacity)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(RecvelL10n.text("nutrition.record.eyebrow").uppercased())
+                    .font(.system(size: 10, weight: .black))
+                    .kerning(1.2)
+                    .foregroundStyle(LabInk.energy.opacity(0.9))
+                Text(RecvelL10n.text("nutrition.record.title"))
+                    .font(.system(size: 32, weight: .bold))
+                Text(RecvelL10n.text("nutrition.record.detail"))
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Aire real bajo la isla dinamica: con 6 pt el bloque nacia pegado.
+        .padding(.top, 12)
+        .padding(.bottom, 6)
+        .animation(.easeOut(duration: 0.2), value: isAnalyzing)
+    }
+
+    /// Las cuatro vias de entrada.
+    private var inputSection: some View {
+        HStack(spacing: 9) {
+            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                quickAction(icon: "camera.fill", title: RecvelL10n.text("nutrition.input.photo"))
+            }
+            .onChange(of: selectedPhoto) { _, item in
+                guard let item else { return }
+                Task { await analyzePhoto(item) }
+            }
+
+            Button {
+                isInputFocused = true
+            } label: {
+                quickAction(icon: "text.cursor", title: RecvelL10n.text("nutrition.input.text"))
+            }
+
+            Button {
+                Task {
+                    if voiceCapture.isRecording { voiceCapture.stop() }
+                    else { await voiceCapture.start() }
+                }
+            } label: {
+                quickAction(
+                    icon: voiceCapture.isRecording ? "stop.fill" : "waveform",
+                    title: RecvelL10n.text(voiceCapture.isRecording ? "nutrition.input.stop" : "nutrition.input.voice"),
+                    isActive: voiceCapture.isRecording
+                )
+            }
+
+            PhotosPicker(selection: $selectedBarcodePhoto, matching: .images) {
+                quickAction(icon: "barcode.viewfinder", title: RecvelL10n.text("nutrition.input.barcode"))
+            }
+            .onChange(of: selectedBarcodePhoto) { _, item in
+                guard let item else { return }
+                Task { await analyzeBarcode(item) }
+            }
+        }
+        .disabled(isAnalyzing)
+    }
+
+    /// Descripcion escrita + disparo de la estimacion.
+    private var describeSection: some View {
+        VStack(spacing: 11) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "fork.knife").foregroundStyle(.white.opacity(0.45))
+                TextField(RecvelL10n.text("nutrition.input.placeholder"), text: $composer.text, axis: .vertical)
+                    .focused($isInputFocused)
+                    .lineLimit(2...4)
+                    .snappyTextInput()
+                    .accessibilityIdentifier("nutrition.description")
+            }
+            .padding(14)
+            .background(LabInk.panel, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(LabInk.hairline, lineWidth: 1)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.medium()
+                    isInputFocused = false
+                    estimateLocally()
+                } label: {
+                    Label(RecvelL10n.text("nutrition.record.estimateLocal"), systemImage: "iphone.and.arrow.forward")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(canEstimate ? .black : Color.white.opacity(0.35))
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .background(
+                            canEstimate ? LabInk.energy : Color.white.opacity(0.06),
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(!canEstimate)
+                .animation(.easeOut(duration: 0.2), value: canEstimate)
+                .accessibilityIdentifier("nutrition.estimate")
+
+                if experimentalAPIEnabled {
+                    Button { showExternalConsent = true } label: {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .frame(width: 50, height: 50)
+                            .background(LabInk.panel, in: Circle())
+                            .overlay(Circle().strokeBorder(LabInk.hairline, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(RecvelL10n.text("nutrition.record.tryExternalAI"))
+                    .disabled(!canEstimate && selectedPhotoData == nil)
+                }
+            }
+        }
+    }
+
+    /// Hay algo que estimar: texto escrito o foto adjunta.
+    private var canEstimate: Bool {
+        !composer.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+private func quickAction(icon: String, title: String, isActive: Bool = false) -> some View {
+        let accent = ScoreKind.energy.color
+        return VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(isActive ? accent : Color.white.opacity(0.85))
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(isActive ? accent : .secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 64)
+        .background(
+            (isActive ? accent.opacity(0.14) : Color.white.opacity(0.05)),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(isActive ? accent.opacity(0.45) : Color.white.opacity(0.06), lineWidth: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .animation(.easeOut(duration: 0.2), value: isActive)
+    }
+
+    private func estimateCard(_ estimate: NutritionEstimate) -> some View {
+        let adjusted = adjustedEstimate(estimate)
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(estimate.title).font(.headline).lineLimit(2)
+                    Label("\(RecvelL10n.text("common.confidence")) \(estimate.confidence.displayName.lowercased())", systemImage: confidenceIcon(estimate.confidence))
+                        .font(.caption)
+                        .foregroundStyle(confidenceColor(estimate.confidence))
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("\(adjusted.calories)").font(.title.weight(.bold)).monospacedDigit().contentTransition(.numericText())
+                    Text("\(adjusted.kcalLower)-\(adjusted.kcalUpper) kcal")
+                        .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+
+            HStack {
+                MacroValue(name: RecvelL10n.text("nutrition.macro.protein"), value: adjusted.protein, color: .cyan)
+                MacroValue(name: RecvelL10n.text("nutrition.macro.carbohydrates"), value: adjusted.carbohydrates, color: .orange)
+                MacroValue(name: RecvelL10n.text("nutrition.macro.fat"), value: adjusted.fat, color: .pink)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Label("nutrition.portion", systemImage: "scalemass.fill").font(.subheadline)
+                    Spacer()
+                    Text(String(format: "%.1fx", portionMultiplier)).font(.subheadline.weight(.bold)).monospacedDigit()
+                }
+                Slider(value: $portionMultiplier.hapticStep(), in: 0.5...3, step: 0.25)
+                    .tint(ScoreKind.recovery.color)
+                    .accessibilityIdentifier("nutrition.portion")
+                HStack {
+                    Text("Media").font(.caption2).foregroundStyle(.tertiary)
+                    Spacer()
+                    Text("Triple").font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 9) {
+                Text("Corrige lo que la IA no puede ver").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                correctionChips
+            }
+
+            HStack {
+                Text("nutrition.mealType").font(.subheadline)
+                Spacer()
+                Menu {
+                    ForEach(MealType.allCases) { type in
+                        Button {
+                            Haptics.menuSelect()
+                            mealType = type
+                        } label: {
+                            if mealType == type { Label(type.displayName, systemImage: "checkmark") }
+                            else { Text(type.displayName) }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(mealType.displayName).font(.subheadline.weight(.semibold))
+                        Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                    }
+                    .padding(.horizontal, 12).frame(height: 36)
+                    .platformGlass(interactive: true, shape: .capsule)
+                }
+                .hapticMenuLabel()
+            }
+
+            NutritionFlowLayout(spacing: 6) {
+                ForEach(Array(Set(adjusted.uncertainties)).sorted(), id: \.self) { item in
+                    Label(item, systemImage: "questionmark.circle")
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 9).padding(.vertical, 6)
+                        .background(Color.white.opacity(0.07), in: Capsule())
+                }
+            }
+
+            Button {
+                Haptics.success()
+                LocalStore.save(
+                    adjusted,
+                    mealType: mealType,
+                    notes: selectedCorrections.sorted().joined(separator: ", "),
+                    in: modelContext
+                )
+                resetEstimate()
+                // Al ser pantalla propia y no una tarjeta del dashboard, guardar
+                // cierra el flujo: se vuelve a Nutricion, que es donde el usuario
+                // ve el efecto de lo que acaba de registrar (macros y anillos).
+                dismiss()
+            } label: {
+                Label("Confirmar y guardar", systemImage: "checkmark.circle.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.white.opacity(0.16))
+
+            Text("Las calorias son un rango asistido. Revisa porciones, aceites y bebidas antes de guardar.")
+                .font(.caption2).foregroundStyle(.secondary)
+        }
+        .padding(17)
+        .revelSurface(accent: confidenceColor(estimate.confidence))
+    }
+
+    private var correctionChips: some View {
+        NutritionFlowLayout(spacing: 7) {
+            ForEach(CorrectionOption.all) { option in
+                Button {
+                    Haptics.selection()
+                    if option.id == "double" {
+                        portionMultiplier = portionMultiplier == 2 ? 1 : 2
+                    } else if option.id == "remove" {
+                        resetEstimate()
+                    } else if selectedCorrections.contains(option.id) {
+                        selectedCorrections.remove(option.id)
+                    } else {
+                        selectedCorrections.insert(option.id)
+                    }
+                } label: {
+                    Label(option.label, systemImage: option.icon)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10).frame(height: 34)
+                        .foregroundStyle(isCorrectionSelected(option) ? .black : .primary)
+                        .background(
+                            isCorrectionSelected(option) ? ScoreKind.energy.color : Color.white.opacity(0.07),
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func isCorrectionSelected(_ option: CorrectionOption) -> Bool {
+        option.id == "double" ? portionMultiplier == 2 : selectedCorrections.contains(option.id)
+    }
+
+    private func messageBanner(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "info.circle.fill").foregroundStyle(.cyan)
+            Text(text).font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button {
+                Haptics.soft()
+                message = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cerrar")
+        }
+        .padding(13)
+        .revelSurface(accent: .cyan)
+    }
+
+    private func estimateLocally() {
+        guard let value = estimator.estimate(from: composer.text) else { return }
+        estimate = value
+        prepareEstimate()
+    }
+
+    private func analyzePhoto(_ item: PhotosPickerItem) async {
+        isAnalyzing = true
+        defer { isAnalyzing = false }
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data), let cgImage = image.cgImage else {
+            message = "No se pudo leer la foto."
+            return
+        }
+        selectedPhotoData = data
+        let classifications: [String] = await Task.detached {
+            let request = VNClassifyImageRequest()
+            let handler = VNImageRequestHandler(cgImage: cgImage)
+            try? handler.perform([request])
+            return (request.results ?? []).filter { $0.confidence >= 0.08 }.prefix(10).map(\.identifier)
+        }.value
+
+        if let foods = estimator.foodDescription(from: classifications), let local = estimator.estimate(from: foods) {
+            composer.text = foods
+            estimate = NutritionEstimate(
+                title: local.title,
+                calories: local.calories,
+                protein: local.protein,
+                carbohydrates: local.carbohydrates,
+                fat: local.fat,
+                confidence: .low,
+                uncertainties: ["Clasificacion visual generica", "Porcion no medida", "Confirma ingredientes"],
+                source: "photo-local"
+            )
+            prepareEstimate()
+        } else {
+            composer.text = "Describe los alimentos y la porcion que aparecen en la foto"
+            message = "La clasificacion local no identifico suficientes alimentos. Agrega una descripcion o usa la IA experimental."
+        }
+    }
+
+    private func analyzeBarcode(_ item: PhotosPickerItem) async {
+        isAnalyzing = true
+        defer { isAnalyzing = false }
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data), let cgImage = image.cgImage else {
+            message = "No se pudo leer la imagen del codigo."
+            return
+        }
+        let payload: String? = await Task.detached {
+            let request = VNDetectBarcodesRequest()
+            let handler = VNImageRequestHandler(cgImage: cgImage)
+            try? handler.perform([request])
+            return request.results?.first?.payloadStringValue
+        }.value
+        guard let payload else {
+            message = "No encontramos un codigo legible. Prueba con una foto mas cercana y bien iluminada."
+            return
+        }
+        do {
+            estimate = try await OpenFoodFactsClient().estimate(barcode: payload)
+            composer.text = "Codigo \(payload)"
+            prepareEstimate()
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func estimateWithExternalAI() async {
+        guard let key = KeychainStore.get("nutrition.gemini.apiKey"), !key.isEmpty else {
+            message = "Agrega tu API key de Gemini en Ajustes para usar el modo experimental."
+            return
+        }
+        isAnalyzing = true
+        defer { isAnalyzing = false }
+        do {
+            estimate = try await GeminiNutritionAIClient(apiKey: key).estimate(text: composer.text, imageData: selectedPhotoData)
+            prepareEstimate()
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func prepareEstimate() {
+        portionMultiplier = 1
+        selectedCorrections = []
+        mealType = inferredMealType()
+        message = nil
+    }
+
+    private func adjustedEstimate(_ estimate: NutritionEstimate) -> NutritionEstimate {
+        let additions = CorrectionOption.all.filter { selectedCorrections.contains($0.id) }
+        func total(_ base: Int, _ keyPath: KeyPath<CorrectionOption, Int>) -> Int {
+            Int((Double(base) * portionMultiplier).rounded()) + additions.reduce(0) { $0 + $1[keyPath: keyPath] }
+        }
+        let addedKcal = additions.reduce(0) { $0 + $1.calories }
+        return NutritionEstimate(
+            title: estimate.title,
+            calories: total(estimate.calories, \.calories),
+            protein: total(estimate.protein, \.protein),
+            carbohydrates: total(estimate.carbohydrates, \.carbohydrates),
+            fat: total(estimate.fat, \.fat),
+            confidence: estimate.confidence,
+            kcalLower: Int((Double(estimate.kcalLower) * portionMultiplier).rounded()) + addedKcal,
+            kcalUpper: Int((Double(estimate.kcalUpper) * portionMultiplier).rounded()) + addedKcal,
+            uncertainties: estimate.uncertainties + additions.map(\.label),
+            source: estimate.source
+        )
+    }
+
+    private func resetEstimate() {
+        estimate = nil
+        composer.text = ""
+        selectedPhoto = nil
+        selectedPhotoData = nil
+        selectedCorrections = []
+        portionMultiplier = 1
+    }
+
+    private func inferredMealType() -> MealType {
+        let hour = Calendar.current.component(.hour, from: .now)
+        if hour < 11 { return .breakfast }
+        if hour < 16 { return .lunch }
+        if hour < 21 { return .dinner }
+        return .snack
+    }
+
+    private func confidenceIcon(_ confidence: DataConfidence) -> String {
+        switch confidence { case .low: "exclamationmark.triangle.fill"; case .medium: "circle.lefthalf.filled"; case .high: "checkmark.seal.fill" }
+    }
+
+    private func confidenceColor(_ confidence: DataConfidence) -> Color {
+        switch confidence { case .low: ScoreKind.strain.color; case .medium: ScoreKind.energy.color; case .high: ScoreKind.recovery.color }
     }
 }

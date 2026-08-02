@@ -31,9 +31,9 @@ struct FitnessFocusBreakdown {
 
     var primaryLabel: String {
         guard total > 0 else { return "Sin datos" }
-        if lowAerobic >= highAerobic && lowAerobic >= anaerobic { return "Aerobico bajo" }
-        if highAerobic >= anaerobic { return "Aerobico alto" }
-        return "Anaerobico"
+        if lowAerobic >= highAerobic && lowAerobic >= anaerobic { return RecvelL10n.text("training.cardio.zone.lowAerobic") }
+        if highAerobic >= anaerobic { return RecvelL10n.text("training.cardio.zone.highAerobic") }
+        return RecvelL10n.text("training.cardio.zone.anaerobic")
     }
 
     private func percent(_ value: Double) -> Int {
@@ -111,12 +111,12 @@ private enum FitnessDetailRoute: String, Identifiable {
 
     var title: String {
         switch self {
-        case .activity: "Resumen de actividad"
+        case .activity: RecvelL10n.text("training.summary.title")
         case .strain: RecvelL10n.text("training.loadResponse.title")
         case .cardioLoad: "Carga cardio"
-        case .cardioFocus: "Foco cardio"
+        case .cardioFocus: RecvelL10n.text("training.cardio.focus")
         case .heartRateRecovery: "Recuperación cardíaca"
-        case .strength: "Progresion de fuerza"
+        case .strength: RecvelL10n.text("training.strength.progression")
         }
     }
 }
@@ -143,7 +143,7 @@ struct FitnessView: View {
     @State private var showTemplateManager = false
     @State private var routineRevision = 0
     @State private var appeared = false
-    @State private var strengthMetric = "Frecuencia"
+    @State private var strengthMetric: StrengthMetric = .frequency
     @State private var progressionExercise: MetricSelection?
     @AppStorage("fitness.showCardio") private var showCardio = true
     @AppStorage("fitness.showStrength") private var showStrength = true
@@ -175,19 +175,25 @@ struct FitnessView: View {
                         // se muda aqui, y de paso desaparece el titulo duplicado:
                         // antes se veia "Entrenamiento" dos veces, el de la barra
                         // y este.
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 1) {
                                 Text("tab.training")
-                                    .font(.largeTitle.weight(.bold))
-                                Text("Últimos 30 días")
-                                    .font(.subheadline.weight(.semibold))
+                                    .font(.system(size: 34, weight: .bold))
+                                Text(RecvelL10n.text("training.header.subtitle"))
+                                    .font(.system(size: 15, weight: .medium))
                                     .foregroundStyle(.secondary)
                             }
                             Spacer(minLength: 8)
                             addMenu
                         }
                         .padding(.top, 4)
+                        .padding(.bottom, 2)
 
+                        // Cada tarjeta aplica SU fase dentro de su propia
+                        // propiedad (`.skeleton(healthPhase)` al final de cada
+                        // una), no aqui: encadenar modificadores en este
+                        // ViewBuilder disparaba el type-checker y subia la
+                        // compilacion del archivo de ~20 s a ~5 min.
                         entrance(0) { activityCalendar }
                         entrance(1) { activitySummaryCard }
                         entrance(2) { appleHealthWorkoutsSection }
@@ -206,12 +212,26 @@ struct FitnessView: View {
                         }
 
                         if showCardio {
-                            entrance(5) { sectionTitle("Cardio") }
+                            entrance(5) {
+                                RevelSectionHeader(
+                                    eyebrow: RecvelL10n.text("training.section.cardio.eyebrow"),
+                                    title: RecvelL10n.text("training.section.cardio"),
+                                    accent: ScoreKind.strain.color
+                                )
+                            }
                             entrance(6) { cardioGrid }
                         }
 
                         if showStrength {
-                            entrance(7) { sectionTitle("Fuerza") }
+                            entrance(7) {
+                                RevelSectionHeader(
+                                    eyebrow: RecvelL10n.text("training.section.strength.eyebrow"),
+                                    title: RecvelL10n.text("training.section.strength"),
+                                    accent: .cyan
+                                )
+                            }
+                            // Fuerza sale de SwiftData (series registradas),
+                            // no de HealthKit: no depende de `healthPhase`.
                             entrance(8) { strengthVolumeCard }
                             entrance(9) { strengthProgressionCard }
                             entrance(10) { exerciseProgressionCard }
@@ -219,18 +239,20 @@ struct FitnessView: View {
                         }
 
                         Button { composer = .sections } label: {
-                            Label("Editar Entrenamiento", systemImage: "slider.horizontal.3")
-                                .font(.headline)
+                            Label(RecvelL10n.text("training.edit"), systemImage: "slider.horizontal.3")
+                                .font(.system(size: 15, weight: .semibold))
                                 .frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
-                        .liquidGlass(cornerRadius: 8)
+                        .revelSurface()
+                        .padding(.top, 4)
 
-                        Text("La Carga es una estimación de bienestar basada en duración, zonas de frecuencia cardíaca y tu referencia personal. No predice lesiones ni sustituye una evaluación profesional.")
-                            .font(.caption2)
+                        Text(RecvelL10n.text("training.disclaimer"))
+                            .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, 4)
+                            .padding(.top, 2)
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 28)
@@ -328,7 +350,9 @@ struct FitnessView: View {
                     .presentationCornerRadius(30)
             }
             .task {
-                _ = WorkoutTemplateCatalogSeeder.seed(in: modelContext, existing: templates)
+                // Abrir la pestaña NO crea plantillas. Antes sembraba el
+                // catalogo entero (24) en la biblioteca del usuario; ahora solo
+                // se materializa el preset que el usuario elige, al guardarlo.
                 if !UserDefaults.standard.bool(forKey: "skipHealthKitRefresh") { await health.refresh() }
                 withAnimation(reduceMotion ? nil : .spring(response: 0.65, dampingFraction: 0.86)) {
                     appeared = true
@@ -336,6 +360,9 @@ struct FitnessView: View {
             }
         }
     }
+
+    /// Fase de las tarjetas que dependen de Apple Health.
+    private var healthPhase: LoadPhase { health.corePhase }
 
     private func entrance<Content: View>(_ index: Int, @ViewBuilder content: () -> Content) -> some View {
         content()
@@ -366,7 +393,7 @@ struct FitnessView: View {
                 Haptics.menuSelect()
                 Task { await health.refresh() }
             } label: {
-                Label("Actualizar Apple Health", systemImage: "heart.text.square")
+                Label(RecvelL10n.text("training.appleHealth.refresh"), systemImage: "heart.text.square")
             }
             Button {
                 Haptics.menuSelect()
@@ -395,8 +422,9 @@ struct FitnessView: View {
     private var activityCalendar: some View {
         FitnessActivityCalendar(points: points)
             .padding(16)
-            .liquidGlass(cornerRadius: 8)
+            .revelSurface(cornerRadius: 22)
             .accessibilityIdentifier("fitness.calendar")
+            .skeleton(healthPhase)
     }
 
     private var activitySummaryCard: some View {
@@ -407,7 +435,7 @@ struct FitnessView: View {
             let difference = recent - prior
 
             VStack(alignment: .leading, spacing: 12) {
-                metricHeader("Resumen de actividad", icon: "square.grid.3x3.fill")
+                metricHeader(RecvelL10n.text("training.summary.title"), icon: "square.grid.3x3.fill")
                 HStack(alignment: .firstTextBaseline) {
                     Text(durationText(total))
                         .font(.system(size: 29, weight: .bold, design: .rounded))
@@ -417,33 +445,19 @@ struct FitnessView: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(difference >= 0 ? ScoreKind.recovery.color : ScoreKind.strain.color)
                 }
-                Text("Tiempo registrado en entrenamientos y actividad manual")
+                Text(RecvelL10n.text("training.summary.caption"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Chart(points) { point in
-                    LineMark(
-                        x: .value("Dia", point.date),
-                        y: .value("Minutos", point.minutes)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(ScoreKind.strain.color.gradient)
-                    AreaMark(
-                        x: .value("Dia", point.date),
-                        y: .value("Minutos", point.minutes)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(LinearGradient(colors: [ScoreKind.strain.color.opacity(0.22), .clear], startPoint: .top, endPoint: .bottom))
-                }
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .frame(height: 92)
+                NeonTrendChart(values: points.map(\.minutes), color: ScoreKind.strain.color)
+                    .frame(height: 92)
             }
             .padding(16)
-            .liquidGlass(cornerRadius: 8, tint: ScoreKind.strain.color)
+            .revelSurface(cornerRadius: 22, accent: ScoreKind.strain.color)
         }
         .buttonStyle(.glassCardLink)
         .accessibilityIdentifier("fitness.activitySummary")
+            .skeleton(healthPhase)
     }
 
     private var appleHealthWorkouts: [WorkoutSummary] {
@@ -467,27 +481,27 @@ struct FitnessView: View {
 
             if health.dataMode == .empty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Sin acceso a entrenamientos")
+                    Text(RecvelL10n.text("training.appleHealth.noAccess"))
                         .font(.subheadline.weight(.semibold))
-                    Text("Conecta Apple Health para consultar entrenamientos con tipo, duración y calorías.")
+                    Text(RecvelL10n.text("training.appleHealth.connectDetail"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Button {
                         Task { await health.requestAuthorization() }
                     } label: {
-                        Label("Conectar Apple Health", systemImage: "link")
+                        Label(RecvelL10n.text("training.appleHealth.connect"), systemImage: "link")
                             .font(.subheadline.weight(.bold))
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .liquidGlass(cornerRadius: 8, tint: ScoreKind.recovery.color)
+                    .revelSurface(cornerRadius: 22, accent: ScoreKind.recovery.color)
                 }
             } else if appleHealthWorkouts.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Sin entrenamientos en Apple Health")
+                    Text(RecvelL10n.text("training.appleHealth.empty"))
                         .font(.subheadline.weight(.semibold))
-                    Text("No hay entrenamientos detallados en los últimos 30 días. Aun así, Apple Health puede aportar minutos de actividad acumulada.")
+                    Text(RecvelL10n.text("training.appleHealth.emptyDetail"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -503,8 +517,9 @@ struct FitnessView: View {
             }
         }
         .padding(16)
-        .liquidGlass(cornerRadius: 8, tint: ScoreKind.strain.color)
+        .revelSurface(cornerRadius: 22, accent: ScoreKind.strain.color)
         .accessibilityIdentifier("fitness.workoutList")
+            .skeleton(healthPhase)
     }
 
     private func appleHealthWorkoutRow(_ workout: WorkoutSummary) -> some View {
@@ -517,7 +532,7 @@ struct FitnessView: View {
                 Text(workout.activityName)
                     .font(.subheadline.weight(.bold))
                     .lineLimit(1)
-                Text(workout.startDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
+                Text(workout.startDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute().locale(RecvelL10n.locale)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -569,26 +584,19 @@ struct FitnessView: View {
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
-                Chart(points) { point in
-                    LineMark(x: .value("Dia", point.date), y: .value("Desviacion", point.strainDeviation))
-                        .foregroundStyle(.blue.opacity(0.55))
-                        .interpolationMethod(.catmullRom)
-                    PointMark(x: .value("Dia", point.date), y: .value("Desviacion", point.strainDeviation))
-                        .foregroundStyle(strainStatusColor(point.strainDeviation))
-                        .symbolSize(point.strain > 0 ? 20 : 0)
-                    RuleMark(y: .value("Objetivo", 0))
-                        .foregroundStyle(.white.opacity(0.14))
-                }
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .chartYScale(domain: -80...80)
+                NeonTrendChart(
+                    values: points.map(\.strainDeviation),
+                    color: .blue,
+                    domain: -80...80
+                )
                 .frame(height: 82)
             }
             .padding(16)
-            .liquidGlass(cornerRadius: 8, tint: .blue)
+            .revelSurface(cornerRadius: 22, accent: .blue)
         }
         .buttonStyle(.glassCardLink)
         .accessibilityIdentifier("fitness.strainPerformance")
+            .skeleton(healthPhase)
     }
 
     private var cardioGrid: some View {
@@ -605,6 +613,7 @@ struct FitnessView: View {
                     .accessibilityIdentifier("fitness.hrr")
             }
         }
+            .skeleton(healthPhase)
     }
 
     private var cardioLoadCard: some View {
@@ -618,23 +627,16 @@ struct FitnessView: View {
                 Text(status).font(.caption.weight(.bold)).foregroundStyle(.purple)
                 Spacer()
             }
-            Chart(points) { point in
-                LineMark(x: .value("Dia", point.date), y: .value("Carga", point.cardiovascularLoad))
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(.purple.gradient)
-                AreaMark(x: .value("Dia", point.date), y: .value("Carga", point.cardiovascularLoad))
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(LinearGradient(colors: [.purple.opacity(0.2), .clear], startPoint: .top, endPoint: .bottom))
-            }
-            .chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 78)
+            NeonTrendChart(values: points.map(\.cardiovascularLoad), color: .purple)
+                .frame(height: 78)
         }
         .padding(16)
-        .liquidGlass(cornerRadius: 8, tint: .purple)
+        .revelSurface(cornerRadius: 22, accent: .purple)
     }
 
     private var cardioFocusCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Foco cardio", systemImage: "square.3.layers.3d")
+            Label(RecvelL10n.text("training.cardio.focus"), systemImage: "square.3.layers.3d")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text(focus.primaryLabel).font(.title3.weight(.bold)).lineLimit(1).minimumScaleFactor(0.75)
             Text(focus.total > 0 ? "\(focus.lowPercent)% del tiempo" : "Necesita zonas FC")
@@ -645,13 +647,13 @@ struct FitnessView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
         .padding(15)
-        .liquidGlass(cornerRadius: 8, tint: .cyan)
+        .revelSurface(cornerRadius: 22, accent: .cyan)
     }
 
     private var heartRateRecoveryCard: some View {
         let status = hrrStatus(latestHRR)
         return VStack(alignment: .leading, spacing: 10) {
-            Label("HRR 1 min", systemImage: "heart.fill")
+            Label(RecvelL10n.text("training.cardio.hrr"), systemImage: "heart.fill")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(latestHRR.map { "\(Int($0.rounded()))" } ?? "--")
@@ -665,7 +667,7 @@ struct FitnessView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
         .padding(15)
-        .liquidGlass(cornerRadius: 8, tint: .pink)
+        .revelSurface(cornerRadius: 22, accent: .pink)
     }
 
     private var strengthVolumeCard: some View {
@@ -676,7 +678,7 @@ struct FitnessView: View {
         }
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Volumen total", systemImage: "scalemass.fill").font(.headline)
+                Label(RecvelL10n.text("training.strength.volume"), systemImage: "scalemass.fill").font(.headline)
                 Spacer()
                 Text(values.reduce(0, +) > 0 ? "\(Int(values.reduce(0, +))) kg" : "Sin dato")
                     .font(.caption.weight(.bold)).foregroundStyle(.secondary)
@@ -684,13 +686,13 @@ struct FitnessView: View {
             MuscleRadar(labels: groups, values: values)
                 .frame(height: 238)
             if values.allSatisfy({ $0 == 0 }) {
-                Text("Registra series x repeticiones x peso para activar el mapa muscular. No estimamos volumen desde HealthKit.")
+                Text(RecvelL10n.text("training.strength.volumeEmpty"))
                     .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
             }
         }
         .padding(16)
-        .liquidGlass(cornerRadius: 8)
+        .revelSurface(cornerRadius: 22)
         .accessibilityIdentifier("fitness.strengthVolume")
     }
 
@@ -699,29 +701,29 @@ struct FitnessView: View {
             let strengthPoints = strengthProgressionPoints
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("Progresion de fuerza", systemImage: "chart.line.uptrend.xyaxis").font(.headline)
+                    Label(RecvelL10n.text("training.strength.progression"), systemImage: "chart.line.uptrend.xyaxis").font(.headline)
                     Spacer()
                     Menu {
-                        Button("Frecuencia") {
+                        Button(RecvelL10n.text("training.strength.metric.frequency")) {
                             Haptics.menuSelect()
-                            strengthMetric = "Frecuencia"
+                            strengthMetric = .frequency
                         }
-                        Button("Minutos") {
+                        Button(RecvelL10n.text("training.strength.metric.minutes")) {
                             Haptics.menuSelect()
-                            strengthMetric = "Minutos"
+                            strengthMetric = .minutes
                         }
                     } label: {
-                        Label(strengthMetric, systemImage: "chevron.up.chevron.down")
+                        Label(strengthMetric.label, systemImage: "chevron.up.chevron.down")
                             .font(.caption.weight(.semibold))
                     }
                     .hapticMenuLabel()
                 }
                 if strengthPoints.allSatisfy({ $0.value == 0 }) {
-                    FitnessEmptyPlot(title: "Sin progresion todavia", detail: "Tus sesiones de fuerza apareceran aqui.")
+                    FitnessEmptyPlot(title: RecvelL10n.text("training.strength.progressionEmpty"), detail: RecvelL10n.text("training.strength.progressionEmptyDetail"))
                         .frame(height: 150)
                 } else {
                     Chart(strengthPoints) { point in
-                        BarMark(x: .value("Dia", point.date), y: .value(strengthMetric, point.value))
+                        BarMark(x: .value("Dia", point.date), y: .value(strengthMetric.label, point.value))
                             .foregroundStyle(LinearGradient(colors: [.cyan, .blue], startPoint: .bottom, endPoint: .top))
                             .cornerRadius(4)
                     }
@@ -729,7 +731,7 @@ struct FitnessView: View {
                 }
             }
             .padding(16)
-            .liquidGlass(cornerRadius: 8, tint: .blue)
+            .revelSurface(cornerRadius: 22, accent: .blue)
         }
         .buttonStyle(.glassCardLink)
         .accessibilityIdentifier("fitness.strengthProgression")
@@ -744,10 +746,10 @@ struct FitnessView: View {
 
     private var exerciseProgressionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Progresión por ejercicio", systemImage: "chart.xyaxis.line")
+            Label(RecvelL10n.text("training.strength.byExercise"), systemImage: "chart.xyaxis.line")
                 .font(.headline)
             if exerciseSummaries.isEmpty {
-                Text("Registra una sesión de fuerza con series y kilos para ver aquí tu progresión de peso y 1RM estimado por ejercicio.")
+                Text(RecvelL10n.text("training.strength.byExerciseDetail"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -787,14 +789,14 @@ struct FitnessView: View {
             }
         }
         .padding(16)
-        .liquidGlass(cornerRadius: 16, tint: .blue)
+        .revelSurface(cornerRadius: 22, accent: .blue)
         .accessibilityIdentifier("fitness.exerciseProgressionCard")
     }
 
     private var workoutTemplates: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Plantillas de entrenamiento").font(.title3.weight(.bold))
+                Text(RecvelL10n.text("training.templates.title")).font(.title3.weight(.bold))
                 Spacer()
                 if !templates.isEmpty {
                     Menu {
@@ -832,14 +834,14 @@ struct FitnessView: View {
                         templateSkeleton
                     }
                     .opacity(0.35)
-                    Text("Sin rutinas").font(.headline)
-                    Text("Crea rutinas reutilizables de fuerza, cardio, movilidad o recuperacion y enlazalas a tu plan semanal.")
+                    Text(RecvelL10n.text("training.templates.empty")).font(.headline)
+                    Text(RecvelL10n.text("training.templates.emptyDetail"))
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Button {
                         Haptics.add()
                         composer = .template
                     } label: {
-                        Label("Agregar rutina", systemImage: "plus")
+                        Label(RecvelL10n.text("training.templates.add"), systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 18)
                             .frame(height: 40)
@@ -850,7 +852,7 @@ struct FitnessView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .liquidGlass(cornerRadius: 16)
+                .revelSurface(cornerRadius: 22)
             } else {
                 // Segmentado por tipo: las rutinas de fuerza, cardio, movilidad
                 // y desafio viven todas aqui (Plantillas = LA vista de rutinas).
@@ -899,7 +901,7 @@ struct FitnessView: View {
                             }
                             .frame(maxWidth: .infinity, minHeight: 124, alignment: .topLeading)
                             .padding(14)
-                            .liquidGlass(cornerRadius: 8, tint: .cyan)
+                            .revelSurface(cornerRadius: 22, accent: .cyan)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -952,7 +954,7 @@ struct FitnessView: View {
             let manual = manualActivities.filter {
                 $0.category == "Fuerza" && Calendar.current.isDate($0.startDate, inSameDayAs: point.date)
             }
-            let value = strengthMetric == "Minutos"
+            let value = strengthMetric == .minutes
                 ? healthStrength.reduce(0) { $0 + $1.durationMinutes } + manual.reduce(0) { $0 + $1.durationMinutes }
                 : Double(healthStrength.count + manual.count)
             return StrengthPoint(date: point.date, value: value)
@@ -1026,6 +1028,21 @@ struct FitnessView: View {
     }
 }
 
+/// Metrica del grafico de progresion de fuerza. Antes era un `String` en
+/// español comparado por igualdad ("Minutos"), asi que en ingles la comparacion
+/// fallaba y el grafico se quedaba siempre en frecuencia.
+enum StrengthMetric {
+    case frequency
+    case minutes
+
+    var label: String {
+        switch self {
+        case .frequency: RecvelL10n.text("training.strength.metric.frequency")
+        case .minutes: RecvelL10n.text("training.strength.metric.minutes")
+        }
+    }
+}
+
 private struct FitnessActivityCalendar: View {
     let points: [FitnessDayPoint]
     private let calendar = Calendar.autoupdatingCurrent
@@ -1045,19 +1062,22 @@ private struct FitnessActivityCalendar: View {
                 }
             }
             HStack(spacing: 14) {
-                legend(color: .green, text: "1 actividad")
-                legend(color: ScoreKind.recovery.color, text: "2 actividades")
-                legend(color: .cyan, text: "3+")
+                legend(color: .green, text: RecvelL10n.text("training.calendar.legend.one"))
+                legend(color: ScoreKind.recovery.color, text: RecvelL10n.text("training.calendar.legend.two"))
+                legend(color: .cyan, text: RecvelL10n.text("training.calendar.legend.many"))
             }
         }
     }
 
     private func monthGrid(_ month: Date) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(month.formatted(.dateTime.month(.abbreviated).year()))
+            // `.locale(...)` explicito: `Date.formatted` ignora el `\.locale` del
+            // entorno y el mes salia en español con la app en ingles.
+            Text(month.formatted(.dateTime.month(.abbreviated).year().locale(RecvelL10n.locale)))
                 .font(.subheadline.weight(.bold))
             HStack(spacing: 4) {
-                ForEach(["L", "M", "X", "J", "V", "S", "D"], id: \.self) { day in
+                // Iniciales del idioma activo, no las españolas escritas a mano.
+                ForEach(Array(RecvelL10n.mondayFirstWeekdayInitials.enumerated()), id: \.offset) { _, day in
                     Text(day).font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary).frame(maxWidth: .infinity)
                 }
             }
@@ -1196,9 +1216,9 @@ private struct FitnessDetailSheet: View {
         case .cardioFocus:
             heroValue(focus.primaryLabel, status: focus.total > 0 ? "Distribucion por zonas FC" : "Sin zonas suficientes", color: .cyan)
             Chart([
-                FocusDatum(name: "Aerobico bajo", value: focus.lowAerobic, color: .cyan),
-                FocusDatum(name: "Aerobico alto", value: focus.highAerobic, color: .blue),
-                FocusDatum(name: "Anaerobico", value: focus.anaerobic, color: .purple)
+                FocusDatum(name: RecvelL10n.text("training.cardio.zone.lowAerobic"), value: focus.lowAerobic, color: .cyan),
+                FocusDatum(name: RecvelL10n.text("training.cardio.zone.highAerobic"), value: focus.highAerobic, color: .blue),
+                FocusDatum(name: RecvelL10n.text("training.cardio.zone.anaerobic"), value: focus.anaerobic, color: .purple)
             ]) { item in
                 BarMark(x: .value("Zona", item.name), y: .value("Minutos", item.value))
                     .foregroundStyle(item.color.gradient).cornerRadius(5)
@@ -1238,9 +1258,9 @@ private struct FitnessDetailSheet: View {
                 breakdownRow("Últimos 7 días", value: String(format: "%.0f", points.suffix(7).reduce(0) { $0 + $1.cardiovascularLoad }), progress: 0.72, color: .purple)
                 breakdownRow("21 días anteriores", value: String(format: "%.0f", points.dropLast(7).reduce(0) { $0 + $1.cardiovascularLoad }), progress: 0.58, color: .cyan)
             case .cardioFocus:
-                breakdownRow("Aerobico bajo", value: "\(focus.lowPercent)%", progress: Double(focus.lowPercent) / 100, color: .cyan)
-                breakdownRow("Aerobico alto", value: "\(focus.highPercent)%", progress: Double(focus.highPercent) / 100, color: .blue)
-                breakdownRow("Anaerobico", value: "\(focus.anaerobicPercent)%", progress: Double(focus.anaerobicPercent) / 100, color: .purple)
+                breakdownRow(RecvelL10n.text("training.cardio.zone.lowAerobic"), value: "\(focus.lowPercent)%", progress: Double(focus.lowPercent) / 100, color: .cyan)
+                breakdownRow(RecvelL10n.text("training.cardio.zone.highAerobic"), value: "\(focus.highPercent)%", progress: Double(focus.highPercent) / 100, color: .blue)
+                breakdownRow(RecvelL10n.text("training.cardio.zone.anaerobic"), value: "\(focus.anaerobicPercent)%", progress: Double(focus.anaerobicPercent) / 100, color: .purple)
             case .heartRateRecovery:
                 HRRScale(value: heartRateRecovery)
             case .strength:
@@ -1249,7 +1269,7 @@ private struct FitnessDetailSheet: View {
             }
         }
         .padding(17)
-        .liquidGlass(cornerRadius: 8)
+        .revelSurface(cornerRadius: 22)
         .accessibilityIdentifier("fitness.detail.breakdown")
     }
 
@@ -1263,7 +1283,7 @@ private struct FitnessDetailSheet: View {
                 .font(.caption).foregroundStyle(.tertiary)
         }
         .padding(17)
-        .liquidGlass(cornerRadius: 8, tint: .cyan)
+        .revelSurface(cornerRadius: 22, accent: .cyan)
         .accessibilityIdentifier("fitness.detail.science")
     }
 
@@ -3284,7 +3304,7 @@ struct WeeklyRoutinePlanner {
         // Deporte de cardio: usa el elegido; si no, alterna carrera/suave.
         func cardioDay(_ index: Int) -> DayAssignment {
             if let cardioSport { return .cardio(sport: cardioSport) }
-            return .cardio(index.isMultiple(of: 2) ? "Carrera" : "Cardio suave")
+            return .cardio(index.isMultiple(of: 2) ? RecvelL10n.text("workout.type.running") : RecvelL10n.text("workout.type.generic"))
         }
 
         let sorted = trainingWeekdays.sorted()
