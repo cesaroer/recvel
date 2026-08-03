@@ -56,10 +56,23 @@ struct NutritionView: View {
             AppBackground()
             WidthLockedScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    // Orden por urgencia de la pregunta que trae al usuario:
+                    //
+                    // 1. "¿Como voy?"  → los anillos. Es el contexto que da
+                    //    sentido a todo lo demas. MyFitnessPal degrado este
+                    //    resumen en 2018 y tuvo que revertirlo: sin el, la
+                    //    pantalla no orienta.
+                    // 2. "Quiero registrar" → la accion mas frecuente, pegada
+                    //    justo debajo del estado que modifica.
+                    // 3. "¿Que como ahora?" → el consejo. Va DESPUES del
+                    //    estado porque se deriva de el: su frase ("te faltan
+                    //    37 g de proteina") no significa nada hasta haber
+                    //    visto los anillos.
+                    // 4-5. Mañana e historial: futuro y pasado, menos urgentes.
                     pageHeader(profile: profile)
                     dailyHero(profile: profile)
-                    nextMealCard(profile: profile)
                     recordFoodEntry
+                    nextMealCard(profile: profile)
                     tomorrowPlan(profile: profile)
                     recentMeals
                 }
