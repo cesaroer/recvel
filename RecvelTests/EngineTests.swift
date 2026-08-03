@@ -669,7 +669,11 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(focus.lowAerobic, 17, accuracy: 0.001)
         XCTAssertEqual(focus.highAerobic, 30, accuracy: 0.001)
         XCTAssertEqual(focus.anaerobic, 5, accuracy: 0.001)
-        XCTAssertEqual(focus.primaryLabel, "Aerobico alto")
+        // La etiqueta pasa por el catalogo de strings desde que las zonas de
+        // cardio se localizaron; antes era un literal sin acento en el codigo.
+        // Se compara contra la clave resuelta para que el test no se rompa al
+        // traducir ni al corregir la ortografia.
+        XCTAssertEqual(focus.primaryLabel, RecvelL10n.text("training.cardio.zone.highAerobic"))
         XCTAssertEqual(engine.latestHeartRateRecovery(history: [.demo]), 31)
     }
 
@@ -3063,6 +3067,159 @@ final class EngineTests: XCTestCase {
                 let name = RecvelL10n.text(food.nameKey)
                 XCTAssertNotEqual(name, food.nameKey,
                                   "\(food.nameKey) sin traducir en \(language.rawValue)")
+            }
+        }
+    }
+    // MARK: - Recetas y escalado de porciones
+
+    /// Una receta que apunte a un alimento inexistente no fallaria al compilar,
+    /// solo se veria incompleta en pantalla. Este test lo convierte en error.
+    func testEveryRecipeIngredientResolvesInFoodCatalog() {
+        for recipe in MealRecipeCatalog.entries {
+            XCTAssertFalse(recipe.components.isEmpty, "\(recipe.id) no tiene ingredientes")
+            for component in recipe.components {
+                XCTAssertNotNil(FoodCatalog.item(id: component.foodID),
+                                "\(recipe.id) apunta a un alimento inexistente: \(component.foodID)")
+            }
+            XCTAssertFalse(recipe.stepKeys.isEmpty, "\(recipe.id) no tiene pasos")
+        }
+    }
+
+    /// El banner y la pantalla no pueden contradecirse: cada platillo que el
+    /// motor sabe nombrar debe tener receta. La excepcion documentada es
+    /// `balancedPlate`, que es una instruccion ("a tu gusto"), no un platillo.
+    func testEveryEngineDishHasARecipeExceptTheGenericFallback() {
+        let engineKeys = [
+            "nutrition.food.chickenBeansVegetables",
+            "nutrition.food.tofuBeansRice",
+            "nutrition.food.eggsBeansTortillas",
+            "nutrition.food.yogurtFruit",
+            "nutrition.food.eggsYogurtFruit",
+            "nutrition.food.eggsBeansFruit",
+            "nutrition.food.oatsSoySeeds",
+            "nutrition.food.legumeBowl"
+        ]
+        for key in engineKeys {
+            XCTAssertNotNil(MealRecipeCatalog.recipe(titleKey: key), "sin receta para \(key)")
+        }
+        XCTAssertNil(MealRecipeCatalog.recipe(titleKey: "nutrition.food.balancedPlate"),
+                     "balancedPlate no debe tener receta: es una instruccion, no un platillo")
+    }
+
+    /// La garantia central: los totales son la SUMA de los ingredientes ya
+    /// escalados, con tolerancia cero. Si alguna vez se interpolan o se copia el
+    /// objetivo, este test cae.
+    func testScaledMealTotalsAreExactlyTheSumOfItsIngredients() throws {
+        let recipe = try XCTUnwrap(MealRecipeCatalog.recipe(id: "chicken-beans-vegetables"))
+        let targets = NutritionPlanEngine().targets(for: NutritionProfile(setupCompleted: true), now: .now)
+        let meal = MealPortionScaler.scale(
+            recipe: recipe,
+            mealType: .lunch,
+            gap: MacroGap(calories: 1_500, protein: 80),
+            targets: targets,
+            remainingMeals: [.lunch, .dinner]
+        )
+
+        XCTAssertEqual(meal.totals.calories, meal.ingredients.reduce(0) { $0 + $1.calories })
+        XCTAssertEqual(meal.totals.protein, meal.ingredients.reduce(0) { $0 + $1.protein })
+        XCTAssertEqual(meal.totals.carbohydrates, meal.ingredients.reduce(0) { $0 + $1.carbohydrates })
+        XCTAssertEqual(meal.totals.fat, meal.ingredients.reduce(0) { $0 + $1.fat })
+    }
+
+    /// Escalar al hueco del DIA daria un desayuno de 2 000 kcal a las 8 a.m.
+    /// El reparto entre comidas es lo que lo evita.
+    func testBreakfastDoesNotTryToCoverTheWholeDay() {
+        let targets = NutritionPlanEngine().targets(for: NutritionProfile(setupCompleted: true), now: .now)
+        let hugeGap = MacroGap(calories: targets.calories, protein: targets.protein)
+        let target = MealPortionScaler.target(
+            for: .breakfast,
+            gap: hugeGap,
+            targets: targets,
+            remainingMeals: [.breakfast, .lunch, .dinner]
+        )
+
+        XCTAssertLessThanOrEqual(target.calories, Int(Double(targets.calories) * MealPortionScaler.maxCalorieShare))
+        XCTAssertLessThanOrEqual(target.protein, MealPortionScaler.maxMealProtein)
+        XCTAssertLessThan(target.calories, targets.calories / 2, "un desayuno no cubre medio dia")
+    }
+
+    /// Con el rango ya cubierto no se propone porcion cero ni saltarse la
+    /// comida: la guia de copy prohibe culpabilizar por comer.
+    func testSatisfiedGapStillProposesARealPortion() throws {
+        let recipe = try XCTUnwrap(MealRecipeCatalog.recipe(id: "yogurt-fruit"))
+        let targets = NutritionPlanEngine().targets(for: NutritionProfile(setupCompleted: true), now: .now)
+        let meal = MealPortionScaler.scale(
+            recipe: recipe,
+            mealType: .snack,
+            gap: MacroGap(calories: -400, protein: -20),
+            targets: targets,
+            remainingMeals: [.snack]
+        )
+
+        XCTAssertGreaterThan(meal.totals.calories, 0, "nunca una porcion vacia")
+        XCTAssertTrue(meal.ingredients.allSatisfy { $0.servings > 0 })
+        XCTAssertTrue(meal.caveatKeys.contains("recipe.caveat.aboveRange"))
+    }
+
+    /// Las alergias son exclusion dura: la pantalla lista ingredientes y ofrece
+    /// registrarlos, asi que no basta con bajar el orden.
+    func testAllergiesExcludeRecipesHard() {
+        let dairyFree = MealRecipeCatalog.recipes(
+            for: .breakfast, dietStyle: .vegetarian, excludingAllergens: ["lacteos"]
+        )
+        XCTAssertFalse(dairyFree.contains { $0.id == "eggs-yogurt-fruit" },
+                       "yogurt griego tiene alergeno lacteo")
+
+        let eggFree = MealRecipeCatalog.recipes(
+            for: .breakfast, dietStyle: .vegetarian, excludingAllergens: ["huevo"]
+        )
+        XCTAssertFalse(eggFree.contains { $0.id == "eggs-beans-fruit" })
+
+        // Sin alergias declaradas no se filtra nada.
+        let all = MealRecipeCatalog.recipes(for: .breakfast, dietStyle: .vegetarian)
+        XCTAssertFalse(all.isEmpty)
+    }
+
+    /// Cantidades que alguien pueda cocinar: nadie mide "1.37 tazas".
+    func testPortionsAreRoundedToCookableAmounts() {
+        XCTAssertEqual(MealPortionScaler.rounded(1.37, step: 0.5), 1.5)
+        XCTAssertEqual(MealPortionScaler.rounded(2.2, step: 1), 2)
+        XCTAssertEqual(MealPortionScaler.rounded(0.1, step: 0.5), 0.5, "nunca cero")
+        XCTAssertEqual(ScaledIngredient.fraction(1.5), "1½")
+        XCTAssertEqual(ScaledIngredient.fraction(0.5), "½")
+        XCTAssertEqual(ScaledIngredient.fraction(2.0), "2")
+    }
+
+    /// Los macros del platillo no pueden depender del idioma.
+    func testScaledMealMacrosAreIdenticalAcrossLanguages() throws {
+        defer { RecvelLanguageStore.save(.esMX) }
+        let recipe = try XCTUnwrap(MealRecipeCatalog.recipe(id: "tofu-beans-rice"))
+        let targets = NutritionPlanEngine().targets(for: NutritionProfile(setupCompleted: true), now: .now)
+        let gap = MacroGap(calories: 1_200, protein: 70)
+
+        RecvelLanguageStore.save(.esMX)
+        let spanish = MealPortionScaler.scale(recipe: recipe, mealType: .lunch, gap: gap,
+                                              targets: targets, remainingMeals: [.lunch, .dinner])
+        RecvelLanguageStore.save(.english)
+        let english = MealPortionScaler.scale(recipe: recipe, mealType: .lunch, gap: gap,
+                                              targets: targets, remainingMeals: [.lunch, .dinner])
+
+        XCTAssertEqual(spanish.totals, english.totals)
+    }
+
+    /// Los pasos y resumenes se muestran en pantalla: sin traducir se verian
+    /// como "recipe.tofuBeansRice.step.1".
+    func testRecipeCopyIsLocalizedInBothLanguages() {
+        defer { RecvelLanguageStore.save(.esMX) }
+        for language in [AppLanguage.esMX, .english] {
+            RecvelLanguageStore.save(language)
+            for recipe in MealRecipeCatalog.entries {
+                XCTAssertNotEqual(RecvelL10n.text(recipe.summaryKey), recipe.summaryKey,
+                                  "\(recipe.summaryKey) sin traducir en \(language.rawValue)")
+                for step in recipe.stepKeys {
+                    XCTAssertNotEqual(RecvelL10n.text(step), step,
+                                      "\(step) sin traducir en \(language.rawValue)")
+                }
             }
         }
     }

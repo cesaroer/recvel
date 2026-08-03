@@ -198,6 +198,7 @@
 		C6B776F6AA18089D1403064D /* Standing_Military_Press_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 13985CE2C332CD7217A6D03E /* Standing_Military_Press_1.jpg */; };
 		C92138E2E791EAA819FEE243 /* LanguageController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F0D9F9B6234019E59D2F2B /* LanguageController.swift */; };
 		C961836A4C39425D8CA152A2 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 4E737BF259C173FD3A341B19 /* InfoPlist.xcstrings */; };
+		C988B28F2F4CF8F559CFA4DF /* MealPortionScaler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF32D515BFB9839528C7FA1A /* MealPortionScaler.swift */; };
 		CA0619DA47D3EEFB1CF8692D /* muscle_6_secondary.svg in Resources */ = {isa = PBXBuildFile; fileRef = 614F58E7F3877F34127390BC /* muscle_6_secondary.svg */; };
 		CC1B67730894B18AEE21E076 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F85D968EFD4291F51DA30AA /* PlanView.swift */; };
 		CCC9C7E70E68C5193C33823C /* RecvelWatchWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE9A81FDE433DFCC5336CC /* RecvelWatchWidgets.swift */; };
@@ -230,6 +231,7 @@
 		F32E287ABA725595679FD877 /* muscle_13_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 6AB9076D977463DACF54ABB7 /* muscle_13_main.svg */; };
 		F78DA89DC981C37A88614F21 /* Standing_Overhead_Barbell_Triceps_Extension_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 210B553B3280789B216E6D9E /* Standing_Overhead_Barbell_Triceps_Extension_0.jpg */; };
 		F7E266323CB71C6C5D360C6E /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9284D70768005A77F4424D7 /* Haptics.swift */; };
+		F80BB212457EEDACAA13405D /* MealRecipeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC992C4240F2D6833D1D4990 /* MealRecipeCatalog.swift */; };
 		F955FF3BAB7FC6AB4048FB20 /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18A98293E1DA193A974AC47D /* TrendsView.swift */; };
 		FAC5AAB0BB5CA1AE8DE2BEF0 /* muscle_6_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 103E76ABE0D3816FCE0ED097 /* muscle_6_main.svg */; };
 		FADDA297A69AEB35DF3E4791 /* HealthIntelligenceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F9276A6FAF95FEA6C0FF31 /* HealthIntelligenceViews.swift */; };
@@ -481,6 +483,7 @@
 		C6946ADD811F7A00913684D0 /* Bent_Over_Barbell_Row_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Bent_Over_Barbell_Row_1.jpg; sourceTree = "<group>"; };
 		C97C7619F32EE18687CF6297 /* TrainingPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanViews.swift; sourceTree = "<group>"; };
 		CBD5AB6B40E512F6AA02537B /* NutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionView.swift; sourceTree = "<group>"; };
+		CF32D515BFB9839528C7FA1A /* MealPortionScaler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPortionScaler.swift; sourceTree = "<group>"; };
 		CF481284A19AB648797BD27B /* Ankle_Circles_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Ankle_Circles_0.jpg; sourceTree = "<group>"; };
 		CF5F92C2D22230ED98EA9F50 /* FastingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastingView.swift; sourceTree = "<group>"; };
 		CF64F6E50EFD78C3B8ACC2BF /* MorningReportEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningReportEngine.swift; sourceTree = "<group>"; };
@@ -525,6 +528,7 @@
 		F91D4F2E07FC181CEE1ECCB4 /* Pullups_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Pullups_1.jpg; sourceTree = "<group>"; };
 		F9284D70768005A77F4424D7 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		F9E5E2D5337E530EDB4C5DC5 /* Monster_Walk_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Monster_Walk_0.jpg; sourceTree = "<group>"; };
+		FC992C4240F2D6833D1D4990 /* MealRecipeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRecipeCatalog.swift; sourceTree = "<group>"; };
 		FDCE72201D5B69FF0F8BB302 /* TabBarVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarVisibility.swift; sourceTree = "<group>"; };
 		FE204971CBF83830AB831A4D /* Dips___Triceps_Version_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Dips___Triceps_Version_0.jpg"; sourceTree = "<group>"; };
 		FE65F58DEAA3453E0BAC1A6C /* HomeCalendarViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCalendarViews.swift; sourceTree = "<group>"; };
@@ -827,6 +831,8 @@
 				38F0D9F9B6234019E59D2F2B /* LanguageController.swift */,
 				271B913923C82C6E42DB1251 /* LocalNotificationManager.swift */,
 				69EA00A65CFE352738D8AA9A /* LocalStore.swift */,
+				CF32D515BFB9839528C7FA1A /* MealPortionScaler.swift */,
+				FC992C4240F2D6833D1D4990 /* MealRecipeCatalog.swift */,
 				CF64F6E50EFD78C3B8ACC2BF /* MorningReportEngine.swift */,
 				44785860B5617E561E10232E /* MuscleMapCatalog.swift */,
 				174EB4692E2B09892BC803A7 /* NotificationRouter.swift */,
@@ -1294,6 +1300,8 @@
 				C92138E2E791EAA819FEE243 /* LanguageController.swift in Sources */,
 				8D0C5F501FC5CEF34F35BF8B /* LocalNotificationManager.swift in Sources */,
 				081379F295F3CFF0A0084851 /* LocalStore.swift in Sources */,
+				C988B28F2F4CF8F559CFA4DF /* MealPortionScaler.swift in Sources */,
+				F80BB212457EEDACAA13405D /* MealRecipeCatalog.swift in Sources */,
 				0BC9DB08F73A6A3E15F15EF5 /* MorningReportEngine.swift in Sources */,
 				7A0F1D1AC6C0CDEBD3A109BD /* MorningReportView.swift in Sources */,
 				690577EA37726976097152A2 /* MuscleMapCatalog.swift in Sources */,
