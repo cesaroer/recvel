@@ -2998,4 +2998,72 @@ final class EngineTests: XCTestCase {
                            "Mantenimiento es fortalecimiento, no estiramiento")
         }
     }
+    // MARK: - Catalogo de alimentos (regresion de la migracion a FoodCatalog)
+
+    /// El catalogo salio de `NutritionEstimator` a `FoodCatalog` para que las
+    /// recetas puedan componer platillos sumando alimentos reales. Estos valores
+    /// estan CONGELADOS: cambiar un macro alteraria estimaciones que el usuario
+    /// ya tiene guardadas en su historial.
+    func testFoodCatalogKeepsOriginalMacrosFrozen() throws {
+        let chicken = try XCTUnwrap(FoodCatalog.item(id: "chicken_breast"))
+        XCTAssertEqual(chicken.calories, 180)
+        XCTAssertEqual(chicken.protein, 31)
+        XCTAssertEqual(chicken.carbs, 0)
+        XCTAssertEqual(chicken.fat, 5)
+
+        let beans = try XCTUnwrap(FoodCatalog.item(id: "beans"))
+        XCTAssertEqual(beans.calories, 125)
+        XCTAssertEqual(beans.protein, 8)
+
+        let egg = try XCTUnwrap(FoodCatalog.item(id: "egg"))
+        XCTAssertEqual(egg.calories, 78)
+        XCTAssertEqual(egg.protein, 6)
+    }
+
+    /// La estimacion por texto debe dar exactamente lo mismo que antes de mover
+    /// el catalogo. Es el guard de que la migracion fue mecanica.
+    func testTextEstimationIsUnchangedAfterCatalogMigration() throws {
+        let estimator = NutritionEstimator()
+
+        let simple = try XCTUnwrap(estimator.estimate(from: "pollo con arroz"))
+        XCTAssertEqual(simple.calories, 385)   // 180 + 205
+        XCTAssertEqual(simple.protein, 35)     // 31 + 4
+        XCTAssertEqual(simple.carbohydrates, 45)
+        XCTAssertEqual(simple.confidence, .medium, "dos alimentos reconocidos")
+
+        let scaled = try XCTUnwrap(estimator.estimate(from: "2 huevos"))
+        XCTAssertEqual(scaled.calories, 156)   // 78 x 2
+        XCTAssertEqual(scaled.protein, 12)
+
+        let unknown = try XCTUnwrap(estimator.estimate(from: "algo que no existe"))
+        XCTAssertEqual(unknown.confidence, .low, "sin alimentos reconocidos, confianza baja")
+    }
+
+    /// Todo alimento debe tener id unico y limites de porcion coherentes: el
+    /// escalador de recetas depende de ambos.
+    func testFoodCatalogIsInternallyConsistent() {
+        let ids = FoodCatalog.items.map(\.id)
+        XCTAssertEqual(Set(ids).count, ids.count, "hay ids duplicados en el catalogo")
+
+        for food in FoodCatalog.items {
+            XCTAssertFalse(food.tokens.isEmpty, "\(food.id) no tiene tokens y nunca se reconoceria")
+            XCTAssertLessThan(food.minServings, food.maxServings, "\(food.id) tiene limites invertidos")
+            XCTAssertGreaterThan(food.servingStep, 0, "\(food.id) tiene paso de porcion no positivo")
+            XCTAssertTrue(food.nameKey.hasPrefix("food.name."), "\(food.id) no usa clave de localizacion")
+        }
+    }
+
+    /// Los nombres de alimento se muestran en la UI de recetas, asi que tienen
+    /// que estar traducidos: una clave sin traducir se ve como "food.name.tofu".
+    func testFoodNamesAreLocalizedInBothLanguages() {
+        defer { RecvelLanguageStore.save(.esMX) }
+        for language in [AppLanguage.esMX, .english] {
+            RecvelLanguageStore.save(language)
+            for food in FoodCatalog.items {
+                let name = RecvelL10n.text(food.nameKey)
+                XCTAssertNotEqual(name, food.nameKey,
+                                  "\(food.nameKey) sin traducir en \(language.rawValue)")
+            }
+        }
+    }
 }

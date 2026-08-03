@@ -47,6 +47,7 @@
 		2A04BD70D081EFFC3FBE1B5E /* Standing_Calf_Raises_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 794C8797BA01CDB1C0A404B8 /* Standing_Calf_Raises_0.jpg */; };
 		2A7F94432BEE349DCFA343C9 /* RecvelWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = ECBBA2FB1966A83451184173 /* RecvelWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2B228F6D275FA89984519A6B /* muscle_14_secondary.svg in Resources */ = {isa = PBXBuildFile; fileRef = F21DD7295252445237DDBD6E /* muscle_14_secondary.svg */; };
+		2B2CA2442CD5D5FD5735E5E2 /* FoodCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C53BE7B1D775F1482B6A97 /* FoodCatalog.swift */; };
 		2B4F516CAAD242203FD157AB /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 4E737BF259C173FD3A341B19 /* InfoPlist.xcstrings */; };
 		2C2B094EFD7AF850EE85E13C /* Pullups_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 37E4CA6CC45CF496FD987992 /* Pullups_0.jpg */; };
 		2C5F4578BBC4A7EBBC465C5F /* Bench_Dips_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB269568473ACD511FE6CF91 /* Bench_Dips_1.jpg */; };
@@ -95,6 +96,7 @@
 		5EA1A9CD73777591039A0134 /* RecvelLocalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC66A07195947F46084531E /* RecvelLocalization.swift */; };
 		5F42C09E2BC717C7AA766C88 /* Barbell_Deadlift_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D13449F7B13A0A523CEE408E /* Barbell_Deadlift_1.jpg */; };
 		5F78EF54E46BCF23B124D7DD /* Dead_Bug_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BF4AB10D3C11B2B878918687 /* Dead_Bug_0.jpg */; };
+		5FF035DB739D38A0DCCC43FE /* ReportRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56711B2CB81C0F8D7984FB4 /* ReportRing.swift */; };
 		60162E9DCE2277BA3266363F /* muscle_10_secondary.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1042478662DE2ADC33850C4D /* muscle_10_secondary.svg */; };
 		60FE3C1173DE7CF52E31979F /* Dumbbell_Flyes_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 424997678A38443A765FB194 /* Dumbbell_Flyes_0.jpg */; };
 		6112A1376D7156F3AFFA2E8F /* Barbell_Bench_Press___Medium_Grip_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D89EAD1B487F94C74E7D53F7 /* Barbell_Bench_Press___Medium_Grip_1.jpg */; };
@@ -103,6 +105,7 @@
 		66EC5D039AEA32FA33044CBC /* SharedSnapshotPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = E49D8AC64D6A5F440E81B529 /* SharedSnapshotPublisher.swift */; };
 		6710F30E902CB1CCA4CBFFD2 /* muscle_14_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = AC1C43BCB59472D33885F291 /* muscle_14_main.svg */; };
 		67486A053F23341546F015B3 /* LaboratoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40F4FA4EA49757EE84E1F9A5 /* LaboratoryView.swift */; };
+		67AAEEADC82E90C0E8BE2133 /* ReportMetricRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 821790C2EA4A1703EA091DEF /* ReportMetricRow.swift */; };
 		67D09BB41A64E55BF2CDE0CC /* muscle_4_secondary.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1A97097499A6BA985C6C1673 /* muscle_4_secondary.svg */; };
 		68E72D9A5A673A5DDC40A8B5 /* Spinal_Stretch_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = B00CE8934E13026C6482B260 /* Spinal_Stretch_1.jpg */; };
 		690577EA37726976097152A2 /* MuscleMapCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44785860B5617E561E10232E /* MuscleMapCatalog.swift */; };
@@ -152,10 +155,12 @@
 		976467F7CC4E5FA91A9A8F47 /* Mountain_Climbers_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 748DDB422C29B6E58E0BF388 /* Mountain_Climbers_1.jpg */; };
 		98408A05E871601D4E56E871 /* FastingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF5F92C2D22230ED98EA9F50 /* FastingView.swift */; };
 		98D7D2F080B317C2F1B9A3AF /* RecvelSharedSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4840CBBAAF155B9732FF41FB /* RecvelSharedSnapshot.swift */; };
+		9B011ED80832CC619876186E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C0D5C1058A0FA18FA0D22695 /* README.md */; };
 		9BF7B9480CE407DA3EFB2A1E /* Wide_Grip_Lat_Pulldown_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 0C72D5D2375B5A126EF07A4A /* Wide_Grip_Lat_Pulldown_1.jpg */; };
 		9C39CDBDD3B440981663CAA3 /* Quad_Stretch_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 610A9A1F45CE8509299D7AA0 /* Quad_Stretch_1.jpg */; };
 		9C7A71A52AFEF269ADC7ABA9 /* Freehand_Jump_Squat_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = C40266821B67844D51706C19 /* Freehand_Jump_Squat_1.jpg */; };
 		9D1E8DA0F8D0F49E699FCF48 /* DailyChallengeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A60F3FE99A562EBFC66B4DA /* DailyChallengeEngine.swift */; };
+		9D383D0B3EB6180C224B5A1C /* ReportInk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A24C7132FFC25A1F7E11B /* ReportInk.swift */; };
 		9ED7C4EB805417992544304C /* Ab_Roller_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9C40DC14EA0678DB80BAF253 /* Ab_Roller_1.jpg */; };
 		A02BA078B8E8706216520D0C /* Bent_Over_Barbell_Row_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 99F521E3523231967635DADB /* Bent_Over_Barbell_Row_0.jpg */; };
 		A02C7A07763D2C22D219C45B /* RecvelActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BB61EB0C779E9F02A02D4E /* RecvelActivityAttributes.swift */; };
@@ -197,6 +202,7 @@
 		CC1B67730894B18AEE21E076 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F85D968EFD4291F51DA30AA /* PlanView.swift */; };
 		CCC9C7E70E68C5193C33823C /* RecvelWatchWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE9A81FDE433DFCC5336CC /* RecvelWatchWidgets.swift */; };
 		D08343149F6D4CCE87690FEA /* muscle_1_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8B4CD2986731D623F0E3F90A /* muscle_1_main.svg */; };
+		D24A023261D2C7CF685416B5 /* SegmentedLoadBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 808536CE2A7910642FE7495D /* SegmentedLoadBar.swift */; };
 		D38FA75377AC98C0D4424D1A /* BioAgeProViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554DE454E4B66D954C3DEB02 /* BioAgeProViews.swift */; };
 		D3BB50BD837B53A9ECD06CF9 /* HealthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D99C8B88330367A16B25D5F2 /* HealthModels.swift */; };
 		D959DD7537DD83D21DA56177 /* muscle_11_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1E2BCDBDBD7FAAE4A3C4EF45 /* muscle_11_main.svg */; };
@@ -362,6 +368,7 @@
 		38F0D9F9B6234019E59D2F2B /* LanguageController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageController.swift; sourceTree = "<group>"; };
 		39CFA52540C231B9DA8D3DCD /* Shoulder_Stretch_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Shoulder_Stretch_1.jpg; sourceTree = "<group>"; };
 		3D4DA686B78A3224403CC5E2 /* EngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
+		3E8A24C7132FFC25A1F7E11B /* ReportInk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportInk.swift; sourceTree = "<group>"; };
 		4075C8B1299B763F5564A68E /* Barbell_Incline_Bench_Press___Medium_Grip_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Barbell_Incline_Bench_Press___Medium_Grip_1.jpg"; sourceTree = "<group>"; };
 		40F4FA4EA49757EE84E1F9A5 /* LaboratoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaboratoryView.swift; sourceTree = "<group>"; };
 		41F5DD86659A5D70472BE7CE /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
@@ -409,7 +416,10 @@
 		7A50CEFAF98A488878BE8646 /* Inverted_Row_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Inverted_Row_1.jpg; sourceTree = "<group>"; };
 		7C8FC10E6A1D2FDB3C22B369 /* Pushups_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Pushups_1.jpg; sourceTree = "<group>"; };
 		7E392196985E2809EF226CAD /* Leg_Press_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Leg_Press_1.jpg; sourceTree = "<group>"; };
+		808536CE2A7910642FE7495D /* SegmentedLoadBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedLoadBar.swift; sourceTree = "<group>"; };
+		821790C2EA4A1703EA091DEF /* ReportMetricRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportMetricRow.swift; sourceTree = "<group>"; };
 		83055622B636EFA8DD9CD935 /* muscle_2_secondary.svg */ = {isa = PBXFileReference; path = muscle_2_secondary.svg; sourceTree = "<group>"; };
+		86C53BE7B1D775F1482B6A97 /* FoodCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodCatalog.swift; sourceTree = "<group>"; };
 		880DD5C97094B18B358875A9 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		89B4596188CD86B57A118129 /* Crunches_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Crunches_1.jpg; sourceTree = "<group>"; };
 		8B4CD2986731D623F0E3F90A /* muscle_1_main.svg */ = {isa = PBXFileReference; path = muscle_1_main.svg; sourceTree = "<group>"; };
@@ -460,6 +470,7 @@
 		BF4AB10D3C11B2B878918687 /* Dead_Bug_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Dead_Bug_0.jpg; sourceTree = "<group>"; };
 		BF96F03AAC6D796B8F958A0F /* muscle_8_main.svg */ = {isa = PBXFileReference; path = muscle_8_main.svg; sourceTree = "<group>"; };
 		C08540A3250208BB225EC9B1 /* Crunches_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Crunches_0.jpg; sourceTree = "<group>"; };
+		C0D5C1058A0FA18FA0D22695 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C1A69B1A3069CB1B61652D9B /* Single_Leg_Glute_Bridge_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Single_Leg_Glute_Bridge_1.jpg; sourceTree = "<group>"; };
 		C2298B592C0C35F7AEE34050 /* Monster_Walk_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Monster_Walk_1.jpg; sourceTree = "<group>"; };
 		C2FD3B871CF9C8C7A9BFF66A /* One_Arm_Dumbbell_Row_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = One_Arm_Dumbbell_Row_0.jpg; sourceTree = "<group>"; };
@@ -507,6 +518,7 @@
 		F231A07C8163AC6031EC3331 /* Barbell_Full_Squat_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Barbell_Full_Squat_0.jpg; sourceTree = "<group>"; };
 		F436C4733D3368966B8DE714 /* Inverted_Row_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Inverted_Row_0.jpg; sourceTree = "<group>"; };
 		F51D506991BAC44067FB0969 /* Leg_Press_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Leg_Press_0.jpg; sourceTree = "<group>"; };
+		F56711B2CB81C0F8D7984FB4 /* ReportRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportRing.swift; sourceTree = "<group>"; };
 		F6BB61EB0C779E9F02A02D4E /* RecvelActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecvelActivityAttributes.swift; sourceTree = "<group>"; };
 		F88B57AE4733DC8A8A2F192F /* Bodyweight_Walking_Lunge_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Bodyweight_Walking_Lunge_0.jpg; sourceTree = "<group>"; };
 		F8DCB129883B7906DC7264A3 /* Seated_Floor_Hamstring_Stretch_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Seated_Floor_Hamstring_Stretch_0.jpg; sourceTree = "<group>"; };
@@ -685,6 +697,18 @@
 			path = ExerciseMedia;
 			sourceTree = "<group>";
 		};
+		244B89CE3CC45E271CB63DE8 /* RevelInspiredComponents */ = {
+			isa = PBXGroup;
+			children = (
+				C0D5C1058A0FA18FA0D22695 /* README.md */,
+				3E8A24C7132FFC25A1F7E11B /* ReportInk.swift */,
+				821790C2EA4A1703EA091DEF /* ReportMetricRow.swift */,
+				F56711B2CB81C0F8D7984FB4 /* ReportRing.swift */,
+				808536CE2A7910642FE7495D /* SegmentedLoadBar.swift */,
+			);
+			path = RevelInspiredComponents;
+			sourceTree = "<group>";
+		};
 		3A589A0C9CDECE5E18F95B2C /* RecvelTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -749,6 +773,7 @@
 				C97C7619F32EE18687CF6297 /* TrainingPlanViews.swift */,
 				0A914C1C1EA0F3ECFAECE1D3 /* TrainingPresetCatalog.swift */,
 				18A98293E1DA193A974AC47D /* TrendsView.swift */,
+				244B89CE3CC45E271CB63DE8 /* RevelInspiredComponents */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -790,6 +815,7 @@
 				4A60F3FE99A562EBFC66B4DA /* DailyChallengeEngine.swift */,
 				B7124E07C9CC057ACD4BE9A0 /* ExerciseMechanicsCatalog.swift */,
 				305374BB9BBD825224CFFB46 /* FastingLiveActivityManager.swift */,
+				86C53BE7B1D775F1482B6A97 /* FoodCatalog.swift */,
 				F9284D70768005A77F4424D7 /* Haptics.swift */,
 				33FA0F7BC717C0E626A69BA5 /* HealthDataProvider.swift */,
 				D56F39A4993F70B85B158EFE /* HealthIntelligenceEngine.swift */,
@@ -1143,6 +1169,7 @@
 				087D8FECC706A25FF3BB83FB /* Pushups_1.jpg in Resources */,
 				34DB6303AC10510DC2283FF3 /* Quad_Stretch_0.jpg in Resources */,
 				9C39CDBDD3B440981663CAA3 /* Quad_Stretch_1.jpg in Resources */,
+				9B011ED80832CC619876186E /* README.md in Resources */,
 				E76FB81BF24CDE582FBE1663 /* Rope_Jumping_0.jpg in Resources */,
 				6A665F5ED7844CD15039BAC3 /* Rope_Jumping_1.jpg in Resources */,
 				0816B8E65AB4F564431B54FF /* Rowing_Stationary_0.jpg in Resources */,
@@ -1248,6 +1275,7 @@
 				2C6249492AD1D1CCD9E7A31C /* FastingLiveActivityManager.swift in Sources */,
 				98408A05E871601D4E56E871 /* FastingView.swift in Sources */,
 				F16506E2DCFDEC43A93D2624 /* FitnessView.swift in Sources */,
+				2B2CA2442CD5D5FD5735E5E2 /* FoodCatalog.swift in Sources */,
 				1BD0EADED639257E69B8E86D /* GlassComponents.swift in Sources */,
 				F7E266323CB71C6C5D360C6E /* Haptics.swift in Sources */,
 				13EC6790B63938FF09500677 /* HealthDataProvider.swift in Sources */,
@@ -1282,8 +1310,12 @@
 				6CFEA953EB1FF337D05B211B /* RecvelApp.swift in Sources */,
 				3CC709C38C9B59A22DED4563 /* RecvelLocalization.swift in Sources */,
 				5A4CB0DF06DC3AAE98EDFEF4 /* RecvelSharedSnapshot.swift in Sources */,
+				9D383D0B3EB6180C224B5A1C /* ReportInk.swift in Sources */,
+				67AAEEADC82E90C0E8BE2133 /* ReportMetricRow.swift in Sources */,
+				5FF035DB739D38A0DCCC43FE /* ReportRing.swift in Sources */,
 				64B5CE27681020B46E21E33B /* ScientificInfoView.swift in Sources */,
 				88C6379CCF24D9E09CD3B67E /* ScoreEngine.swift in Sources */,
+				D24A023261D2C7CF685416B5 /* SegmentedLoadBar.swift in Sources */,
 				AD4D2AB13B5B50AD28357D08 /* SettingsView.swift in Sources */,
 				66EC5D039AEA32FA33044CBC /* SharedSnapshotPublisher.swift in Sources */,
 				5B3940BA537269AE6E09A8A7 /* SleepCyclePlanner.swift in Sources */,
