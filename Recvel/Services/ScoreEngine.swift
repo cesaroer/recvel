@@ -23,12 +23,36 @@ struct ScoreEngine {
             lowerIsBetter: true
         )
 
+        // Temperatura de muñeca DORMIDO frente a la habitual. Apple solo la mide
+        // durmiendo, asi que no hay lectura diurna con la que contaminarla.
+        //
+        // Evidencia: en 47 000 usuarios de Fitbit, una desviacion sostenida por
+        // encima de ~0.5 C sobre la linea base personal precedio a enfermedad
+        // confirmada en 1-2 dias en cerca del 75 % de los casos (Cell, 2021).
+        //
+        // Limite reconocido: la temperatura de piel es una salida
+        // termorreguladora con muchos confusores (ambiente, ciclo menstrual,
+        // alcohol, hora del ejercicio), y las desviaciones sostenidas son mas
+        // fiables que las de una sola noche. Por eso entra con peso bajo y solo
+        // como señal de contexto, nunca como deteccion de enfermedad.
+        let temperatureDeviation = baselineEngine.deviation(
+            current: snapshot.wristTemperature,
+            values: historyWithoutToday.compactMap(\.wristTemperature),
+            lowerIsBetter: true
+        )
+
         let sleep = sleepScore(snapshot.sleepDetails, fallbackHours: snapshot.sleepHours)
         let recoveryFactors: [(Double?, Double)] = [
-            (hrvDeviation.map { 62 + $0 * 115 }, 0.34),
-            (rhrDeviation.map { 62 + $0 * 120 }, 0.24),
-            (snapshot.sleepHours.map { _ in Double(sleep) }, 0.28),
-            (respiratoryDeviation.map { 65 + $0 * 70 }, 0.14)
+            (hrvDeviation.map { 62 + $0 * 115 }, 0.31),
+            (rhrDeviation.map { 62 + $0 * 120 }, 0.22),
+            (snapshot.sleepHours.map { _ in Double(sleep) }, 0.25),
+            (respiratoryDeviation.map { 65 + $0 * 70 }, 0.12),
+            // Amplificacion x20: en piel las variaciones relativas son diminutas
+            // —0.5 C sobre 33 C es apenas 1.5 %— y con un factor menor el efecto
+            // quedaba por debajo del redondeo del score, es decir, decorativo.
+            // Con x20 y peso 0.10, el umbral de 0.5 C del estudio de Fitbit
+            // mueve el score de forma visible pero acotada.
+            (temperatureDeviation.map { 62 + min(max($0 * 20, -1), 1) * 60 }, 0.10)
         ]
         let autonomicRecovery = weightedScore(recoveryFactors, fallback: 58)
 
@@ -39,7 +63,8 @@ struct ScoreEngine {
             hrvDeviation: hrvDeviation,
             rhrDeviation: rhrDeviation
         )
-        let recovery = clamp(autonomicRecovery + priorLoad)
+        let sustained = sustainedSuppressionAdjustment(history: historyWithoutToday, before: snapshot.date)
+        let recovery = clamp(autonomicRecovery + priorLoad + sustained)
 
         let sleepHours = snapshot.sleepHours
 
@@ -69,7 +94,11 @@ struct ScoreEngine {
                 kind: .recovery,
                 value: recovery,
                 confidence: confidence,
-                summary: recoverySummary(hrvDeviation: hrvDeviation, rhrDeviation: rhrDeviation)
+                summary: recoverySummary(
+                    hrvDeviation: hrvDeviation,
+                    rhrDeviation: rhrDeviation,
+                    alcoholGrams: snapshot.dietaryAlcoholGrams
+                )
             ),
             WellnessScore(
                 kind: .strain,
@@ -177,6 +206,44 @@ struct ScoreEngine {
         return min(energyRatio * 0.6 + workout * 0.6, 1.6)
     }
 
+    /// Penalizacion maxima por supresion sostenida.
+    static let maxSustainedSuppressionPenalty = 7.0
+
+    /// Ajuste por HRV sostenidamente por debajo de la linea base.
+    ///
+    /// **Es informacion que un dia suelto NO contiene.** La lectura de hoy dice
+    /// como amaneciste; una racha de dias por debajo dice otra cosa distinta, y
+    /// es la señal que la literatura de monitoreo asocia con sobrecarga no
+    /// funcional: supresion sostenida (>7 dias bajo linea base) y HRV que no
+    /// responde a los dias de descanso.
+    ///
+    /// Deliberadamente NO se promedia la HRV para el score diario. Promediar da
+    /// tendencias mas estables (Plews y Buchheit: las correlaciones con
+    /// rendimiento solo aparecen con medias de 3-4 dias), pero **empeora la
+    /// clasificacion de respuestas individuales a corto plazo**, que es justo lo
+    /// que un score diario tiene que hacer. Asi que el dia manda en el score y
+    /// la racha entra por separado, como aqui.
+    func sustainedSuppressionAdjustment(history: [DailyHealthSnapshot], before date: Date) -> Int {
+        let previous = history
+            .filter { $0.date < date }
+            .sorted { $0.date > $1.date }
+        // Se necesitan al menos 5 dias recientes y una base de 14 para afirmar
+        // que hay racha. Con menos, no se afirma nada.
+        let recent = Array(previous.prefix(5)).compactMap(\.hrv)
+        guard recent.count >= 4 else { return 0 }
+        let baselineValues = previous.dropFirst(5).compactMap(\.hrv)
+        guard baselineValues.count >= 9, let baseline = baselineEngine.median(baselineEngine.robustValues(baselineValues)),
+              baseline > 0 else { return 0 }
+
+        // Cuantos de los dias recientes quedaron claramente por debajo.
+        let belowCount = recent.filter { ($0 - baseline) / baseline < -0.05 }.count
+        guard belowCount >= 4 else { return 0 }
+
+        let meanRecent = recent.reduce(0, +) / Double(recent.count)
+        let drop = min(max((baseline - meanRecent) / baseline, 0) / 0.15, 1)
+        return -Int((Self.maxSustainedSuppressionPenalty * drop).rounded())
+    }
+
     func factors(for snapshot: DailyHealthSnapshot, history: [DailyHealthSnapshot]) -> [RecoveryFactor] {
         let baselineHRV = baselineEngine.median(history.compactMap(\.hrv))
         let baselineRHR = baselineEngine.median(history.compactMap(\.restingHeartRate))
@@ -259,10 +326,22 @@ struct ScoreEngine {
     private func sleepScore(_ details: SleepSummary?, fallbackHours: Double?) -> Int {
         let duration = fallbackHours.map { min($0 / 8.0, 1.05) * 100 }
         guard let details else { return duration.map { clamp(Int($0)) } ?? 50 }
+        // Reparto de pesos: la REGULARIDAD sube y la duracion baja.
+        //
+        // En UK Biobank (60 977 personas, mas de 10 millones de horas de
+        // acelerometro) el indice de regularidad del sueño resulto mejor
+        // predictor de mortalidad por cualquier causa que la duracion, con un
+        // ajuste del modelo superior. Tenerla en 0.15 frente a 0.55 de duracion
+        // contradecia esa evidencia.
+        //
+        // No se iguala del todo por honestidad: aquello mide mortalidad a años,
+        // no recuperacion diaria, y extrapolar de uno a otro seria ir mas alla
+        // de lo que el estudio sostiene. La duracion sigue pesando mas porque
+        // es lo que cambia dia a dia.
         let factors: [(Double?, Double)] = [
-            (duration, 0.55),
+            (duration, 0.42),
+            (details.consistencyMinutes.map { max(100 - $0 * 0.9, 35) }, 0.28),
             (details.efficiency.map { min($0 / 90, 1.05) * 100 }, 0.20),
-            (details.consistencyMinutes.map { max(100 - $0 * 0.9, 35) }, 0.15),
             (details.latencyMinutes.map { max(100 - max($0 - 12, 0) * 2.2, 35) }, 0.10)
         ]
         return weightedScore(factors, fallback: duration.map { Int($0) } ?? 50)
@@ -273,7 +352,29 @@ struct ScoreEngine {
         return baselineEngine.confidence(sampleCount: historyCount)
     }
 
-    private func recoverySummary(hrvDeviation: Double?, rhrDeviation: Double?) -> String {
+    /// Resumen de Recovery.
+    ///
+    /// El alcohol registrado NO resta en el score: su efecto fisiologico ya esta
+    /// dentro de la HRV y la FC en reposo de esa misma noche. En 21 000 adultos
+    /// con wearable, beber subio la FC nocturna y bajo la HRV de forma
+    /// dosis-dependiente (PLOS Digital Health, 2025); un estudio controlado con
+    /// smartwatch midio 63.6 -> 66.6 lpm de FC nocturna. Restarlo aparte seria
+    /// contar dos veces el mismo fenomeno.
+    ///
+    /// Lo que si aporta es EXPLICAR una lectura baja. Y se dice como asociacion,
+    /// nunca como causa: es un dato que el usuario registro, no una medicion.
+    private func recoverySummary(
+        hrvDeviation: Double?,
+        rhrDeviation: Double?,
+        alcoholGrams: Double? = nil
+    ) -> String {
+        let signalsBelow = (hrvDeviation.map { $0 < -0.06 } ?? false)
+            || (rhrDeviation.map { $0 < -0.06 } ?? false)
+        // Umbral en una bebida estandar (~14 g), que es la dosis a partir de la
+        // cual los estudios ya observan cambio.
+        if signalsBelow, let alcoholGrams, alcoholGrams >= 14 {
+            return RecvelL10n.text("recovery.summary.alcoholContext")
+        }
         if let hrvDeviation, hrvDeviation > 0.06 { return RecvelL10n.text("recovery.summary.hrvAbove") }
         if let rhrDeviation, rhrDeviation < -0.06 { return RecvelL10n.text("recovery.summary.rhrAbove") }
         if hrvDeviation == nil && rhrDeviation == nil { return RecvelL10n.text("recovery.summary.building") }

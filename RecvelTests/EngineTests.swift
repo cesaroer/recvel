@@ -3329,4 +3329,90 @@ final class EngineTests: XCTestCase {
             "un dia tranquilo no debe restar"
         )
     }
+    // MARK: - Recovery: señales ampliadas
+
+    private func recoveryDay(
+        _ offset: Int, hrv: Double = 58, rhr: Double = 52, temp: Double? = nil,
+        alcohol: Double? = nil, energy: Double = 500, minutes: Double = 20,
+        from today: Date = Date()
+    ) -> DailyHealthSnapshot {
+        DailyHealthSnapshot(
+            date: Calendar.current.date(byAdding: .day, value: offset, to: today) ?? today,
+            hrv: hrv, restingHeartRate: rhr, sleepHours: 7.5,
+            activeEnergy: energy, steps: 8_000, respiratoryRate: 14,
+            workoutMinutes: minutes, wristTemperature: temp,
+            dietaryAlcoholGrams: alcohol
+        )
+    }
+
+    /// La temperatura de muñeca elevada sobre la habitual debe bajar Recovery.
+    /// Entra con peso bajo: es una salida termorreguladora con muchos confusores.
+    func testElevatedWristTemperatureLowersRecovery() {
+        let engine = ScoreEngine()
+        let today = Date()
+        let history = (1...12).map { recoveryDay(-$0, temp: 33.2, from: today) }
+
+        let normal = engine.scores(for: recoveryDay(0, temp: 33.2, from: today), history: history)
+            .first { $0.kind == .recovery }?.value ?? 0
+        let feverish = engine.scores(for: recoveryDay(0, temp: 34.0, from: today), history: history)
+            .first { $0.kind == .recovery }?.value ?? 0
+
+        XCTAssertLessThan(feverish, normal, "temperatura elevada deberia bajar Recovery")
+    }
+
+    /// Una racha de HRV bajo la linea base es informacion que el dia suelto no
+    /// contiene: es la señal asociada a sobrecarga no funcional.
+    func testSustainedHRVSuppressionLowersRecovery() {
+        let engine = ScoreEngine()
+        let today = Date()
+        // 14 dias de base sana + 5 recientes claramente por debajo.
+        let baseline = (6...19).map { recoveryDay(-$0, hrv: 60, from: today) }
+        let suppressed = (1...5).map { recoveryDay(-$0, hrv: 48, from: today) }
+        let steady = (1...5).map { recoveryDay(-$0, hrv: 60, from: today) }
+
+        let withStreak = engine.sustainedSuppressionAdjustment(
+            history: suppressed + baseline, before: today
+        )
+        let withoutStreak = engine.sustainedSuppressionAdjustment(
+            history: steady + baseline, before: today
+        )
+
+        XCTAssertLessThan(withStreak, 0, "una racha por debajo deberia restar")
+        XCTAssertEqual(withoutStreak, 0, "sin racha no se resta")
+        XCTAssertLessThanOrEqual(abs(Double(withStreak)), ScoreEngine.maxSustainedSuppressionPenalty)
+    }
+
+    /// Sin historial suficiente no se afirma que haya racha.
+    func testSustainedSuppressionNeedsEnoughHistory() {
+        let engine = ScoreEngine()
+        let today = Date()
+        let tooFew = (1...5).map { recoveryDay(-$0, hrv: 40, from: today) }
+        XCTAssertEqual(
+            engine.sustainedSuppressionAdjustment(history: tooFew, before: today), 0,
+            "sin linea base larga no se puede hablar de racha"
+        )
+    }
+
+    /// El alcohol NO resta en el score: su efecto ya esta dentro de la HRV y la
+    /// FC de esa noche. Solo aporta el texto que explica la lectura baja.
+    func testAlcoholExplainsRecoveryWithoutBeingSubtractedTwice() {
+        let engine = ScoreEngine()
+        let today = Date()
+        let history = (1...12).map { recoveryDay(-$0, from: today) }
+        // Mismas señales fisiologicas, con y sin alcohol registrado.
+        let signals = recoveryDay(0, hrv: 45, rhr: 60, from: today)
+        let withAlcohol = DailyHealthSnapshot(
+            date: signals.date, hrv: 45, restingHeartRate: 60, sleepHours: 7.5,
+            activeEnergy: 500, steps: 8_000, respiratoryRate: 14,
+            workoutMinutes: 20, dietaryAlcoholGrams: 28
+        )
+
+        let plain = engine.scores(for: signals, history: history).first { $0.kind == .recovery }
+        let drinking = engine.scores(for: withAlcohol, history: history).first { $0.kind == .recovery }
+
+        XCTAssertEqual(plain?.value, drinking?.value,
+                       "el alcohol no debe restar aparte: ya esta en HRV y FC")
+        XCTAssertNotEqual(plain?.summary, drinking?.summary,
+                          "pero si debe explicar la lectura")
+    }
 }
