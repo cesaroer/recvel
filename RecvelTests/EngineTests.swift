@@ -3223,4 +3223,110 @@ final class EngineTests: XCTestCase {
             }
         }
     }
+    // MARK: - Recovery y carga previa
+
+    /// Un dia duro ayer debe bajar Recovery hoy, aunque las señales autonomicas
+    /// no lo hayan registrado todavia (en el estudio de rugby solo 4/6 mostraron
+    /// FC elevada y 2/6 HRV reducida pese al efecto de grupo).
+    func testHardPreviousDayLowersRecoveryWhenSignalsLookNormal() {
+        let engine = ScoreEngine()
+        let calendar = Calendar.current
+        let today = Date()
+
+        // Señales de hoy en su valor habitual: la HRV no acuso el golpe.
+        func day(_ offset: Int, energy: Double, minutes: Double) -> DailyHealthSnapshot {
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: offset, to: today) ?? today,
+                hrv: 58, restingHeartRate: 52, sleepHours: 7.5,
+                activeEnergy: energy, steps: 8_000, respiratoryRate: 14,
+                workoutMinutes: minutes
+            )
+        }
+
+        let baseline = (2...9).map { day(-$0, energy: 600, minutes: 30) }
+        let restedYesterday = baseline + [day(-1, energy: 600, minutes: 30)]
+        let hardYesterday = baseline + [day(-1, energy: 1_600, minutes: 110)]
+        let todaySnapshot = day(0, energy: 500, minutes: 0)
+
+        let rested = engine.scores(for: todaySnapshot, history: restedYesterday)
+            .first { $0.kind == .recovery }?.value ?? 0
+        let hard = engine.scores(for: todaySnapshot, history: hardYesterday)
+            .first { $0.kind == .recovery }?.value ?? 0
+
+        XCTAssertLessThan(hard, rested, "un dia duro ayer deberia pesar hoy")
+        XCTAssertGreaterThanOrEqual(rested - hard, 1)
+    }
+
+    /// El ajuste es MODESTO a proposito: HRV y FC en reposo ya reflejan el costo
+    /// de ayer, asi que restar la carga entera contaria dos veces lo mismo.
+    func testPriorLoadAdjustmentIsBounded() {
+        let engine = ScoreEngine()
+        let calendar = Calendar.current
+        let today = Date()
+        let brutal = (1...3).map { offset in
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -offset, to: today) ?? today,
+                hrv: 58, restingHeartRate: 52, sleepHours: 7.5,
+                activeEnergy: 5_000, steps: 20_000, respiratoryRate: 14,
+                workoutMinutes: 300
+            )
+        }
+        let adjustment = engine.priorLoadAdjustment(
+            history: brutal, before: today, hrvDeviation: 0, rhrDeviation: 0
+        )
+        XCTAssertLessThanOrEqual(abs(Double(adjustment)), ScoreEngine.maxPriorLoadPenalty)
+        XCTAssertLessThan(adjustment, 0)
+    }
+
+    /// Si la HRV y la FC en reposo YA cayeron, el ajuste se atenua: el costo de
+    /// ayer ya esta contado en esas desviaciones.
+    func testPriorLoadDoesNotDoubleCountWhenSignalsAlreadyDropped() {
+        let engine = ScoreEngine()
+        let calendar = Calendar.current
+        let today = Date()
+        let hard = (1...3).map { offset in
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -offset, to: today) ?? today,
+                hrv: 58, restingHeartRate: 52, sleepHours: 7.5,
+                activeEnergy: 2_000, steps: 14_000, respiratoryRate: 14,
+                workoutMinutes: 150
+            )
+        }
+
+        let signalsBlind = engine.priorLoadAdjustment(
+            history: hard, before: today, hrvDeviation: 0, rhrDeviation: 0
+        )
+        let signalsAlreadyDropped = engine.priorLoadAdjustment(
+            history: hard, before: today, hrvDeviation: -0.8, rhrDeviation: -0.8
+        )
+
+        XCTAssertLessThan(signalsBlind, 0)
+        XCTAssertGreaterThan(signalsAlreadyDropped, signalsBlind,
+                             "con las señales ya caidas el ajuste debe atenuarse")
+    }
+
+    /// Sin historial no hay nada que ajustar, y un dia tranquilo no penaliza.
+    func testCalmPreviousDaysDoNotPenalizeRecovery() {
+        let engine = ScoreEngine()
+        let today = Date()
+        XCTAssertEqual(
+            engine.priorLoadAdjustment(history: [], before: today, hrvDeviation: 0, rhrDeviation: 0),
+            0
+        )
+
+        let calendar = Calendar.current
+        let calm = (1...3).map { offset in
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -offset, to: today) ?? today,
+                hrv: 58, restingHeartRate: 52, sleepHours: 8,
+                activeEnergy: 300, steps: 4_000, respiratoryRate: 14,
+                workoutMinutes: 0
+            )
+        }
+        XCTAssertEqual(
+            engine.priorLoadAdjustment(history: calm, before: today, hrvDeviation: 0, rhrDeviation: 0),
+            0,
+            "un dia tranquilo no debe restar"
+        )
+    }
 }

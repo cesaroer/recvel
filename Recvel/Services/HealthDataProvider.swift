@@ -83,8 +83,16 @@ final class HealthDataProvider: ObservableObject {
         }
 
         isLoading = true
-        corePhase = .loading
-        activationPhase = .loading
+        // El esqueleto solo aparece cuando NO hay nada que enseñar todavia.
+        // Con datos ya cargados, un refresh mantiene visible lo anterior y lo
+        // sustituye cuando llega lo nuevo: parpadear a gris cada vez que se
+        // vuelve a Home es peor que mostrar un dato de hace un minuto. El
+        // refresh explicito del usuario ya tiene su propio indicador (el spinner
+        // de pull-to-refresh y el boton del menu).
+        if history.isEmpty {
+            corePhase = .loading
+            activationPhase = .loading
+        }
         defer { isLoading = false }
         await updatePermissionRequestState()
 
