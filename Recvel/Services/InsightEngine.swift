@@ -47,11 +47,11 @@ struct InsightEngine {
         let focus: (String, String)
         switch recovery {
         case 75...:
-            focus = ("Aprovecha la capacidad", "Buen dia para una sesion de calidad. Detente cerca de tu carga objetivo.")
+            focus = (text("brief.focus.high.title"), text("brief.focus.high.detail"))
         case 50..<75:
-            focus = ("Construye sin vaciarte", "Prioriza volumen moderado y deja margen para recuperar esta noche.")
+            focus = (text("insight.recovery.moderate.title"), text("insight.recovery.moderate.detail"))
         default:
-            focus = ("Recupera primero", "Movimiento suave, hidratacion y una noche consistente tendran mas valor hoy.")
+            focus = (text("brief.focus.low.title"), text("brief.focus.low.detail"))
         }
 
         return DailyBrief(
@@ -69,12 +69,12 @@ struct InsightEngine {
 
     func primaryInsight(from scores: [WellnessScore]) -> String {
         guard let recovery = scores.first(where: { $0.kind == .recovery }) else {
-            return "Conecta Apple Health para comenzar tu baseline personal."
+            return text("insight.connectHealth")
         }
         switch recovery.value {
-        case 75...: return "Tus senales permiten una carga exigente, siempre que como te sientes coincida con los datos."
-        case 50..<75: return "Tu capacidad es intermedia. Acumula carga de forma gradual y protege la ventana de sueno."
-        default: return "Tus senales sugieren bajar intensidad. Observa la tendencia y prioriza recuperacion basica."
+        case 75...: return text("insight.primary.high")
+        case 50..<75: return text("insight.primary.moderate")
+        default: return text("insight.primary.low")
         }
     }
 
@@ -130,50 +130,50 @@ struct InsightEngine {
         let targetLoad = 5.5 + Double(recoveryScore) / 100 * 11.5
 
         let reasons = [
-            snapshot.sleepHours.map { String(format: "Sueno %.1f h", $0) },
+            snapshot.sleepHours.map { text("reason.sleep", ["value": String(format: "%.1f", $0)]) },
             snapshot.hrv.map { value in typicalHRV.map { "HRV \(Int(value)) vs \(Int($0)) ms" } ?? "HRV \(Int(value)) ms" },
-            snapshot.restingHeartRate.map { value in typicalRHR.map { "FC \(Int(value)) vs \(Int($0)) bpm" } ?? "FC \(Int(value)) bpm" }
+            snapshot.restingHeartRate.map { value in typicalRHR.map { "RHR \(Int(value)) vs \(Int($0)) \(RecvelL10n.text("unit.heartRate"))" } ?? "RHR \(Int(value)) \(RecvelL10n.text("unit.heartRate"))" }
         ].compactMap { $0 }
 
         if shortSleep {
             return DetailAdvice(
-                eyebrow: "MEJOR PALANCA DE RECOVERY",
-                title: "Amplia tu oportunidad de sueno",
-                detail: "La duracion fue la senal mas clara para actuar hoy. Conserva una hora de despertar estable y protege una ventana mas larga esta noche.",
+                eyebrow: text("advice.recovery.eyebrow"),
+                title: text("advice.recovery.sleep.title"),
+                detail: text("advice.recovery.sleep.detail"),
                 metric: snapshot.sleepHours.map { String(format: "%.1f h", $0) } ?? "< 7 h",
-                metricLabel: "ultima noche",
+                metricLabel: text("advice.metric.lastNight"),
                 reasons: reasons
             )
         }
 
         if recoveryScore < 50 || (hrvLow && rhrHigh) {
             return DetailAdvice(
-                eyebrow: "MEJOR PALANCA DE RECOVERY",
-                title: "Deja margen fisiologico hoy",
-                detail: "Mas de una senal se alejo de tu rango. Mantener la intensidad opcional baja y observar la tendencia manana aporta mas que perseguir un score.",
+                eyebrow: text("advice.recovery.eyebrow"),
+                title: text("advice.recovery.margin.title"),
+                detail: text("advice.recovery.margin.detail"),
                 metric: String(format: "%.1f", targetLoad),
-                metricLabel: "tope orientativo /21",
+                metricLabel: text("advice.metric.guidanceCap"),
                 reasons: reasons
             )
         }
 
         if strainScore > 78 {
             return DetailAdvice(
-                eyebrow: "MEJOR PALANCA DE RECOVERY",
-                title: "La carga de hoy ya es suficiente",
-                detail: "Tu carga acumulada es alta. El siguiente paso util es proteger comida, hidratacion habitual y la ventana de sueno, no sumar intensidad por completar un numero.",
+                eyebrow: text("advice.recovery.eyebrow"),
+                title: text("advice.recovery.load.title"),
+                detail: text("advice.recovery.load.detail"),
                 metric: "\(strainScore)%",
-                metricLabel: "carga relativa",
+                metricLabel: text("advice.metric.relativeLoad"),
                 reasons: reasons
             )
         }
 
         return DetailAdvice(
-            eyebrow: "MEJOR PALANCA DE RECOVERY",
-            title: "Mantiene la rutina que funciona",
-            detail: "Tus senales estan cerca de su rango. Entrena segun sensaciones, termina cerca de tu objetivo de carga y conserva horarios de sueno regulares.",
+            eyebrow: text("advice.recovery.eyebrow"),
+            title: text("advice.recovery.routine.title"),
+            detail: text("advice.recovery.routine.detail"),
             metric: "\(recoveryScore)%",
-            metricLabel: "capacidad estimada",
+            metricLabel: text("advice.metric.estimatedCapacity"),
             reasons: reasons
         )
     }
@@ -192,50 +192,50 @@ struct InsightEngine {
             .filter { $0.zone >= 4 }
             .reduce(0) { $0 + $1.minutes }
         let reasons = [
-            "Recovery \(recoveryScore)%",
-            "Semana \(Int(weeklyMinutes)) min",
+            "\(RecvelL10n.text("score.recovery.title")) \(recoveryScore)%",
+            text("reason.weekMinutes", ["value": "\(Int(weeklyMinutes))"]),
             highZoneMinutes > 0 ? "Z4-Z5 \(Int(highZoneMinutes)) min" : nil
         ].compactMap { $0 }
 
         if current > upper {
             return DetailAdvice(
-                eyebrow: "SIGUIENTE MEJOR ACCION",
-                title: "Objetivo de carga cubierto",
-                detail: "No necesitas compensar nada mas hoy. Distribuir la actividad durante la semana suele ser mas util que concentrarla en una sola sesion.",
+                eyebrow: text("advice.nextAction"),
+                title: text("advice.load.covered.title"),
+                detail: text("advice.load.covered.detail"),
                 metric: String(format: "+%.1f", current - upper),
-                metricLabel: "sobre el rango",
+                metricLabel: text("advice.metric.aboveRange"),
                 reasons: reasons
             )
         }
 
         if recoveryScore < 50 {
             return DetailAdvice(
-                eyebrow: "SIGUIENTE MEJOR ACCION",
-                title: "Prioriza movimiento facil",
-                detail: "Tu Recovery reduce el margen recomendado. Si tus sensaciones coinciden, elige actividad conversacional o movilidad y evita usar el objetivo como obligacion.",
+                eyebrow: text("advice.nextAction"),
+                title: text("advice.load.easy.title"),
+                detail: text("advice.load.easy.detail"),
                 metric: String(format: "%.1f", max(lower - current, 0)),
-                metricLabel: "hasta rango bajo",
+                metricLabel: text("advice.metric.toLowerRange"),
                 reasons: reasons
             )
         }
 
         if current < lower {
             return DetailAdvice(
-                eyebrow: "SIGUIENTE MEJOR ACCION",
-                title: "Aun tienes margen de carga",
-                detail: "Puedes sumar una sesion gradual si te sientes bien. Mantente dentro del rango y deja que dolor, enfermedad o fatiga percibida tengan prioridad sobre el score.",
+                eyebrow: text("advice.nextAction"),
+                title: text("advice.load.margin.title"),
+                detail: text("advice.load.margin.detail"),
                 metric: String(format: "%.1f", upper - current),
-                metricLabel: "margen hasta el tope",
+                metricLabel: text("advice.metric.toUpperRange"),
                 reasons: reasons
             )
         }
 
         return DetailAdvice(
-            eyebrow: "SIGUIENTE MEJOR ACCION",
-            title: "Estas dentro del rango",
-            detail: "La carga actual ya coincide con tu capacidad estimada. Mantener o cerrar suave es una decision completa; no hace falta llegar al limite superior.",
+            eyebrow: text("advice.nextAction"),
+            title: text("advice.load.inRange.title"),
+            detail: text("advice.load.inRange.detail"),
             metric: String(format: "%.1f", current),
-            metricLabel: "carga actual /21",
+            metricLabel: text("advice.metric.currentLoad"),
             reasons: reasons
         )
     }
@@ -243,9 +243,9 @@ struct InsightEngine {
     func energyAdvice(score: Int, scores: [WellnessScore], snapshot: DailyHealthSnapshot? = nil) -> DetailAdvice {
         let value: (ScoreKind) -> Int = { kind in scores.first { $0.kind == kind }?.value ?? 0 }
         var reasons = [
-            "Recovery \(value(.recovery))%",
-            "Sleep \(value(.sleep))%",
-            "Strain \(value(.strain))%"
+            "\(RecvelL10n.text("score.recovery.title")) \(value(.recovery))%",
+            "\(RecvelL10n.text("score.sleep.title")) \(value(.sleep))%",
+            "\(RecvelL10n.text("score.load.title")) \(value(.strain))%"
         ]
         // Luz diurna: ya la medimos. La exposicion diurna ancla el ritmo
         // circadiano y se asocia con mejor alerta diurna (Wright et al.,
@@ -259,40 +259,40 @@ struct InsightEngine {
 
         if score < 40 {
             return DetailAdvice(
-                eyebrow: "RITMO RECOMENDADO",
-                title: "Protege el margen restante",
+                eyebrow: text("advice.energy.eyebrow"),
+                title: text("advice.energy.low.title"),
                 detail: daylightHint(
                     lowEnergy: true,
                     daylight: snapshot?.daylightMinutes,
-                    fallback: "Reduce esfuerzo opcional intenso y concentra lo importante en menos bloques. La proxima noche y una carga moderada son las palancas que Recvel puede observar."
+                    fallback: text("advice.energy.low.detail")
                 ),
                 metric: "\(score)%",
-                metricLabel: "margen estimado",
+                metricLabel: text("advice.metric.estimatedMargin"),
                 reasons: reasons
             )
         }
 
         if score < 70 {
             return DetailAdvice(
-                eyebrow: "RITMO RECOMENDADO",
-                title: "Trabaja a un ritmo sostenible",
+                eyebrow: text("advice.energy.eyebrow"),
+                title: text("advice.energy.moderate.title"),
                 detail: daylightHint(
                     lowEnergy: false,
                     daylight: snapshot?.daylightMinutes,
-                    fallback: "Tienes capacidad intermedia. Alterna tareas exigentes con periodos de menor demanda y evita elevar Strain solo porque el dia aun no termina."
+                    fallback: text("advice.energy.moderate.detail")
                 ),
                 metric: "\(score)%",
-                metricLabel: "margen estimado",
+                metricLabel: text("advice.metric.estimatedMargin"),
                 reasons: reasons
             )
         }
 
         return DetailAdvice(
-            eyebrow: "RITMO RECOMENDADO",
-            title: "Hay capacidad disponible",
-            detail: "Tus senales permiten priorizar una tarea o sesion exigente. Conserva margen hasta el rango de Strain y reevalua si tus sensaciones no coinciden.",
+            eyebrow: text("advice.energy.eyebrow"),
+            title: text("advice.energy.high.title"),
+            detail: text("advice.energy.high.detail"),
             metric: "\(score)%",
-            metricLabel: "margen estimado",
+            metricLabel: text("advice.metric.estimatedMargin"),
             reasons: reasons
         )
     }
@@ -302,8 +302,12 @@ struct InsightEngine {
     /// contextualizamos un dato que ya tenemos.
     private func daylightHint(lowEnergy: Bool, daylight: Double?, fallback: String) -> String {
         guard let daylight, daylight < 30 else { return fallback }
-        let tip = "Hoy registraste poca luz diurna (\(Int(daylight)) min). Un paseo corto con luz natural suele ayudar a la alerta sin subir tanto la carga."
+        let tip = text("advice.daylight.low", ["value": "\(Int(daylight))"])
         return lowEnergy ? "\(fallback) \(tip)" : "\(fallback) \(tip)"
+    }
+
+    private func text(_ key: String, _ values: [String: String] = [:]) -> String {
+        RecvelL10n.text(key, values: values)
     }
 }
 

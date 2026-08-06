@@ -560,7 +560,7 @@ struct FitnessView: View {
     private func workoutAccessibilityLabel(_ workout: WorkoutSummary) -> String {
         var parts = [
             workout.activityName,
-            workout.startDate.formatted(date: .abbreviated, time: .shortened),
+            workout.startDate.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(RecvelL10n.locale)),
             durationText(workout.durationMinutes)
         ]
         if let energy = workout.activeEnergy {
@@ -4059,7 +4059,7 @@ struct WeeklyRoutineSection: View {
 
             if todayAssignment != .rest {
                 HStack(spacing: 12) {
-                    Label(todayDetails.startDate(on: .now)?.formatted(date: .omitted, time: .shortened) ?? "Horario flexible", systemImage: "clock")
+                    Label(todayDetails.startDate(on: .now)?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)) ?? "Horario flexible", systemImage: "clock")
                     Label("\(todayDetails.durationMinutes) min", systemImage: "timer")
                     Label("RPE \(todayDetails.targetRPE)", systemImage: "gauge.with.dots.needle.67percent")
                 }

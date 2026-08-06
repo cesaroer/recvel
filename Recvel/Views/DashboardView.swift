@@ -61,7 +61,7 @@ struct DashboardView: View {
     }
 
     private var recovery: WellnessScore {
-        scores.first { $0.kind == .recovery } ?? WellnessScore(kind: .recovery, value: 50, confidence: .low, summary: "Sin datos")
+        scores.first { $0.kind == .recovery } ?? WellnessScore(kind: .recovery, value: 50, confidence: .low, summary: RecvelL10n.text("home.noData"))
     }
 
     private var brief: DailyBrief {
@@ -253,14 +253,20 @@ struct DashboardView: View {
     /// Ayuno activo al abrir el reporte (nil si no hay ninguno).
     private var fastingStatus: FastingStatus? {
         guard let active = fastingSessions.first(where: { $0.endDate == nil }) else {
-            return FastingStatus(headline: "Sin ayuno activo", detail: "Empieza uno desde la pestaña Ayuno")
+            return FastingStatus(
+                headline: RecvelL10n.text("home.fasting.none.title"),
+                detail: RecvelL10n.text("home.fasting.none.detail")
+            )
         }
         let hours = Date.now.timeIntervalSince(active.startDate) / 3600
         return FastingStatus(
-            headline: String(format: "%.1f h en ayuno", max(hours, 0)),
-            detail: String(format: "Objetivo %.0f h · empezaste a las %@",
-                           active.targetHours,
-                           active.startDate.formatted(date: .omitted, time: .shortened))
+            headline: RecvelL10n.text("home.fasting.active.title", values: [
+                "hours": String(format: "%.1f", max(hours, 0))
+            ]),
+            detail: RecvelL10n.text("home.fasting.active.detail", values: [
+                "target": String(format: "%.0f", active.targetHours),
+                "start": active.startDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))
+            ])
         )
     }
 
@@ -273,8 +279,11 @@ struct DashboardView: View {
         return NutritionStatus(
             headline: "\(eaten) / \(targets.calories) kcal",
             detail: today.isEmpty
-                ? "Sin comidas registradas hoy"
-                : "\(today.count) \(today.count == 1 ? "comida registrada" : "comidas registradas")"
+                ? RecvelL10n.text("home.nutrition.none")
+                : RecvelL10n.text(
+                    today.count == 1 ? "home.nutrition.count.one" : "home.nutrition.count.other",
+                    values: ["count": "\(today.count)"]
+                )
         )
     }
 
@@ -341,12 +350,12 @@ struct DashboardView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("RECVEL · \(isShowingToday ? "HOY" : "HISTORIAL")")
+                Text("RECVEL · \(RecvelL10n.text(isShowingToday ? "home.eyebrow.today" : "home.eyebrow.history"))")
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(ScoreKind.recovery.color)
                 Text("home.morningSummary")
                     .font(.system(size: 29, weight: .bold))
-                Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 // Un reporte que solo aparece solo es un reporte que no puedes consultar.
@@ -403,7 +412,7 @@ struct DashboardView: View {
             .menuOrder(.fixed)
             .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
             .accessibilityIdentifier("dashboard.moreMenu")
-            .accessibilityLabel("Mas opciones")
+            .accessibilityLabel(RecvelL10n.text("home.moreOptions"))
         }
         .padding(.top, 8)
     }
@@ -570,9 +579,9 @@ struct DashboardView: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 12) {
-                emptySignal("1–2 días", "Primer resumen con confianza baja")
-                emptySignal("7 días", "Referencia personal inicial y regularidad")
-                emptySignal("21 días", "Mayor confianza y comparaciones más útiles")
+                emptySignal(RecvelL10n.text("home.empty.days1"), RecvelL10n.text("home.empty.days1.detail"))
+                emptySignal(RecvelL10n.text("home.empty.days7"), RecvelL10n.text("home.empty.days7.detail"))
+                emptySignal(RecvelL10n.text("home.empty.days21"), RecvelL10n.text("home.empty.days21.detail"))
             }
         }
         .padding(20)
@@ -648,7 +657,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Tendencias").font(.title2.weight(.bold))
+                    Text(RecvelL10n.text("home.trends.title")).font(.title2.weight(.bold))
                     Text(RecvelL10n.text("home.trends.caption"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -716,7 +725,7 @@ struct DashboardView: View {
             Text(value)
                 .font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(color)
             Chart(Array(values.enumerated()), id: \.offset) { item in
-                LineMark(x: .value("Dia", item.offset), y: .value(title, item.element))
+                LineMark(x: .value(RecvelL10n.text("chart.axis.day"), item.offset), y: .value(title, item.element))
                     .foregroundStyle(color).interpolationMethod(.catmullRom)
             }
             .chartXAxis(.hidden).chartYAxis(.hidden)
@@ -731,12 +740,12 @@ struct DashboardView: View {
             HStack {
                 Text(RecvelL10n.text("home.dayContext")).font(.headline)
                 Spacer()
-                Text("REGISTROS CERRADOS").font(.system(size: 9, weight: .bold)).foregroundStyle(.tertiary)
+                Text(RecvelL10n.text("home.dayContext.closed")).font(.system(size: 9, weight: .bold)).foregroundStyle(.tertiary)
             }
             HStack(spacing: 0) {
                 historicalMetric(icon: "bolt.fill", value: selectedSnapshot.activeEnergy.map { "\(Int($0))" } ?? "—", unit: "kcal", color: ScoreKind.energy.color)
                 Rectangle().fill(Color.white.opacity(0.07)).frame(width: 1, height: 50)
-                historicalMetric(icon: "figure.walk", value: selectedSnapshot.steps?.formatted() ?? "—", unit: "pasos", color: .cyan)
+                historicalMetric(icon: "figure.walk", value: selectedSnapshot.steps?.formatted(.number.locale(RecvelL10n.locale)) ?? "—", unit: RecvelL10n.text("unit.steps"), color: .cyan)
                 Rectangle().fill(Color.white.opacity(0.07)).frame(width: 1, height: 50)
                 historicalMetric(icon: "stopwatch.fill", value: selectedSnapshot.workoutMinutes.map { "\(Int($0))" } ?? "0", unit: "min", color: ScoreKind.strain.color)
             }
@@ -769,17 +778,19 @@ struct DashboardView: View {
                 prescriptionValue(
                     icon: "moon.zzz.fill",
                     color: ScoreKind.sleep.color,
-                    title: "Necesidad",
+                    title: RecvelL10n.text("home.plan.sleepNeed"),
                     value: String(format: "%.1f h", brief.sleepNeedHours),
-                    detail: brief.sleepDebtHours > 0.1 ? String(format: "+%.1f h deuda", brief.sleepDebtHours) : "Sin deuda relevante"
+                    detail: brief.sleepDebtHours > 0.1
+                        ? RecvelL10n.text("home.plan.sleepDebt", values: ["hours": String(format: "%.1f", brief.sleepDebtHours)])
+                        : RecvelL10n.text("home.plan.noDebt")
                 )
                 Rectangle().fill(Color.white.opacity(0.10)).frame(width: 1, height: 72)
                 prescriptionValue(
                     icon: "bed.double.fill",
                     color: .cyan,
-                    title: "En cama",
-                    value: brief.bedtime.formatted(date: .omitted, time: .shortened),
-                    detail: "Para despertar a \(wakeTimeText)"
+                    title: RecvelL10n.text("home.plan.bedtime"),
+                    value: brief.bedtime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)),
+                    detail: RecvelL10n.text("home.plan.wakeAt", values: ["time": wakeTimeText])
                 )
             }
 
@@ -831,7 +842,9 @@ struct DashboardView: View {
                 }
             }
             .frame(height: 18)
-            Text(brief.remainingLoad > 0.5 ? String(format: "Te quedan %.1f puntos de carga antes del objetivo.", brief.remainingLoad) : "Objetivo alcanzado. El resto del dia puede enfocarse en recuperar.")
+            Text(brief.remainingLoad > 0.5
+                 ? RecvelL10n.text("home.load.remaining", values: ["points": String(format: "%.1f", brief.remainingLoad)])
+                 : RecvelL10n.text("home.load.reached"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -855,16 +868,16 @@ struct DashboardView: View {
 
             Chart(health.activation) { point in
                 AreaMark(
-                    x: .value("Hora", point.date),
-                    y: .value("Activacion", point.value)
+                    x: .value(RecvelL10n.text("chart.axis.hour"), point.date),
+                    y: .value(RecvelL10n.text("chart.axis.activation"), point.value)
                 )
                 .interpolationMethod(.catmullRom)
                 .foregroundStyle(
                     LinearGradient(colors: [activationColor.opacity(0.36), .clear], startPoint: .top, endPoint: .bottom)
                 )
                 LineMark(
-                    x: .value("Hora", point.date),
-                    y: .value("Activacion", point.value)
+                    x: .value(RecvelL10n.text("chart.axis.hour"), point.date),
+                    y: .value(RecvelL10n.text("chart.axis.activation"), point.value)
                 )
                 .interpolationMethod(.catmullRom)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
@@ -942,9 +955,9 @@ struct DashboardView: View {
     }
     private var activationLabel: String {
         switch activationValue {
-        case 2...: "ALTA"
-        case 1..<2: "MEDIA"
-        default: "BAJA"
+        case 2...: RecvelL10n.text("home.activation.high")
+        case 1..<2: RecvelL10n.text("home.activation.medium")
+        default: RecvelL10n.text("home.activation.low")
         }
     }
 
@@ -972,7 +985,7 @@ struct DashboardView: View {
                             Text(factor.value).font(.subheadline.weight(.bold)).monospacedDigit()
                         }
                         HStack {
-                            Text(factor.baseline ?? "Baseline pendiente")
+                            Text(factor.baseline ?? RecvelL10n.text("home.factor.baselinePending"))
                                 .font(.caption2).foregroundStyle(.tertiary)
                             Spacer()
                             Text(contributionText(factor.contribution))
@@ -991,8 +1004,8 @@ struct DashboardView: View {
     }
 
     private func contributionText(_ value: Double) -> String {
-        guard abs(value) > 0.08 else { return "NEUTRO" }
-        return value > 0 ? "A FAVOR" : "EN CONTRA"
+        guard abs(value) > 0.08 else { return RecvelL10n.text("home.contribution.neutral") }
+        return RecvelL10n.text(value > 0 ? "home.contribution.for" : "home.contribution.against")
     }
 
     private var planWeekSection: some View {
@@ -1004,7 +1017,7 @@ struct DashboardView: View {
                 focusTitle: brief.focusTitle,
                 sleepNeedHours: brief.sleepNeedHours,
                 bedtime: brief.bedtime,
-                cycleHint: "\(brief.suggestedSleepCycles) ciclos",
+                cycleHint: RecvelL10n.text("unit.cycles", values: ["count": "\(brief.suggestedSleepCycles)"]),
                 workoutCurrent: planWorkoutDays,
                 workoutGoal: workoutGoal,
                 sleepCurrent: planSleepDays,
@@ -1041,7 +1054,7 @@ struct DashboardView: View {
     private var wakeTimeText: String {
         let start = Calendar.current.startOfDay(for: .now)
         let date = Calendar.current.date(byAdding: .minute, value: wakeMinutes, to: start) ?? .now
-        return date.formatted(date: .omitted, time: .shortened)
+        return date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))
     }
 
     private var disclaimer: some View {
@@ -1146,11 +1159,11 @@ private struct FluidRecoveryHero: View {
                                 .font(.headline)
                                 .foregroundStyle(.white.opacity(0.92))
                                 .lineLimit(3)
-                            Text(date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)))
+                            Text(date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).locale(RecvelL10n.locale)))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 6) {
-                                Text(mode == .demo ? "Explorar demo" : "Ver analisis")
+                                Text(RecvelL10n.text(mode == .demo ? "home.hero.exploreDemo" : "home.hero.openAnalysis"))
                                 Image(systemName: "chevron.right")
                             }
                             .font(.caption.weight(.bold))

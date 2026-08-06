@@ -1,5 +1,11 @@
 # Contexto para IAs y agentes
 
+> Para voz, glosario, microcopy y localizacion, `COPY_STYLE_GUIDE.md` es la
+> fuente de verdad. La interfaz soporta `es-MX` y `en`; en español se usan
+> `Recuperación`, `Carga`, `Sueño`, `Energía`, `Estrés fisiológico`, `Diario`,
+> `Entrenamiento` y `Edad fisiológica`. No traduzcas IDs ni `rawValue`
+> persistidos.
+
 Este archivo es el contrato operativo del proyecto Recvel. Debe leerse antes de proponer o implementar cambios y actualizarse cuando una decision de producto o arquitectura cambie.
 
 ## Objetivo
@@ -204,6 +210,57 @@ Investigacion dirigida a PubMed/PMC y sociedades oficiales para respaldar honest
 - Frase de cautela sugerida: "El score de Strain de Recvel se inspira en conceptos establecidos de carga de entrenamiento (impulso de entrenamiento basado en FC) para mostrar que tan demandante fue tu dia o semana respecto a tu baseline reciente. Es una estimacion de carga, no una herramienta validada de prediccion de lesiones — la evidencia de ciencia del deporte encuentra que metricas de razon como el ACWR son estadisticamente fragiles para ese fin, y Recvel no hace afirmaciones sobre prevencion de lesiones."
 - Fuentes: [Impellizzeri et al. — problemas conceptuales del ACWR, IJSPP 2020](https://journals.humankinetics.com/view/journals/ijspp/15/6/article-p907.xml) · [Revision sistematica ACWR y riesgo de lesion](https://pmc.ncbi.nlm.nih.gov/articles/PMC7047972/) · [Reanalisis Bayesiano del ACWR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9572878/)
 
+### Coaching de entrenamiento del dia siguiente (julio 2026)
+
+Motor `TrainingCoachingEngine` (`HealthIntelligenceEngine.swift`), patron `SleepCoachingEngine`: cada tip lleva `evidence` citada y habla de *readiness/moderacion*, nunca de riesgo de lesion (regla ACWR de arriba se mantiene).
+
+- **Splits**: full body / torso-pierna / PPL todos validos; el driver principal es el volumen semanal por grupo (2-3x/semana). Schoenfeld et al., meta-analisis 2016/2019.
+- **Readiness muscular**: sintesis proteica elevada ~24-48 h tras entrenar un grupo; grupos distintos se recuperan de forma relativamente independiente (Damas et al., J Physiol 2016; Schoenfeld, Sports Med 2016). Base del consejo "entrenaste tren superior de madrugada -> hoy puedes hacer inferior".
+- **Timing vs sueno**: ejercicio vigoroso que termina <=1 h antes de dormir empeora latencia/eficiencia/REM; >=4 h antes no tiene impacto (Stutz et al., Sports Med 2019). Base del consejo "adelanta el entreno ~2 h".
+- **Deload**: descanso programado permite supercompensacion (Kellmann et al., consenso IOC 2018). Regla: >=6 dias consecutivos entrenando.
+- **1RM estimado**: Epley y Brzycki promediadas, solo 1-10 reps (+-5%); >10 reps no se estima (+-15-20%). Siempre etiquetado "estimado".
+- **HKWorkoutEffortScore (iOS 18)**: solo lectura; manual > estimado; etiquetar "estimado por Apple" vs "tu registro". Entra a Strain como input opcional ponderado (30%), nunca dominante sobre las zonas de FC medidas.
+
+### Rutinas pre-hechas y Coach de rutina (julio 2026)
+
+- `PresetRoutineCatalog` (`TrainingPresetCatalog.swift`): 8 rutinas por split con
+  ejercicios EXACTOS de `ExerciseLibrary` en formato `TemplateCodec`. Los badges
+  ("Ideal para hipertrofia", "Ideal para fortalecer pierna") describen la
+  INTENCION del preset (rangos/volumen), nunca prometen resultados. Los
+  `WorkoutTemplate` reales se materializan SOLO al guardar el plan (dedupe por
+  nombre "{preset} — {focus}").
+- `RoutineAssessmentEngine` (`HealthIntelligenceEngine.swift`): califica la
+  semana con lenguaje de sostenibilidad, JAMAS de riesgo de lesion. Reglas en
+  orden: 0 descansos -> "no sostenible" (ACSM: >=1-2 descansos/semana; ~48-72 h
+  mismo grupo); 1 descanso con 6 entrenos -> vigilar; broSplit con <5 dias o
+  rotacion incompleta -> frecuencia por grupo <2x/semana (Schoenfeld 2016/2019);
+  full body 4+ dias seguidos -> rompe las ~48 h; plan con `WeeklyPlan.createdAt`
+  > ~5 semanas -> "toca variar el estimulo" (bloques tipicos de 4-8 semanas);
+  si nada dispara -> balanceada + "considera variarla en 4-6 semanas".
+- El veredicto es visible SIEMPRE (incluido el positivo) en `WeeklyRoutineSection`
+  y en el review del wizard; la evidencia va plegable en `RoutineCoachCard`.
+- Test de guardia `testCoachNeverMentionsInjuries`: ningun texto del coach puede
+  contener "lesion".
+
+### Movilidad y recuperacion como descanso (julio 2026, decision del usuario)
+
+- Los dias de movilidad/recuperacion cuentan como **descanso** (recuperacion
+  activa) en TODO el sistema: contador del wizard ("¿cuantos dias puedes
+  entrenar?" = solo fuerza+cardio), reglas de sostenibilidad del
+  `RoutineAssessmentEngine` (`isRestEquivalent`), y `planSummary` (no suman
+  `trainingDays`; viven en `mobilityRecoveryDays`).
+- Evidencia: la recuperacion activa de baja intensidad no compromete la
+  recuperacion y puede favorecer la percepcion de recuperacion (Ortiz et al.,
+  J Strength Cond Res 2019; recomendaciones ACSM).
+- El preview del wizard muestra las TRES modalidades: presets de fuerza,
+  cardio como UN ejercicio + minutos (stepper), y la rutina de movilidad
+  editable via la plantilla `generated.mobility.plan` con el MISMO
+  `WorkoutTemplateEditor` de la biblioteca (fuente unica: Plantillas).
+- `ExerciseLibrary` incluye grupos Cardio y Movilidad; test de guardia
+  `testDailyChallengeEmissionsExistInExerciseLibrary` garantiza que todo
+  ejercicio emitido por `DailyChallengeEngine` existe en la libreria.
+
+
 ### Estres inferido desde HRV/FC
 
 - Bien respaldado con cautela: la HRV puede ser un proxy valido y util del estres autonomico de corto plazo "cuando se usa con cuidado dentro de un diseno bien construido" — el marco constante en revisiones recientes, no un aval sin matices.
@@ -292,7 +349,7 @@ Pruebas vigentes:
 - `RecvelUITests`: onboarding, briefing, Tendencias dentro de Home, detalles de Recovery/Sleep/Strain/Energy/Stress/VO2, tab Fitness, navegacion principal, setup nutricional, estimacion/correccion/guardado y estado HealthKit vacio.
 - Validacion visual manual en `iPhone 16 Pro` con `iOS 18.6` para dashboard completo y estado sin datos. No usar otros simuladores por defecto.
 
-Requiere dispositivo fisico: autorizacion granular real de HealthKit, comparacion de fuentes Apple Watch/iPhone, sesiones con FC en vivo, bateria y entrega de notificaciones en uso cotidiano. El companion watchOS se implementa y valida por separado.
+Requiere dispositivo fisico: autorizacion granular real de HealthKit, comparacion de fuentes Apple Watch/iPhone, exactitud de sesiones con FC en vivo, bateria, entrega de WatchConnectivity en segundo plano y notificaciones en uso cotidiano. El companion watchOS, widgets, complicacion y Live Activity de ayuno ya compilan como targets embebidos; no describirlos como ausentes, pero tampoco como validados en hardware.
 
 Reglas adicionales para agentes desde julio de 2026:
 
@@ -309,5 +366,8 @@ Reglas adicionales para agentes desde julio de 2026:
 - Mantener `HealthDataMode` visible para diferenciar HealthKit, parcial y Demo.
 - No volver a colocar Tendencias como tab principal sin una decision explicita; esta alojada en Home y Fitness usa esa posicion.
 - No poblar el radar muscular con energia, minutos o suposiciones. Solo `totalVolumeKg` confirmado por el usuario.
-- El siguiente bloque de alto valor despues de P0 es: validacion con dispositivo, calibracion de Stress, companion watchOS, widgets y ampliar Journal/Tendencias. Un reloj biologico multivariable validado y el coach conversacional siguen despues.
+- La Agenda semanal profesional se rige por `TRAINING_PLANNER_PRO.md`: usar sRPE solo como carga interna personal, conservar el JSON retrocompatible y no convertir 48 h, HRV, horario nocturno o dolor en reglas diagnósticas. Ante dolor/limitación, nunca recomendar completar la sesión.
+- Superficies de sistema (16 jul 2026): `RecvelWidgets` implementa Readiness + tablero fisiologico; `FastingLiveActivityManager` cubre Lock Screen/Dynamic Island; `RecvelWatch` implementa briefing, metricas y `HKWorkoutSession`; `RecvelWatchWidgets` aporta una complicacion. Los datos compartidos pasan por `RecvelSharedSnapshot`, App Group y WatchConnectivity, nunca por backend.
+- Contraste de widgets (18 jul 2026): los widgets Full Color y Live Activities usan fondo neutro `#090C11`, texto principal `#F7FAFC`, secundario `#C1CAD5` y terciario `#8F9BA8`. No usar `.secondary`/`.tertiary` sobre ese fondo porque WidgetKit reduce su luminancia. Los anillos, iconos y numeros semanticos deben llevar `.widgetAccentable()` para los modos Tinted/Vibrant; las complicaciones conservan estilos del sistema para responder a la caratula.
+- El siguiente bloque de alto valor es: validacion con dispositivo y bateria, calibracion de Stress, workout Live Activity, sincronizacion de fuerza estructurada y ampliar Journal/Tendencias. Un coach conversacional sigue despues.
 - **Stress / VO2 / Bio Age (julio 2026):** implementacion + evidencia en [README_StressAndBio.md](README_StressAndBio.md). No llamar PhenoAge a la beta, no presentar VO2 como laboratorio y no llamar “estres mental” a bandas basadas en HRV/RHR.

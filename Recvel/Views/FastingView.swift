@@ -647,7 +647,7 @@ struct FastingView: View {
                         Divider().overlay(Color.white.opacity(0.1)).frame(height: 30)
 
                         VStack(spacing: 2) {
-                            Text(session.estimatedEndDate.formatted(date: .omitted, time: .shortened))
+                            Text(session.estimatedEndDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))
                                 .font(.system(size: 15, weight: .heavy, design: .rounded))
                                 .monospacedDigit()
                             Text("Fin estimado")
@@ -674,7 +674,7 @@ struct FastingView: View {
 
                     // Info de inicio y protocolo
                     HStack {
-                        Label(session.startDate.formatted(date: .omitted, time: .shortened), systemImage: "play.circle.fill")
+                        Label(session.startDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)), systemImage: "play.circle.fill")
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -841,7 +841,7 @@ struct FastingView: View {
                             Text(log.mood?.label ?? log.moodRaw)
                                 .font(.caption.weight(.semibold))
                             Spacer()
-                            Text(log.date.formatted(date: .omitted, time: .shortened))
+                            Text(log.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
                                 .monospacedDigit()
@@ -1038,7 +1038,7 @@ struct FastingView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text("~\(estimatedEnd.formatted(date: .omitted, time: .shortened))")
+                        Text("~\(estimatedEnd.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))")
                             .font(.caption.weight(.semibold))
                             .monospacedDigit()
                             .foregroundStyle(.tertiary)
@@ -1219,7 +1219,7 @@ struct FastingView: View {
             Image(systemName: "clock")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
-            Text("Si empiezas ahora, terminarias ~\(estimatedEnd.formatted(date: .omitted, time: .shortened))")
+            Text("Si empiezas ahora, terminarias ~\(estimatedEnd.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1450,7 +1450,7 @@ struct FastingView: View {
                                             .strokeBorder(Color.white.opacity(0.5), lineWidth: 1.5)
                                     }
                                 }
-                                .accessibilityLabel("\(day.date.formatted(.dateTime.day().month(.abbreviated))): \(day.hours > 0 ? "\(Int(day.hours))h" : "sin ayuno")")
+                                .accessibilityLabel("\(day.date.formatted(.dateTime.day().month(.abbreviated).locale(RecvelL10n.locale))): \(day.hours > 0 ? "\(Int(day.hours))h" : "sin ayuno")")
                         }
                     }
 
@@ -1495,7 +1495,7 @@ struct FastingView: View {
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(session.startDate.formatted(date: .abbreviated, time: .shortened))
+                        Text(session.startDate.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(RecvelL10n.locale)))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(session.fastingProtocol.title)

@@ -20,6 +20,17 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.recvel.app.navigation</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>recvel</string>
+			</array>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
@@ -32,6 +43,10 @@
 	<string>Recvel usa el microfono solo mientras dictas una comida para convertirla en texto en el dispositivo.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Recvel usa reconocimiento de voz para transcribir la descripcion de una comida antes de que la confirmes.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<false/>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

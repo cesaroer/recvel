@@ -149,7 +149,7 @@ struct LegacyJournalView: View {
                         Haptics.soft()
                     } label: {
                         VStack(spacing: 4) {
-                            Text(day.formatted(.dateTime.day()))
+                            Text(day.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                                 .font(.caption2.weight(.semibold))
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(activityColor(count: count))
@@ -163,7 +163,7 @@ struct LegacyJournalView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(count) respuestas")
+                    .accessibilityLabel("\(day.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(RecvelL10n.locale))), \(count) respuestas")
                 }
             }
             Text(selectedDayCaption)
@@ -270,7 +270,7 @@ struct LegacyJournalView: View {
     private var selectedDayCaption: String {
         let count = answered(on: selectedDate)
         let yes = logs.filter { calendar.isDate($0.date, inSameDayAs: selectedDate) && $0.answer }.count
-        return "\(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide))): \(count)/\(habits.count) registrados · \(yes) Si."
+        return "\(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale))): \(count)/\(habits.count) registrados · \(yes) Si."
     }
 
     private func answered(on day: Date) -> Int {
@@ -444,7 +444,7 @@ struct MentalJournalView: View {
                 ForEach(monthDays, id: \.self) { day in
                     let state = state(on: day)
                     Button { selectedDate = day } label: {
-                        Text(day.formatted(.dateTime.day()))
+                        Text(day.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                             .font(.caption.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 34)
                             .background(stateColor(state), in: RoundedRectangle(cornerRadius: 7))
@@ -467,7 +467,7 @@ struct MentalJournalView: View {
         if let entry = entry(on: selectedDate) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide))).font(.headline)
+                    Text(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale))).font(.headline)
                     Spacer()
                     Menu {
                         Button(RecvelL10n.text("journal.editMorning")) { activeMode = .morning }

@@ -15,6 +15,8 @@ enum JournalTagCategory: String, CaseIterable, Identifiable, Codable {
 enum JournalTagPeriod: String, CaseIterable, Codable {
     case daytime = "Durante el dia"
     case nighttime = "Durante la noche"
+
+    var displayName: String { RecvelL10n.text(self == .daytime ? "journal.period.day" : "journal.period.night") }
 }
 
 enum JournalTagSource: String, Codable {

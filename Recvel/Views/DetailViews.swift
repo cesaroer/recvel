@@ -126,7 +126,7 @@ private struct DetailHero: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "es_MX"))))
+            Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -1815,7 +1815,7 @@ struct EnergyDetailView: View {
             Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 52)
             tappableContextMetric(key: "workoutMinutes", icon: "figure.run", value: snapshot.workoutMinutes.map { "\(Int($0))" } ?? "0", label: "min de entrenamiento", color: ScoreKind.strain.color)
             Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 52)
-            tappableContextMetric(key: "steps", icon: "figure.walk", value: snapshot.steps?.formatted() ?? "—", label: "pasos", color: ScoreKind.recovery.color)
+            tappableContextMetric(key: "steps", icon: "figure.walk", value: snapshot.steps?.formatted(.number.locale(RecvelL10n.locale)) ?? "—", label: "pasos", color: ScoreKind.recovery.color)
         }
         .padding(.vertical, 16)
         .liquidGlass(cornerRadius: 8)
@@ -2009,7 +2009,7 @@ private func signedHours(_ hours: Double) -> String {
 }
 
 private func timeText(_ date: Date) -> String {
-    date.formatted(date: .omitted, time: .shortened)
+    date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))
 }
 
 // MARK: - Detalle de metrica (patron Bevel `mainmetrics_bevel.mp4`)
@@ -2119,7 +2119,7 @@ struct MetricDetailView: View {
             }
             HStack(spacing: 8) {
                 Text(allPoints.last?.date.formatted(
-                    .dateTime.day().month(.abbreviated).year().locale(Locale(identifier: "es_MX"))
+                    .dateTime.day().month(.abbreviated).year().locale(RecvelL10n.locale)
                 ) ?? "Sin dato")
                 if let band {
                     Text("·")

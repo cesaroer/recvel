@@ -589,7 +589,7 @@ private struct DualDialHero: View {
             // Titulo sobre el dial, como "Biological Age / As of July 13".
             Text("Reporte del día")
                 .font(.system(size: 25, weight: .bold))
-            Text(report.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+            Text(report.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
             Text("CONFIANZA \(report.recoveryConfidence.displayName.uppercased())")

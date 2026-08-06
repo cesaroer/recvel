@@ -594,7 +594,12 @@ struct HeroScoreRing: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(score.kind.displayName), \(score.value) de 100. \(RecvelL10n.text("common.confidence")) \(score.confidence.displayName)")
+        .accessibilityLabel(
+            RecvelL10n.text("a11y.scoreOfHundred", values: [
+                "name": score.kind.displayName,
+                "value": "\(score.value)"
+            ]) + " \(RecvelL10n.text("common.confidence")) \(score.confidence.displayName)"
+        )
     }
 }
 
@@ -970,7 +975,7 @@ struct LiquidGlassTabBar: View {
         }
         .buttonStyle(GlassPressStyle())
         .accessibilityIdentifier(menuOpen ? "tabbar.fab.close" : "tabbar.fab.open")
-        .accessibilityLabel(menuOpen ? "Cerrar acciones" : "Acciones rapidas")
+        .accessibilityLabel(RecvelL10n.text(menuOpen ? "a11y.closeActions" : "a11y.quickActions"))
     }
 
     private var quickActionMenu: some View {

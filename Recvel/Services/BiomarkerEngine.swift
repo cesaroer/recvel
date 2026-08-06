@@ -7,6 +7,7 @@ enum BioAgeLens: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var method: String { self == .cardio ? "FRIEND · beta" : "PhenoAge" }
+    var displayName: String { RecvelL10n.text(self == .cardio ? "bioage.lens.cardio" : "bioage.lens.blood") }
 }
 
 enum BiomarkerStatus: String {
@@ -15,6 +16,16 @@ enum BiomarkerStatus: String {
     case attention = "Prioridad"
     case calibrating = "Calibrando"
     case missing = "Faltante"
+
+    var displayName: String {
+        switch self {
+        case .favorable: RecvelL10n.text("biomarker.status.favorable")
+        case .fair: RecvelL10n.text("biomarker.status.watch")
+        case .attention: RecvelL10n.text("biomarker.status.priority")
+        case .calibrating: RecvelL10n.text("common.calibrating")
+        case .missing: RecvelL10n.text("common.missing")
+        }
+    }
 }
 
 struct BiomarkerDescriptor: Identifiable {
@@ -320,11 +331,11 @@ struct BioAgeReportEngine {
             driver("activity.zone45", "Zonas 4-5", zone45, unit: "min/sem", benchmark: "Contexto de intensidad: 10+ min/sem", good: 10...1000, fair: 1...9.99, priority: 3, points: [zone45]),
             driver("activity.strength", "Fuerza", strength, unit: "min/sem", benchmark: "Dos sesiones semanales", good: 40...2000, fair: 20...39.99, priority: 1, points: [strength]),
             driver("cardio.vo2", "VO2 max", vo2.last, unit: "ml/kg/min", benchmark: "Comparacion FRIEND por edad y sexo", good: 40...100, fair: 30...39.99, priority: 1, points: vo2),
-            driver("cardio.rhr", "FC en reposo", average(rhr), unit: "lpm", benchmark: "Usa tu baseline de 60 dias", good: 40...65, fair: 65...75, priority: 2, points: rhr),
+            driver("cardio.rhr", "RHR", average(rhr), unit: "bpm", benchmark: "Referencia personal de 60 días", good: 40...65, fair: 65...75, priority: 2, points: rhr),
             driver("body.lean", "Masa magra", lean.last, unit: "kg", benchmark: "Seguir tendencia con la misma fuente", good: 1...300, fair: 0...0, priority: 3, points: lean)
         ]
-        values.append(BioAgeDriver(id: "lifestyle.nutrition", title: "Nutricion", value: mealDays == 0 ? "Sin registros" : "(mealDays) dias registrados", benchmark: "La consistencia mejora el contexto", status: mealDays >= 20 ? .favorable : (mealDays >= 7 ? .fair : .calibrating), priority: 3, points: [], source: "Recvel local"))
-        values.append(BioAgeDriver(id: "lifestyle.alcohol", title: "Alcohol", value: alcoholYes == 0 ? "Sin reportes" : "(alcoholYes) dias", benchmark: "Solo registros voluntarios", status: alcoholYes == 0 ? .calibrating : .attention, priority: 3, points: [], source: "Journal"))
+        values.append(BioAgeDriver(id: "lifestyle.nutrition", title: RecvelL10n.text("tab.nutrition"), value: mealDays == 0 ? "Sin registros" : "\(mealDays) días registrados", benchmark: "La consistencia mejora el contexto", status: mealDays >= 20 ? .favorable : (mealDays >= 7 ? .fair : .calibrating), priority: 3, points: [], source: "Recvel local"))
+        values.append(BioAgeDriver(id: "lifestyle.alcohol", title: "Alcohol", value: alcoholYes == 0 ? "Sin registros" : "\(alcoholYes) días", benchmark: "Solo registros voluntarios", status: alcoholYes == 0 ? .calibrating : .attention, priority: 3, points: [], source: RecvelL10n.text("tab.journal")))
         return values.sorted { ($0.status == .attention ? 0 : $0.priority) < ($1.status == .attention ? 0 : $1.priority) }
     }
 }

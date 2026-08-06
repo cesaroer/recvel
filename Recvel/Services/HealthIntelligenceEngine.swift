@@ -433,7 +433,7 @@ struct BioAgeEngine {
             factors.append(BioAgeFactor(name: "Consistencia de sueno", value: "±\(Int(consistency.rounded())) min", note: "Contexto de 30 dias", favorable: consistency <= 45))
         }
         if let steps = snapshot.steps {
-            factors.append(BioAgeFactor(name: "Actividad", value: steps.formatted(), note: "Pasos del dia; no cambia la edad", favorable: steps >= 7_000))
+            factors.append(BioAgeFactor(name: "Actividad", value: steps.formatted(.number.locale(RecvelL10n.locale)), note: "Pasos del dia; no cambia la edad", favorable: steps >= 7_000))
         }
         return factors
     }

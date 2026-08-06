@@ -42,7 +42,7 @@ struct StressHomeCard: View {
 
     private var caption: String {
         guard profile.hasEnoughData else { return assessment.summary }
-        return "Promedio de \(profile.hours) h medidas hoy. Toca para ver el valor actual y las horas."
+        return RecvelL10n.text("stress.card.caption", values: ["hours": "\(profile.hours)"])
     }
 
     var body: some View {
@@ -117,7 +117,7 @@ struct StressHomeCard: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(RecvelL10n.text("score.stress.title")), \(level.displayName), \(RecvelL10n.text("score.calm.title")) \(displayValue) de 100")
+        .accessibilityLabel("\(RecvelL10n.text("score.stress.title")), \(level.displayName), \(RecvelL10n.text("score.calm.title")) " + RecvelL10n.text("a11y.scoreOf100", values: ["value": displayValue]))
     }
 }
 
@@ -130,7 +130,7 @@ struct VO2HomeCard: View {
             icon: "lungs.fill",
             value: snapshot?.vo2Max.map { String(format: "%.1f", $0) } ?? "--",
             unit: "ml/kg/min",
-            detail: snapshot?.vo2MaxDate.map { "Apple Health · \($0.formatted(.relative(presentation: .named)))" } ?? "Sin estimación reciente",
+            detail: snapshot?.vo2MaxDate.map { "Apple Health · \($0.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)))" } ?? RecvelL10n.text("bioage.noRecentEstimate"),
             color: .cyan
         )
     }
@@ -141,13 +141,15 @@ struct LegacyBioAgeHomeCard: View {
 
     var body: some View {
         MetricIntelligenceCard(
-            eyebrow: "EDAD FISIOLÓGICA · BETA",
+            eyebrow: RecvelL10n.text("bioage.eyebrow"),
             icon: "hourglass",
             value: estimate.estimatedYears.map { String(format: "%.0f", $0) } ?? "--",
-            unit: "años",
+            unit: RecvelL10n.text("unit.years"),
             detail: estimate.deltaYears.map { delta in
-                abs(delta) < 0.5 ? "Cerca de tu edad cronológica" : String(format: "%+.0f vs. edad cronológica", delta)
-            } ?? "Requiere VO2, edad y sexo",
+                abs(delta) < 0.5
+                    ? RecvelL10n.text("bioage.nearChronological")
+                    : RecvelL10n.text("bioage.vsChronological", values: ["delta": String(format: "%+.0f", delta)])
+            } ?? RecvelL10n.text("bioage.requires"),
             color: ScoreKind.recovery.color
         )
     }
@@ -296,7 +298,7 @@ struct StressDetailView: View {
             // Basta una lectura para mostrar "ahora": en la madrugada el
             // promedio del dia aun no existe, pero el valor actual si.
             if profile.current != nil {
-                IntelligenceSectionTitle(title: "Ahora", detail: "última hora medida · 100 = calma")
+                IntelligenceSectionTitle(title: RecvelL10n.text("common.now"), detail: RecvelL10n.text("stress.now.caption"))
                 nowCard
             }
 
@@ -323,24 +325,26 @@ struct StressDetailView: View {
             }
 
             if !activation.isEmpty {
-                IntelligenceSectionTitle(title: "Activación del día", detail: "Según tu FC · no forma parte de la puntuación")
+                IntelligenceSectionTitle(title: RecvelL10n.text("stress.activation.title"), detail: RecvelL10n.text("stress.activation.caption"))
                 activationChart
             }
 
             if !hints.isEmpty {
-                IntelligenceSectionTitle(title: "Posibles factores", detail: "de tus registros")
+                IntelligenceSectionTitle(title: RecvelL10n.text("stress.possibleFactors"), detail: RecvelL10n.text("stress.fromYourEntries"))
                 hintsSection
             }
 
             // Entrypoint permanente de respiracion. Antes solo era alcanzable
             // si aparecia un hint con offersBreathing, asi que en la practica
             // quedaba escondido.
-            IntelligenceSectionTitle(title: "Herramientas", detail: "Un minuto para ti")
+            IntelligenceSectionTitle(title: RecvelL10n.text("common.tools"), detail: RecvelL10n.text("stress.minuteForYou"))
             breathingEntry
 
             IntelligenceSectionTitle(
-                title: "¿Cómo te sientes?",
-                detail: "\(todayEmotions.count)/\(CheckInLimits.maxPerDay) hoy"
+                title: RecvelL10n.text("stress.howDoYouFeel"),
+                detail: RecvelL10n.text("stress.todayCount", values: [
+                    "count": "\(todayEmotions.count)", "max": "\(CheckInLimits.maxPerDay)"
+                ])
             )
             emotionLogger
 
@@ -367,7 +371,7 @@ struct StressDetailView: View {
 
     private var heroSummary: String {
         guard profile.hasEnoughData else { return assessment.summary }
-        return "Promedio de las \(profile.hours) h medidas hoy. El valor de ahora va aparte, abajo."
+        return RecvelL10n.text("stress.hero.summary", values: ["hours": "\(profile.hours)"])
     }
 
     /// Estres de ahora, en la gramatica de la tarjeta "Today's stress" de la
@@ -443,7 +447,7 @@ struct StressDetailView: View {
         .liquidGlass(cornerRadius: 8)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: displayLevel)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Escala de bandas, actual \(displayLevel.displayName)")
+        .accessibilityLabel(RecvelL10n.text("a11y.bandScale", values: ["band": displayLevel.displayName]))
         .accessibilityIdentifier("detail.stress.scale")
     }
 
@@ -624,7 +628,7 @@ struct StressDetailView: View {
             } else if canAddEmotion {
                 emotionAddButton
             } else {
-                Text("Llegaste al tope de \(CheckInLimits.maxPerDay) registros hoy. Mañana puedes seguir.")
+                Text(RecvelL10n.text("mood.dailyCap", values: ["max": "\(CheckInLimits.maxPerDay)"]))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -658,12 +662,12 @@ struct StressDetailView: View {
     /// Titular del tono del dia. En vacio NO repite "¿Como te sientes?" (ya lo
     /// dice el titulo de seccion justo encima): anuncia lo que la tarjeta dara.
     private var emotionMoodTitle: String {
-        guard let average = emotionDayAverage else { return "Tu ánimo de hoy" }
-        if average >= 1.25 { return "Día muy positivo" }
-        if average >= 0.35 { return "Día en buen tono" }
-        if average > -0.35 { return "Día neutro" }
-        if average > -1.25 { return "Día algo tenso" }
-        return "Día tenso"
+        guard let average = emotionDayAverage else { return RecvelL10n.text("mood.today.title") }
+        if average >= 1.25 { return RecvelL10n.text("mood.veryPositive") }
+        if average >= 0.35 { return RecvelL10n.text("mood.good") }
+        if average > -0.35 { return RecvelL10n.text("mood.neutral") }
+        if average > -1.25 { return RecvelL10n.text("mood.slightlyTense") }
+        return RecvelL10n.text("mood.tense")
     }
 
     private var emotionMoodEmoji: String {
@@ -699,8 +703,8 @@ struct StressDetailView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Text(todayEmotions.isEmpty
-                     ? "Aún no registras cómo te sientes hoy"
-                     : "\(todayEmotions.count) de \(CheckInLimits.maxPerDay) registros hoy")
+                     ? RecvelL10n.text("mood.noneToday")
+                     : RecvelL10n.text("mood.countToday", values: ["count": "\(todayEmotions.count)", "max": "\(CheckInLimits.maxPerDay)"]))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -766,7 +770,7 @@ struct StressDetailView: View {
                         }
                     }
                     Spacer(minLength: 4)
-                    Text(log.date.formatted(date: .omitted, time: .shortened))
+                    Text(log.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))
                         .font(.system(size: 12))
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
@@ -883,7 +887,7 @@ struct StressDetailView: View {
             selectedEmotion = nil
             emotionNote = ""
         } label: {
-            Label(todayEmotions.isEmpty ? "Registrar cómo me siento" : "Añadir otro registro",
+            Label(todayEmotions.isEmpty ? RecvelL10n.text("mood.logFeeling") : RecvelL10n.text("mood.addAnother"),
                   systemImage: "plus.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(emotionMoodColor)
@@ -916,7 +920,7 @@ struct StressDetailView: View {
                             }
                         }
                         Spacer(minLength: 4)
-                        Text(log.date.formatted(.relative(presentation: .named)))
+                        Text(log.date.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)))
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                     }
@@ -1018,14 +1022,14 @@ struct StressDetailView: View {
         let detail: String
         switch displayLevel {
         case .attention, .overload:
-            title = "Haz una pausa para recuperarte"
-            detail = "Prueba de 5 a 10 minutos de respiración tranquila o una caminata suave. Observa varias lecturas antes de modificar tu entrenamiento."
+            title = RecvelL10n.text("stress.pause.title")
+            detail = RecvelL10n.text("stress.pause.detail")
         case .great, .normal:
             title = "Protege este estado"
-            detail = "Mantén la hidratación, incluye pausas y ajusta la Carga a tu Recuperación y a cómo te sientes."
+            detail = RecvelL10n.text("stress.keep.detail")
         case .unavailable:
-            title = "Construyendo tu referencia"
-            detail = "Usa el Apple Watch durante varios días, especialmente al dormir, para comparar tu HRV y RHR con tu referencia personal."
+            title = RecvelL10n.text("stress.building.title")
+            detail = RecvelL10n.text("stress.building.detail")
         }
         return LabelCard(icon: "sparkles", title: title, detail: detail, color: color)
             .accessibilityIdentifier("detail.stress.advice")
@@ -1034,8 +1038,8 @@ struct StressDetailView: View {
     private var scienceCard: some View {
         LabelCard(
             icon: "checkmark.shield.fill",
-            title: "Lo que indica esta puntuación",
-            detail: "Estima la presión fisiológica con HRV SDNN y RHR frente a tu historial. No mide estrés emocional, ansiedad ni la causa del cambio. El movimiento, el ejercicio, la cafeína, el alcohol, una enfermedad y algunos medicamentos pueden influir.",
+            title: RecvelL10n.text("stress.meaning.title"),
+            detail: RecvelL10n.text("stress.meaning.detail"),
             color: .cyan
         )
     }
@@ -1060,7 +1064,7 @@ struct VO2DetailView: View {
                 value: snapshot?.vo2Max.map { String(format: "%.1f", $0) } ?? "--",
                 unit: "ml/kg/min",
                 status: freshness,
-                summary: "Una estimación de tu capacidad cardiorrespiratoria basada en caminatas, carreras o senderismo al aire libre registrados por Apple Watch.",
+                summary: RecvelL10n.text("vo2.description"),
                 color: .cyan,
                 progress: min((snapshot?.vo2Max ?? 0) / 60, 1)
             )
@@ -1089,13 +1093,13 @@ struct VO2DetailView: View {
                 .accessibilityIdentifier("detail.vo2.trend")
             }
 
-            LabelCard(icon: "figure.run", title: "Cómo obtener una nueva estimación", detail: "Haz una caminata, carrera o sesión de senderismo al aire libre de al menos 20 minutos, con buena señal GPS e intensidad suficiente. Apple determina cuándo guardar una muestra.", color: .cyan)
-            LabelCard(icon: "info.circle.fill", title: "Es una estimación, no una prueba de laboratorio", detail: "Apple Watch utiliza una predicción submáxima. Es más útil para seguir cambios durante varias semanas que para interpretar decimales o comparar dispositivos.", color: ScoreKind.energy.color)
+            LabelCard(icon: "figure.run", title: RecvelL10n.text("vo2.newEstimate.title"), detail: RecvelL10n.text("vo2.newEstimate.detail"), color: .cyan)
+            LabelCard(icon: "info.circle.fill", title: RecvelL10n.text("vo2.notLab.title"), detail: RecvelL10n.text("vo2.notLab.detail"), color: ScoreKind.energy.color)
         }
     }
 
     private var freshness: String {
-        snapshot?.vo2MaxDate.map { "Medido \($0.formatted(.relative(presentation: .named)))" } ?? "Sin muestras en Apple Health"
+        snapshot?.vo2MaxDate.map { "Medido \($0.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)))" } ?? RecvelL10n.text("vo2.noSamples")
     }
 }
 
@@ -1108,7 +1112,7 @@ struct LegacyBioAgeDetailView: View {
             IntelligenceHero(
                 eyebrow: "EDAD CARDIORRESPIRATORIA · BETA",
                 value: estimate.estimatedYears.map { String(format: "%.0f", $0) } ?? "--",
-                unit: "años",
+                unit: RecvelL10n.text("unit.years"),
                 status: deltaText,
                 summary: estimate.summary,
                 color: ScoreKind.recovery.color,
@@ -1116,7 +1120,7 @@ struct LegacyBioAgeDetailView: View {
             )
 
             HStack(spacing: 0) {
-                bioStat("Cronológica", estimate.chronologicalYears.map(String.init) ?? "--")
+                bioStat(RecvelL10n.text("bioage.chronological"), estimate.chronologicalYears.map(String.init) ?? "--")
                 Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 50)
                 bioStat(RecvelL10n.text("common.confidence"), estimate.confidence.displayName)
                 Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 50)
@@ -1147,13 +1151,13 @@ struct LegacyBioAgeDetailView: View {
                 .accessibilityIdentifier("detail.bioAge.factors")
             }
 
-            LabelCard(icon: "function", title: "Método transparente", detail: "Esta versión beta compara tu VO₂ máx. de Apple Health con las medianas de las referencias FRIEND por edad y sexo. Los demás biomarcadores aportan contexto, pero todavía no suman ni restan años.", color: .cyan)
-            LabelCard(icon: "exclamationmark.shield.fill", title: "No es una edad biologica clinica", detail: "No es PhenoAge, un reloj epigenetico ni una prediccion de longevidad. Sin biomarcadores de laboratorio no afirmamos medir envejecimiento biologico total.", color: ScoreKind.energy.color)
+            LabelCard(icon: "function", title: RecvelL10n.text("bioage.method.title"), detail: RecvelL10n.text("bioage.method.detail"), color: .cyan)
+            LabelCard(icon: "exclamationmark.shield.fill", title: RecvelL10n.text("bioage.notClinical.title"), detail: RecvelL10n.text("bioage.notClinical.detail"), color: ScoreKind.energy.color)
         }
     }
 
     private var deltaText: String {
-        estimate.deltaYears.map { String(format: "%+.0f años vs. edad cronológica", $0) } ?? "Completa edad, sexo y VO₂ máx."
+        estimate.deltaYears.map { String(format: "%+.0f años vs. edad cronológica", $0) } ?? RecvelL10n.text("bioage.completeFields")
     }
 
     private var ageProgress: Double {
@@ -1523,7 +1527,7 @@ struct BreathingExerciseView: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                Text(reduceMotion ? phaseHint : "Sigue el circulo")
+                Text(reduceMotion ? phaseHint : RecvelL10n.text("breathing.followCircle"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -1661,8 +1665,8 @@ private struct StressTodayCard: View {
                         Text("Calma ahora")
                             .font(.system(size: 19, weight: .semibold))
                     }
-                    Text(updatedAt.map { "Actualizado a las \($0.formatted(date: .omitted, time: .shortened))" }
-                        ?? "Sin lectura reciente")
+                    Text(updatedAt.map { RecvelL10n.text("stress.updatedAt", values: ["time": $0.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))]) }
+                        ?? RecvelL10n.text("stress.noRecentReading"))
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                 }
@@ -1670,15 +1674,19 @@ private struct StressTodayCard: View {
                 // En calma se invierten: el minimo del indice es el momento MAS
                 // calmado del dia. El promedio es el mismo numero que el hero.
                 HStack(spacing: 0) {
-                    stat(Self.calm(profile.lowest), "Más calmado", tint: Color(red: 0.42, green: 0.82, blue: 0.78))
+                    stat(Self.calm(profile.lowest), RecvelL10n.text("stress.moreCalm"), tint: Color(red: 0.42, green: 0.82, blue: 0.78))
                     divider
-                    stat(Self.calm(profile.highest), "Menos calmado", tint: Color(red: 0.98, green: 0.55, blue: 0.42))
+                    stat(Self.calm(profile.highest), RecvelL10n.text("stress.lessCalm"), tint: Color(red: 0.98, green: 0.55, blue: 0.42))
                     divider
-                    stat(profile.hasEnoughData ? Self.calm(profile.average) : nil, "Promedio", tint: .white)
+                    stat(profile.hasEnoughData ? Self.calm(profile.average) : nil, RecvelL10n.text("stress.average"), tint: .white)
                 }
 
                 if !profile.hasEnoughData {
-                    Text("Llevas \(profile.hours) \(profile.hours == 1 ? "hora medida" : "horas medidas") hoy · el promedio del día aparece a partir de \(StressDayProfile.minimumHours)")
+                    Text(RecvelL10n.text("stress.hoursSoFar", values: [
+                        "count": "\(profile.hours)",
+                        "unit": RecvelL10n.text(profile.hours == 1 ? "unit.hour.one" : "unit.hour.other"),
+                        "min": "\(StressDayProfile.minimumHours)"
+                    ]))
                         .font(.system(size: 12))
                         .foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1695,7 +1703,10 @@ private struct StressTodayCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .revelCard()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Calma ahora \(Self.calm(profile.current).map(String.init) ?? "sin lectura") de 100, \(currentBand.displayName)")
+        .accessibilityLabel(RecvelL10n.text("a11y.calmNow", values: [
+            "value": Self.calm(profile.current).map(String.init) ?? RecvelL10n.text("common.noReading"),
+            "band": currentBand.displayName
+        ]))
         .accessibilityIdentifier("detail.stress.now")
     }
 

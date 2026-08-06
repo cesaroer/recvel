@@ -434,7 +434,7 @@ struct PlanView: View {
             return "Cuenta únicamente los días de esta semana con datos de Apple Health o registros propios"
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = RecvelL10n.locale
         formatter.setLocalizedDateFormatFromTemplate("Md")
         let remaining = daysLeftInWeek == 0 ? "último día" : "quedan \(daysLeftInWeek) días"
         return "\(formatter.string(from: first)) – \(formatter.string(from: last)) · \(remaining)"
@@ -517,7 +517,7 @@ struct PlanView: View {
 
     private func weekdayLetter(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = RecvelL10n.locale
         formatter.setLocalizedDateFormatFromTemplate("EEEEE")
         return formatter.string(from: date).uppercased()
     }
@@ -697,14 +697,18 @@ struct PlanHomeCard: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Enfoque de hoy")
+                Text(RecvelL10n.text("plan.week.focusToday"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.tertiary)
                 Text(focusTitle)
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(String(format: "Esta noche %.1f h · en cama %@ · %@", sleepNeedHours, bedtime.formatted(date: .omitted, time: .shortened), cycleHint))
+                Text(RecvelL10n.text("plan.week.tonightLine", values: [
+                    "hours": String(format: "%.1f", sleepNeedHours),
+                    "bedtime": bedtime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)),
+                    "cycles": cycleHint
+                ]))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -717,32 +721,32 @@ struct PlanHomeCard: View {
                     progress: weekProgressLine(
                         current: workoutCurrent,
                         goal: workoutGoal,
-                        unitSingular: "entrenamiento",
-                        unitPlural: "entrenamientos"
+                        unitSingular: RecvelL10n.text("unit.workout.one"),
+                        unitPlural: RecvelL10n.text("unit.workout.other")
                     ),
                     remaining: remainingCaption(current: workoutCurrent, goal: workoutGoal),
                     fraction: progressFraction(current: workoutCurrent, goal: workoutGoal),
                     color: ScoreKind.strain.color
                 )
                 goalProgressRow(
-                    title: "Noches suficientes",
+                    title: RecvelL10n.text("plan.week.enoughNights"),
                     progress: weekProgressLine(
                         current: sleepCurrent,
                         goal: sleepGoal,
-                        unitSingular: "noche",
-                        unitPlural: "noches"
+                        unitSingular: RecvelL10n.text("unit.night.one"),
+                        unitPlural: RecvelL10n.text("unit.night.other")
                     ),
                     remaining: remainingCaption(current: sleepCurrent, goal: sleepGoal),
                     fraction: progressFraction(current: sleepCurrent, goal: sleepGoal),
                     color: ScoreKind.sleep.color
                 )
                 goalProgressRow(
-                    title: "Carga equilibrada",
+                    title: RecvelL10n.text("plan.week.balancedLoad"),
                     progress: weekProgressLine(
                         current: balancedCurrent,
                         goal: balancedGoal,
-                        unitSingular: "dia",
-                        unitPlural: "días"
+                        unitSingular: RecvelL10n.text("unit.day.one"),
+                        unitPlural: RecvelL10n.text("unit.day.other")
                     ),
                     remaining: remainingCaption(current: balancedCurrent, goal: balancedGoal),
                     fraction: progressFraction(current: balancedCurrent, goal: balancedGoal),
@@ -750,7 +754,9 @@ struct PlanHomeCard: View {
                 )
             }
 
-            Text(weekHits == 3 ? "Tres metas principales tocadas esta semana" : "\(weekHits) de 3 metas principales esta semana")
+            Text(weekHits == 3
+                 ? RecvelL10n.text("plan.week.allHits")
+                 : RecvelL10n.text("plan.week.someHits", values: ["count": "\(weekHits)"]))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -761,20 +767,28 @@ struct PlanHomeCard: View {
     }
 
     private var accessibilitySummary: String {
-        "Metas semanales. \(focusTitle). \(weekProgressLine(current: workoutCurrent, goal: workoutGoal, unitSingular: "entrenamiento", unitPlural: "entrenamientos")). \(weekProgressLine(current: sleepCurrent, goal: sleepGoal, unitSingular: "noche", unitPlural: "noches")). \(weekProgressLine(current: balancedCurrent, goal: balancedGoal, unitSingular: "día", unitPlural: "días"))."
+        RecvelL10n.text("plan.week.a11y", values: [
+            "focus": focusTitle,
+            "training": weekProgressLine(current: workoutCurrent, goal: workoutGoal, unitSingular: RecvelL10n.text("unit.workout.one"), unitPlural: RecvelL10n.text("unit.workout.other")),
+            "sleep": weekProgressLine(current: sleepCurrent, goal: sleepGoal, unitSingular: RecvelL10n.text("unit.night.one"), unitPlural: RecvelL10n.text("unit.night.other")),
+            "load": weekProgressLine(current: balancedCurrent, goal: balancedGoal, unitSingular: RecvelL10n.text("unit.day.one"), unitPlural: RecvelL10n.text("unit.day.other"))
+        ])
     }
 
     private func weekProgressLine(current: Int, goal: Int, unitSingular: String, unitPlural: String) -> String {
         let shown = min(current, goal)
-        let unit = shown == 1 ? unitSingular : unitPlural
-        return "\(shown) de \(goal) \(unit) esta semana"
+        // El sustantivo concuerda con la META, no con lo llevado: "1 de 4 dias".
+        let unit = goal == 1 ? unitSingular : unitPlural
+        return RecvelL10n.text("plan.week.progressLine", values: [
+            "current": "\(shown)", "goal": "\(goal)", "unit": unit
+        ])
     }
 
     private func remainingCaption(current: Int, goal: Int) -> String {
         let left = max(goal - current, 0)
-        if left == 0 { return "meta tocada" }
-        if left == 1 { return "falta 1" }
-        return "faltan \(left)"
+        if left == 0 { return RecvelL10n.text("plan.week.goalReached") }
+        if left == 1 { return RecvelL10n.text("plan.week.remainingOne") }
+        return RecvelL10n.text("plan.week.remainingMany", values: ["count": "\(left)"])
     }
 
     private func progressFraction(current: Int, goal: Int) -> Double {

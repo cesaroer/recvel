@@ -42,31 +42,37 @@ Apple controla el acceso mediante autorizacion granular. La app no puede inferir
 
 ## Modulos
 
-### Today
+### Hoy
 
-Dashboard diario con Recovery, Strain, Sleep y Energy, metricas clave, calidad del dato y una recomendacion breve. Los componentes usan material, transparencias, profundidad y movimiento sutil con accesibilidad para Reduce Motion.
+Dashboard diario con Recuperación, Carga, Sueño y Energía, métricas clave, calidad del dato y una recomendación breve. Los componentes usan material, transparencias, profundidad y movimiento sutil con accesibilidad para Reduce Motion.
 
-### Recovery
+### Recuperación
 
 Combina desviaciones personales de HRV, FC en reposo, sueno, frecuencia respiratoria y carga reciente. El baseline debe ser individual, robusto ante outliers y requerir suficiente historial antes de mostrar alta confianza.
 
-### Strain
+### Carga
 
 Resume carga cardiovascular diaria usando duracion, intensidad, zonas de FC, energia activa y workouts. No debe equiparar calorias con calidad de entrenamiento.
 
-### Sleep
+### Sueño
 
 Muestra duracion, eficiencia, consistencia, etapas y deuda estimada. Las etapas de dispositivos de consumo son aproximaciones; las recomendaciones deben centrarse primero en duracion y regularidad.
 
-### Stress y Energy
+### Estrés fisiológico y Energía
 
 Indicadores de tendencia basados en HRV, FC, actividad y sueno. Cuando no haya mediciones suficientes se mostrara baja confianza, nunca falsa precision.
 
 **Actualizacion 15 de julio de 2026:** Home ya incluye **Stress** (bandas Excelente/Normal/Atencion/Sobrecarga), **VO2 Max** leido de HealthKit y **Bio Age** con dos lentes trazables. `Cardio · FRIEND beta` convierte VO2 max a una edad cardiorrespiratoria de referencia; `Sangre · PhenoAge` usa la formula publicada de Levine solo cuando existen los nueve analitos requeridos y recientes. Sueno, actividad y estilo de vida aparecen como factores de contexto, pero nunca modifican el numero principal. La investigacion, limites y unidades estan en [README_StressAndBio.md](README_StressAndBio.md).
 
-### Journal Pro
+### Diario Pro
 
-Journal usa un dia **wake-to-wake**, calendario semanal y mensual, entradas de dia/noche, tags automaticos desde Apple Health, tags hibridos y tags manuales configurables. Las categorias sensibles estan apagadas por defecto. Insights compara Recovery o Sleep solo tras al menos 5 respuestas `Si` y 5 `No`, y siempre presenta asociaciones, no causalidad. El diario mental guiado se mantiene como un modulo propio dentro de Journal.
+El Diario usa un día **wake-to-wake**, calendario semanal y mensual, entradas de día/noche, etiquetas automáticas desde Apple Health, etiquetas híbridas y etiquetas manuales configurables. Hallazgos compara Recuperación o Sueño solo tras al menos 5 respuestas `Sí` y 5 `No`, y siempre presenta asociaciones, no causalidad. El diario mental guiado se mantiene como un módulo propio.
+
+## Voz y localización
+
+`COPY_STYLE_GUIDE.md` es la fuente oficial para narrativa, glosario, microcopy, claims científicos y traducción. La app admite `Automático`, `Español (México)` e `English`; la selección explícita se comparte con widgets y Apple Watch mediante el App Group. El cambio también actualiza Live Activities y vuelve a programar notificaciones pendientes.
+
+Los catálogos `Shared/Localizable.xcstrings` y `Shared/InfoPlist.xcstrings` cubren app, permisos de HealthKit, onboarding, accesibilidad, widgets, Live Activities y reloj. Los IDs y `rawValue` persistidos permanecen estables; la presentación usa claves semánticas. Los detalles científicos ofrecen una explicación breve y una ficha de metodología para HRV, RHR, VO₂ máx., SpO₂, SDNN, REM y MET.
 
 ### Nutricion con IA
 
@@ -158,7 +164,19 @@ Fitness no inventa series, repeticiones, peso ni recuperacion cardiaca. Cuando f
 
 ### Apple Watch
 
-La segunda fase agregara una app companion para iniciar workouts, observar FC en vivo y consultar Recovery, Strain y Sleep. Smart Alarm se evaluara despues de validar restricciones de watchOS, bateria y experiencia.
+El companion watchOS ya incluye tres superficies: Readiness (Recovery, Sleep, Strain y Energy), senales fisiologicas (estres, HRV, FC en reposo, pasos y VO2 max) y entrenamiento. Puede iniciar carrera, caminata, ciclismo o fuerza mediante `HKWorkoutSession`, mostrar FC, energia y distancia en vivo, y guardar la sesion en Apple Health. `WatchConnectivity` transporta un snapshot minimo desde el iPhone; no envia historial ni requiere backend. La complicacion muestra Recovery/Sleep/Strain desde el mismo snapshot local.
+
+La captura y el flujo compilan en simulador, pero exactitud, entrega en segundo plano y bateria requieren validacion en Apple Watch fisico. Smart Alarm permanece fuera de este bloque.
+
+### Widgets y Live Activities
+
+`RecvelWidgets` ofrece un widget de Readiness y un tablero fisiologico para Home/Lock Screen. Las superficies muestran fecha, fuente/confianza y conservan `--` cuando no existe una senal; los widgets nunca fabrican fixtures en produccion. El snapshot se genera al refrescar HealthKit, se guarda en el App Group `group.com.recvel.shared` y contiene solo valores diarios derivados.
+
+La paleta de estas superficies esta calibrada para legibilidad sobre fondo oscuro: texto principal `#F7FAFC`, secundario `#C1CAD5`, terciario `#8F9BA8` y fondo `#090C11`. Recovery, Sleep, Strain y Energy usan acentos luminosos y participan en el grupo `widgetAccentable` para adaptarse a Full Color, Tinted y Vibrant sin perder el texto.
+
+El ayuno activo crea una Live Activity con progreso, hora objetivo, Lock Screen y Dynamic Island. Terminar el ayuno cierra la actividad y editar retroactivamente la hora de inicio la reconstruye con el intervalo correcto.
+
+Validacion del 16 de julio de 2026 en `iPhone 16 Pro, iOS 18.6`: build del esquema completo verde (iOS + widgets + watchOS + complicacion), 82 unit tests y tres UI tests enfocados sin fallos. HealthKit en vivo, FC optica, bateria y entrega WatchConnectivity en segundo plano siguen requiriendo hardware.
 
 ## Arquitectura propuesta
 
@@ -209,7 +227,7 @@ Los scores siguen siendo estimaciones de wellness y necesitan validacion antes d
 
 ### P0 completado en simulador
 
-El nucleo P0 que no requiere sensores fisicos esta implementado: queries y normalizacion, fuentes, estados vacio/parcial/baseline, Recovery/Strain/Sleep/Energy explicables, detalle real de sueno y workouts, persistencia editable, recordatorios locales y pruebas deterministas. Queda para dispositivo real validar autorizacion granular, calidad de muestras de Apple Watch, zonas durante workouts reales, consumo de bateria y entrega de notificaciones con horarios reales. El companion watchOS continua fuera de este bloque.
+El nucleo P0 que no requiere sensores fisicos esta implementado: queries y normalizacion, fuentes, estados vacio/parcial/baseline, Recovery/Strain/Sleep/Energy explicables, detalle real de sueno y workouts, persistencia editable, recordatorios locales y pruebas deterministas. Widgets, Live Activity de ayuno y companion watchOS v1 tambien compilan como productos embebidos. Queda para dispositivo real validar autorizacion granular, calidad de muestras, zonas durante workouts, WatchConnectivity en segundo plano, consumo de bateria y entrega de notificaciones con horarios reales.
 
 ### Direccion visual vigente
 
@@ -261,7 +279,7 @@ Prioridades para acercar Recvel a "mejor app del mercado" sin romper local-first
 
 ### P0 — Habito diario y confianza nutricional
 
-- [ ] **Widgets Home Screen / Lock Screen** con Recovery, Strain y Sleep glanceables (loop de 10 s que Athlytic/Bevel ganan hoy).
+- [x] **Widgets Home Screen / Lock Screen** con Recovery, Strain, Sleep y tablero fisiologico.
 - [ ] **Morning Report rico:** notificacion o pantalla al despertar con Recovery, sueno, accion del dia y margen de Strain (ampliar las notifs locales basicas ya existentes).
 - [ ] **Food-101 Core ML** en lugar del clasificador Vision generico (candidatos Apache/MIT ya verificados en `Calorie_AI_Research.md`).
 - [ ] **Reglas de seguridad clinica 12.10** en nutricion: screening tipo SCOFF/EAT-26, disclaimers de no uso clinico, sin streaks punitivos ni rojo/verde de exito/fracaso en deficit.
@@ -277,8 +295,8 @@ Prioridades para acercar Recvel a "mejor app del mercado" sin romper local-first
 
 ### P2 — Paridad de mercado (despues del nucleo diario)
 
-- [ ] **App companion watchOS** + complicaciones (workouts, FC en vivo, resumen de scores).
-- [ ] **Live Activities / Dynamic Island** para ayuno activo o workout en curso.
+- [x] **App companion watchOS v1** + complicacion (workouts, FC en vivo y resumen de scores); pendiente validacion fisica.
+- [x] **Live Activities / Dynamic Island v1** para ayuno activo. Workout en curso puede agregarse despues de validar el flujo del reloj.
 - [x] **Bio Age trazable por lentes** (FRIEND cardiorrespiratorio + PhenoAge cuando hay panel completo; factores de contexto sin pesos propietarios).
 - [ ] **Ciclo menstrual × HRV/sueno** desde HealthKit con autorizacion y lenguaje no alarmista.
 - [ ] **Strength builder** estructurado (series × reps × peso locales; sincronizacion Watch cuando exista companion).
@@ -292,7 +310,7 @@ Prioridades para acercar Recvel a "mejor app del mercado" sin romper local-first
 
 1. **Ahora:** widgets + Lock Screen, Food-101 + reglas 12.10, Morning Report rico, agua/cafeina con hora en Journal, validacion en dispositivo real.
 2. **Despues:** bateria de energia unificada, coach local Q&A, correlacion ayuno↔Recovery, citas cientificas en UI, export/backup.
-3. **Mas adelante:** watchOS companion, edad biologica opt-in, ciclo menstrual, strength builder, Live Activities.
+3. **Mas adelante:** validacion fisica y bateria de watchOS, ciclo menstrual, strength builder sincronizado y Live Activity de workout.
 
 Posicionamiento objetivo: *la app de readiness + nutricion + ayuno mas privada del ecosistema Apple Watch* — scores explicables, confirmacion humana en calorias, sin cuenta ni suscripcion. Compite con Athlytic en claridad, con Bevel en amplitud, y gana en privacidad/honestidad de confianza.
 

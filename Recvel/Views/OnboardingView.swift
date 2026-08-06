@@ -217,7 +217,7 @@ struct OnboardingView: View {
                 HStack(spacing: 10) {
                     scheduleValue(
                         title: RecvelL10n.text("onboarding.schedule.wake"),
-                        value: wakeDate.formatted(date: .omitted, time: .shortened),
+                        value: wakeDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)),
                         icon: "sun.max.fill",
                         color: ScoreKind.energy.color
                     )

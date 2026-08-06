@@ -95,7 +95,7 @@ struct JournalView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                Text(selectedDate.formatted(.dateTime.month(.wide).year()))
+                Text(selectedDate.formatted(.dateTime.month(.wide).year().locale(RecvelL10n.locale)))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -152,7 +152,7 @@ struct JournalView: View {
                     withAnimation(.snappy(duration: 0.24)) { selectedDate = day }
                 } label: {
                     VStack(spacing: 7) {
-                        Text(day.formatted(.dateTime.weekday(.narrow)))
+                        Text(day.formatted(.dateTime.weekday(.narrow).locale(RecvelL10n.locale)))
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(selected ? .white : .secondary)
                         ZStack {
@@ -162,7 +162,7 @@ struct JournalView: View {
                                 .trim(from: 0, to: state.progress)
                                 .stroke(stateColor(state), style: StrokeStyle(lineWidth: 3, lineCap: .round))
                                 .rotationEffect(.degrees(-90))
-                            Text(day.formatted(.dateTime.day()))
+                            Text(day.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .monospacedDigit()
                         }
@@ -177,7 +177,7 @@ struct JournalView: View {
                     .padding(.vertical, 9)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(day.formatted(date: .complete, time: .omitted))
+                .accessibilityLabel(day.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(RecvelL10n.locale)))
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
@@ -200,7 +200,7 @@ struct JournalView: View {
             }
             .frame(width: 62, height: 62)
             VStack(alignment: .leading, spacing: 4) {
-                Text(calendar.isDateInToday(selectedDate) ? "Tu registro de hoy" : selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Text(calendar.isDateInToday(selectedDate) ? "Tu registro de hoy" : selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
                     .font(.headline)
                 Text(dayOverviewCaption)
                     .font(.subheadline)
@@ -755,7 +755,7 @@ private struct JournalMonthCalendarView: View {
                     HStack {
                         monthButton(-1, icon: "chevron.left")
                         Spacer()
-                        Text(visibleMonth.formatted(.dateTime.month(.wide).year())).font(.headline)
+                        Text(visibleMonth.formatted(.dateTime.month(.wide).year().locale(RecvelL10n.locale))).font(.headline)
                         Spacer()
                         monthButton(1, icon: "chevron.right").disabled(calendar.isDate(visibleMonth, equalTo: .now, toGranularity: .month))
                     }
@@ -795,7 +795,7 @@ private struct JournalMonthCalendarView: View {
             dismiss()
         } label: {
             VStack(spacing: 4) {
-                Text(day.formatted(.dateTime.day())).font(.caption.weight(.bold)).monospacedDigit()
+                Text(day.formatted(.dateTime.day().locale(RecvelL10n.locale))).font(.caption.weight(.bold)).monospacedDigit()
                 HStack(spacing: 3) {
                     Circle().fill(color(state)).frame(width: 6, height: 6)
                     if mental { Circle().fill(ScoreKind.sleep.color).frame(width: 6, height: 6) }

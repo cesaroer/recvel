@@ -14,6 +14,14 @@ struct JournalTagDefinition: Identifiable, Equatable {
     let defaultThreshold: Double?
     let unit: String?
 
+    var localizedTitle: String {
+        RecvelL10n.text("journal.tag.\(id).title")
+    }
+
+    var localizedSubtitle: String {
+        RecvelL10n.text("journal.tag.\(id).detail")
+    }
+
     init(
         _ id: String,
         _ title: String,
@@ -51,14 +59,14 @@ enum JournalCatalog {
         .init("auto.daylight", "20+ min de luz natural", "Exposicion exterior", symbol: "sun.max.fill", category: .automatic, source: .automatic, enabled: true, threshold: 20, unit: "min"),
         .init("auto.strength", "20+ min de fuerza", "Trabajo de resistencia", symbol: "dumbbell.fill", category: .automatic, source: .automatic, enabled: true, threshold: 20, unit: "min"),
         .init("auto.zone2", "30+ min en zona 2", "Base aerobica", symbol: "figure.run.circle.fill", category: .automatic, source: .automatic, enabled: true, threshold: 30, unit: "min"),
-        .init("auto.stress", "50+ stress score", "Presion fisiologica", symbol: "waveform.path.ecg", category: .automatic, source: .automatic, enabled: true, threshold: 50, unit: "pts"),
+        .init("auto.stress", "Estrés fisiológico de 50+", "Presión fisiológica", symbol: "waveform.path.ecg", category: .automatic, source: .automatic, enabled: true, threshold: 50, unit: "pts"),
         .init("auto.mindful", "Sesion mindfulness", "Minutos conscientes", symbol: "brain.head.profile", category: .automatic, source: .automatic, enabled: true, threshold: 1, unit: "min"),
         .init("auto.nap", "Siestas", "Sueno fuera de la sesion principal", symbol: "powersleep", category: .automatic, period: .nighttime, source: .automatic, enabled: true, threshold: 10, unit: "min"),
-        .init("auto.overreach", "Target strain overreached", "Carga mayor a la sugerida", symbol: "gauge.with.dots.needle.67percent", category: .automatic, source: .automatic, enabled: true),
+        .init("auto.overreach", "Carga por encima del objetivo", "Carga mayor a la sugerida", symbol: "gauge.with.dots.needle.67percent", category: .automatic, source: .automatic, enabled: true),
         .init("auto.nutrition", "Nutricion registrada", "Comidas confirmadas en Recvel", symbol: "fork.knife", category: .automatic, source: .automatic, enabled: true, threshold: 1, unit: "comidas"),
         // Recvel extras derived from available HealthKit / scores (Bevel may not show these)
         .init("auto.sleep", "Sueno registrado", "Sesion de sueno del dia", symbol: "moon.zzz.fill", category: .automatic, period: .nighttime, source: .automatic, enabled: true, threshold: 1, unit: "h"),
-        .init("auto.recovery", "Recovery del dia", "Puntuacion local de recuperacion", symbol: "heart.fill", category: .automatic, source: .automatic, enabled: true, threshold: 67, unit: "pts"),
+        .init("auto.recovery", "Recuperación del día", "Puntuación local de Recuperación", symbol: "heart.fill", category: .automatic, source: .automatic, enabled: true, threshold: 67, unit: "pts"),
         .init("auto.hrv", "HRV del dia", "Variabilidad cardiaca medida", symbol: "waveform.path.ecg.rectangle", category: .automatic, source: .automatic, enabled: true, threshold: 1, unit: "ms"),
         .init("auto.rhr", "FC en reposo", "Pulso en reposo del dia", symbol: "heart.text.square.fill", category: .automatic, source: .automatic, enabled: true, threshold: 1, unit: "lpm"),
         .init("auto.vo2", "VO2 Max del dia", "Muestra cardiorrespiratoria", symbol: "lungs.fill", category: .automatic, source: .automatic, enabled: true, threshold: 1, unit: "ml/kg/min"),
@@ -136,7 +144,7 @@ struct JournalResolvedTag: Identifiable {
     let configuration: JournalTagConfiguration?
 
     var id: String { definition.id }
-    var title: String { configuration?.customTitle ?? definition.title }
+    var title: String { configuration?.customTitle ?? definition.localizedTitle }
     var symbol: String { configuration?.customSymbol ?? definition.symbol }
     var isEnabled: Bool { configuration?.isEnabled ?? definition.defaultEnabled }
     var isPinned: Bool { configuration?.isPinned ?? false }
@@ -191,7 +199,7 @@ enum JournalAutoEntryEngine {
             result.append(JournalAutoSignal(tagID: id, answer: answer, value: value, displayValue: display, source: source))
         }
 
-        append("auto.steps", value: snapshot.steps.map(Double.init), display: snapshot.steps.map { "\($0.formatted()) pasos" } ?? "")
+        append("auto.steps", value: snapshot.steps.map(Double.init), display: snapshot.steps.map { "\($0.formatted(.number.locale(RecvelL10n.locale))) pasos" } ?? "")
         let cardioMinutes = snapshot.workoutMinutes ?? (snapshot.workouts.isEmpty ? nil : 0)
         append("auto.cardio", value: cardioMinutes, display: cardioMinutes.map { "\(Int($0.rounded())) min" } ?? "")
         append("auto.daylight", value: snapshot.daylightMinutes, display: snapshot.daylightMinutes.map { "\(Int($0.rounded())) min" } ?? "")
@@ -314,6 +322,7 @@ enum JournalInsightMetric: String, CaseIterable, Identifiable {
     case recovery = "Recovery"
     case sleep = "Sleep"
     var id: String { rawValue }
+    var displayName: String { self == .recovery ? ScoreKind.recovery.displayName : ScoreKind.sleep.displayName }
 }
 
 struct JournalTagImpact: Identifiable, Equatable {

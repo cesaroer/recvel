@@ -83,7 +83,7 @@ struct TonightHomeCard: View {
     private func miniTimeline(label: String, date: Date, color: Color) -> some View {
         VStack(spacing: 4) {
             Circle().fill(color).frame(width: 7, height: 7).shadow(color: color.opacity(0.5), radius: 3)
-            Text(date.formatted(date: .omitted, time: .shortened))
+            Text(date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))
                 .font(.caption.weight(.bold))
                 .monospacedDigit()
             Text(label)
@@ -486,7 +486,7 @@ struct TonightDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(step.title)
                     .font(.subheadline.weight(.medium))
-                Text("\(fire.formatted(date: .omitted, time: .shortened)) · \(step.durationMinutes) min · empieza \(chainedOffset) min antes")
+                Text("\(fire.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))) · \(step.durationMinutes) min · empieza \(chainedOffset) min antes")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -618,7 +618,7 @@ struct TonightDetailView: View {
                         Haptics.soft()
                     } label: {
                         VStack(spacing: 3) {
-                            Text(day.formatted(.dateTime.day()))
+                            Text(day.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                                 .font(.system(size: 9, weight: .semibold))
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(night.map { disciplineColor($0.status) } ?? Color.white.opacity(0.035))
@@ -654,9 +654,9 @@ struct TonightDetailView: View {
 
     private func sleepNightExplanation(_ night: SleepDisciplineNight) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(night.nightDate.formatted(.dateTime.weekday(.wide).day().month()))
+            Text(night.nightDate.formatted(.dateTime.weekday(.wide).day().month().locale(RecvelL10n.locale)))
                 .font(.caption.weight(.bold))
-            Text("Plan \(night.plannedBedtime.formatted(date: .omitted, time: .shortened)) · real \(night.actualSleepStart?.formatted(date: .omitted, time: .shortened) ?? "sin datos")")
+            Text("Plan \(night.plannedBedtime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))) · real \(night.actualSleepStart?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)) ?? "sin datos")")
                 .font(.caption).monospacedDigit()
             if let delta = night.bedtimeDeltaMinutes {
                 Text("\(Int(delta.rounded())) min de diferencia · \(Int((night.points ?? 0).rounded()))/100 esa noche")
@@ -704,7 +704,7 @@ struct TonightDetailView: View {
     private func timelineTime(label: String, date: Date, color: Color) -> some View {
         VStack(spacing: 5) {
             Circle().fill(color).frame(width: 9, height: 9).shadow(color: color, radius: 5)
-            Text(date.formatted(date: .omitted, time: .shortened))
+            Text(date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))
                 .font(.caption.weight(.bold))
                 .monospacedDigit()
             Text(label).font(.caption2).foregroundStyle(.secondary)
@@ -728,7 +728,7 @@ struct TonightDetailView: View {
 
     private var sleepReminderScheduleCaption: String {
         let parts = sleepReminderSlots.map { slot in
-            "\(slot.kind.title.replacingOccurrences(of: "Hora de ", with: "")) \(slot.fireDate.formatted(date: .omitted, time: .shortened))"
+            "\(slot.kind.title.replacingOccurrences(of: "Hora de ", with: "")) \(slot.fireDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))"
         }
         return parts.joined(separator: " · ")
     }

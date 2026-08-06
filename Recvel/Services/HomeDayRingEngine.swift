@@ -14,23 +14,23 @@ enum HomeDayRingMetric: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .sleep: "Sleep"
-        case .recovery: "Recovery"
-        case .strain: "Strain"
-        case .stress: "Stress"
-        case .steps: "Pasos"
-        case .activity: "Actividad"
+        case .sleep: RecvelL10n.text("score.sleep.title")
+        case .recovery: RecvelL10n.text("score.recovery.title")
+        case .strain: RecvelL10n.text("score.load.title")
+        case .stress: RecvelL10n.text("score.stress.title")
+        case .steps: RecvelL10n.text("metric.steps")
+        case .activity: RecvelL10n.text("metric.activity")
         }
     }
 
     var shortTitle: String {
         switch self {
-        case .sleep: "Sueno"
-        case .recovery: "Recup."
-        case .strain: "Strain"
-        case .stress: "Stress"
-        case .steps: "Pasos"
-        case .activity: "Energia"
+        case .sleep: RecvelL10n.text("score.sleep.title")
+        case .recovery: RecvelL10n.text("score.recovery.short")
+        case .strain: RecvelL10n.text("score.load.title")
+        case .stress: RecvelL10n.text("score.stress.short")
+        case .steps: RecvelL10n.text("metric.steps")
+        case .activity: RecvelL10n.text("score.energy.title")
         }
     }
 

@@ -91,61 +91,61 @@ struct NutritionPlanEngine: NutritionPlanning {
             nextMeal = suggestion(
                 type: nextType,
                 title: proteinFocusedTitle(profile: profile, type: nextType),
-                detail: "Apunta a 30-40 g de proteina y agrega verduras o fruta.",
-                reason: "Hoy faltan aproximadamente \(proteinGap) g para tu rango de proteina."
+                detail: text("nutrition.plan.protein.detail"),
+                reason: text("nutrition.plan.protein.reason", ["grams": "\(proteinGap)"])
             )
         } else if calorieGap < -250 {
             nextMeal = suggestion(
                 type: nextType,
-                title: "Opcion ligera y saciante",
-                detail: "Proteina magra, verduras y una porcion moderada de grasa.",
-                reason: "Ya superaste tu rango de energia; no necesitas compensar ni saltarte comidas."
+                title: text("nutrition.plan.light.title"),
+                detail: text("nutrition.plan.light.detail"),
+                reason: text("nutrition.plan.light.reason")
             )
         } else if (context.plannedWorkout || context.strain ?? 0 >= 70) && carbs < Int(Double(targets.carbohydrates) * 0.65) {
             nextMeal = suggestion(
                 type: nextType,
-                title: "Carbohidrato + proteina",
-                detail: "Arroz, papa, avena o tortilla con una fuente de proteina.",
-                reason: "Tu actividad es alta y aun tienes margen de carbohidratos para el dia."
+                title: text("nutrition.plan.carbs.title"),
+                detail: text("nutrition.plan.carbs.detail"),
+                reason: text("nutrition.plan.carbs.reason")
             )
         } else {
             nextMeal = suggestion(
                 type: nextType,
                 title: balancedTitle(profile: profile, type: nextType),
-                detail: "Combina proteina, fibra, color vegetal y una porcion que puedas confirmar.",
-                reason: "Mantiene el dia cerca de tu rango sin perseguir una cifra exacta."
+                detail: text("nutrition.plan.balanced.detail"),
+                reason: text("nutrition.plan.balanced.reason")
             )
         }
 
         var tomorrow = tomorrowSuggestions(profile: profile)
         var tomorrowReason: String
         if proteinGap >= 25 {
-            tomorrowReason = "Hoy faltaron cerca de \(proteinGap) g de proteina. Mañana la distribuimos desde la primera comida."
+            tomorrowReason = text("nutrition.plan.tomorrow.protein", ["grams": "\(proteinGap)"])
             tomorrow[0] = suggestion(
                 type: .breakfast,
                 title: breakfastProteinTitle(profile: profile),
-                detail: "25-35 g de proteina, fruta y una fuente de fibra.",
-                reason: "Empezar temprano reduce la carga de completar la meta por la noche."
+                detail: text("nutrition.plan.breakfast.detail"),
+                reason: text("nutrition.plan.breakfast.reason")
             )
         } else if calorieGap < -250 {
-            tomorrowReason = "Hoy quedaste por encima del rango. Mañana vuelve a tu estructura habitual, sin recortes agresivos."
+            tomorrowReason = text("nutrition.plan.tomorrow.above")
         } else if let sleep = context.sleep, sleep < 55 {
-            tomorrowReason = "Tu sueño fue bajo. Priorizamos comidas regulares y cafeina temprana; esto es apoyo de bienestar, no tratamiento."
+            tomorrowReason = text("nutrition.plan.tomorrow.sleep")
         } else if let recovery = context.recovery, recovery < 45 {
-            tomorrowReason = "Tu recovery esta bajo. Mañana conviene una estructura simple, hidratacion y energia suficiente."
+            tomorrowReason = text("nutrition.plan.tomorrow.recovery")
         } else {
-            tomorrowReason = "Hoy vas cerca de tu estructura. Mañana mantenemos variedad y proteina repartida."
+            tomorrowReason = text("nutrition.plan.tomorrow.steady")
         }
 
         let status: String
         if today.isEmpty {
-            status = "Aun no hay comidas. Tu primera entrada definira el resto del dia."
+            status = text("nutrition.plan.status.empty")
         } else if calories < targets.calorieLower {
-            status = "Llevas \(calories) kcal; quedan cerca de \(max(calorieGap, 0)) kcal dentro de tu referencia."
+            status = text("nutrition.plan.status.below", ["calories": "\(calories)", "remaining": "\(max(calorieGap, 0))"])
         } else if calories <= targets.calorieUpper {
-            status = "Vas dentro de tu rango de energia y llevas \(protein) g de proteina."
+            status = text("nutrition.plan.status.inRange", ["protein": "\(protein)"])
         } else {
-            status = "Vas \(calories - targets.calorieUpper) kcal sobre el rango; observa la tendencia, no un solo dia."
+            status = text("nutrition.plan.status.above", ["calories": "\(calories - targets.calorieUpper)"])
         }
 
         return NutritionDayPlan(
@@ -169,32 +169,36 @@ struct NutritionPlanEngine: NutritionPlanning {
 
     private func proteinFocusedTitle(profile: NutritionProfile, type: MealType) -> String {
         switch profile.dietStyle {
-        case DietStyle.vegan.rawValue: return "Tofu, frijoles y arroz"
-        case DietStyle.vegetarian.rawValue: return "Huevos, frijoles y tortillas"
-        default: return type == .snack ? "Yogurt alto en proteina y fruta" : "Pollo, frijoles y verduras"
+        case DietStyle.vegan.rawValue: return text("nutrition.food.tofuBeansRice")
+        case DietStyle.vegetarian.rawValue: return text("nutrition.food.eggsBeansTortillas")
+        default: return type == .snack ? text("nutrition.food.yogurtFruit") : text("nutrition.food.chickenBeansVegetables")
         }
     }
 
     private func balancedTitle(profile: NutritionProfile, type: MealType) -> String {
         if type == .breakfast { return breakfastProteinTitle(profile: profile) }
-        if profile.dietStyle == DietStyle.vegan.rawValue { return "Bowl de legumbres y vegetales" }
-        return "Plato completo a tu gusto"
+        if profile.dietStyle == DietStyle.vegan.rawValue { return text("nutrition.food.legumeBowl") }
+        return text("nutrition.food.balancedPlate")
     }
 
     private func breakfastProteinTitle(profile: NutritionProfile) -> String {
         switch profile.dietStyle {
-        case DietStyle.vegan.rawValue: return "Avena, soya y semillas"
-        case DietStyle.vegetarian.rawValue: return "Huevos con frijoles y fruta"
-        default: return "Huevos, yogurt y fruta"
+        case DietStyle.vegan.rawValue: return text("nutrition.food.oatsSoySeeds")
+        case DietStyle.vegetarian.rawValue: return text("nutrition.food.eggsBeansFruit")
+        default: return text("nutrition.food.eggsYogurtFruit")
         }
     }
 
     private func tomorrowSuggestions(profile: NutritionProfile) -> [NutritionPlanSuggestion] {
         [
-            suggestion(type: .breakfast, title: breakfastProteinTitle(profile: profile), detail: "Proteina + fibra para abrir el dia.", reason: "Reparte la proteina entre comidas."),
-            suggestion(type: .lunch, title: proteinFocusedTitle(profile: profile, type: .lunch), detail: "Completa con vegetales y una porcion de carbohidrato.", reason: "Aporta energia util para tu actividad."),
-            suggestion(type: .dinner, title: "Cena simple y completa", detail: "Proteina, verduras y carbohidrato segun hambre y actividad.", reason: "Una estructura predecible facilita registrar porciones.")
+            suggestion(type: .breakfast, title: breakfastProteinTitle(profile: profile), detail: text("nutrition.plan.tomorrow.breakfast.detail"), reason: text("nutrition.plan.tomorrow.breakfast.reason")),
+            suggestion(type: .lunch, title: proteinFocusedTitle(profile: profile, type: .lunch), detail: text("nutrition.plan.tomorrow.lunch.detail"), reason: text("nutrition.plan.tomorrow.lunch.reason")),
+            suggestion(type: .dinner, title: text("nutrition.plan.tomorrow.dinner.title"), detail: text("nutrition.plan.tomorrow.dinner.detail"), reason: text("nutrition.plan.tomorrow.dinner.reason"))
         ]
+    }
+
+    private func text(_ key: String, _ values: [String: String] = [:]) -> String {
+        CopyMessage(key: key, values: values).localized()
     }
 }
 

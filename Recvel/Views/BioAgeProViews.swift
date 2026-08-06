@@ -781,7 +781,7 @@ private struct BiomarkerMiniCard: View {
             HStack { Image(systemName: reading.descriptor.symbol).foregroundStyle(.secondary); Spacer(); Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary) }
             Text(reading.value.map { String(format: "%.1f", $0) } ?? "--").font(.title3.weight(.bold)).monospacedDigit()
             Text(reading.descriptor.shortTitle).font(.caption.weight(.semibold))
-            Text(reading.date?.formatted(.relative(presentation: .named)) ?? "Sin fecha").font(.caption2).foregroundStyle(.secondary)
+            Text(reading.date?.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)) ?? "Sin fecha").font(.caption2).foregroundStyle(.secondary)
         }
         .frame(width: 126, height: 112, alignment: .leading).padding(13).liquidGlass(cornerRadius: 16)
     }
@@ -840,7 +840,7 @@ private struct BiomarkerDetailView: View {
                             Text(reading.value.map { String(format: "%.1f", $0) } ?? "--").font(.system(size: 48, weight: .bold)).monospacedDigit()
                             Text(reading.unit).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         }
-                        Text("\(reading.source) · \(reading.date?.formatted(date: .abbreviated, time: .omitted) ?? "sin fecha")").font(.caption).foregroundStyle(.secondary)
+                        Text("\(reading.source) · \(reading.date?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(RecvelL10n.locale)) ?? "sin fecha")").font(.caption).foregroundStyle(.secondary)
                     }.padding(18).liquidGlass(cornerRadius: 16)
 
                     if !reading.history.isEmpty {

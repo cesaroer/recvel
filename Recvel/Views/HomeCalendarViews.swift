@@ -97,12 +97,12 @@ struct HomeDayStripCell: View {
         let isToday = Calendar.current.isDateInToday(date)
         Button(action: action) {
             VStack(spacing: 6) {
-                Text(date.formatted(.dateTime.weekday(.narrow)))
+                Text(date.formatted(.dateTime.weekday(.narrow).locale(RecvelL10n.locale)))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(selected ? .white : .secondary)
                 ZStack {
                     HomeMiniDayRings(values: rings, size: 34, lineWidth: 2.2)
-                    Text(date.formatted(.dateTime.day()))
+                    Text(date.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(selected ? .white : (isToday ? todayBlue : .primary))
@@ -132,9 +132,11 @@ struct HomeDayStripCell: View {
     }
 
     private var accessibilityLabel: String {
-        let dateText = date.formatted(date: .complete, time: .omitted)
+        let dateText = date.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(RecvelL10n.locale))
         let ringText = rings.compactMap { value -> String? in
-            guard let display = value.displayValue else { return "\(value.metric.title) sin dato" }
+            guard let display = value.displayValue else {
+                return RecvelL10n.text("a11y.metricNoData", values: ["metric": value.metric.title])
+            }
             return "\(value.metric.title) \(display)"
         }.joined(separator: ", ")
         return ringText.isEmpty ? dateText : "\(dateText). \(ringText)"
@@ -233,12 +235,12 @@ struct HomeMonthCalendarSheet: View {
                         Haptics.selection()
                         visibleMonth = calendar.startOfDay(for: month)
                     } label: {
-                        Text(month.formatted(.dateTime.month(.wide).year()))
+                        Text(month.formatted(.dateTime.month(.wide).year().locale(RecvelL10n.locale)))
                     }
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text(visibleMonth.formatted(.dateTime.month(.wide).year()).capitalized)
+                    Text(visibleMonth.formatted(.dateTime.month(.wide).year().locale(RecvelL10n.locale)).capitalized)
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(.white)
                     Image(systemName: "chevron.down")
@@ -318,7 +320,7 @@ struct HomeMonthCalendarSheet: View {
             .padding(.vertical, 2)
         }
         .accessibilityIdentifier("dashboard.ringPicker")
-        .accessibilityLabel("Indicadores del calendario, maximo \(HomeDayRingMetric.maxSelected)")
+        .accessibilityLabel(RecvelL10n.text("a11y.calendarIndicators", values: ["max": "\(HomeDayRingMetric.maxSelected)"]))
     }
 
     private var weekdayHeader: some View {
@@ -374,7 +376,7 @@ struct HomeMonthCalendarSheet: View {
                 )
                 .opacity(isFuture ? 0.35 : 1)
 
-                Text(day.formatted(.dateTime.day()))
+                Text(day.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(dayNumberColor(selected: selected, isToday: isToday, isFuture: isFuture))
@@ -388,7 +390,7 @@ struct HomeMonthCalendarSheet: View {
         }
         .buttonStyle(.plain)
         .disabled(isFuture)
-        .accessibilityLabel(day.formatted(date: .complete, time: .omitted))
+        .accessibilityLabel(day.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(RecvelL10n.locale)))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 

@@ -126,8 +126,9 @@ Recvel/
 - Modelos: nombres descriptivos (`DailyHealthSnapshot`, `WellnessScore`).
 
 ### Strings
-- El idioma de la app es **español**, pero los nombres de scores clave se mantienen en inglés (`Recovery`, `Strain`, `Sleep`, `Energy`) por alineación con competidores.
-- Usa tildes y eñes en textos visibles.
+- La fuente de verdad editorial y de localizacion es `COPY_STYLE_GUIDE.md`.
+- La app soporta español de México e inglés. En español, los scores se muestran como `Recuperación`, `Carga`, `Sueño` y `Energía`; los `rawValue` internos no cambian.
+- Usa tildes y eñes en textos visibles y evita spanglish cuando exista un termino claro.
 
 ### Datos
 - HealthKit es de solo lectura por ahora (excepto posible escritura de nutrición más adelante).

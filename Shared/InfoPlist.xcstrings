@@ -1,0 +1,115 @@
+{
+  "sourceLanguage" : "es-MX",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recvel"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recvel"
+          }
+        }
+      }
+    },
+    "NSHealthClinicalHealthRecordsShareUsageDescription" : {
+      "comment" : "Privacy - Health Records Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel can import the lab results you select to calculate PhenoAge locally on your device."
+          }
+        },
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel puede importar los resultados de laboratorio que selecciones para calcular PhenoAge localmente en tu dispositivo."
+          }
+        }
+      }
+    },
+    "NSHealthShareUsageDescription" : {
+      "comment" : "Privacy - Health Share Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel uses the Apple Health data you authorize to show personal trends in recovery, training, sleep, and well-being. Processing occurs on your device."
+          }
+        },
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel usa los datos de Apple Health que autorices para mostrar tendencias personales de recuperación, entrenamiento, sueño y bienestar. El procesamiento ocurre en tu dispositivo."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription" : {
+      "comment" : "Privacy - Health Update Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel can save nutrition and workout data to Apple Health only when you choose to do so."
+          }
+        },
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel puede guardar datos de nutrición y entrenamiento en Apple Health solo cuando tú lo elijas."
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel uses the microphone only while you dictate a meal for on-device transcription."
+          }
+        },
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel usa el micrófono solo mientras dictas una comida para transcribirla en el dispositivo."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Privacy - Speech Recognition Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel uses speech recognition to transcribe a meal description before you review and confirm it."
+          }
+        },
+        "es-MX" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recvel usa el reconocimiento de voz para transcribir la descripción de una comida antes de que la revises y confirmes."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

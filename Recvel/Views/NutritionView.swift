@@ -659,7 +659,7 @@ private final class NutritionVoiceCapture: NSObject, ObservableObject {
     @Published var isRecording = false
 
     private let audioEngine = AVAudioEngine()
-    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "es-MX"))
+    private let recognizer = SFSpeechRecognizer(locale: RecvelL10n.locale)
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var tapInstalled = false

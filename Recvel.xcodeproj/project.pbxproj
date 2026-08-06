@@ -155,6 +155,7 @@
 		976467F7CC4E5FA91A9A8F47 /* Mountain_Climbers_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 748DDB422C29B6E58E0BF388 /* Mountain_Climbers_1.jpg */; };
 		98408A05E871601D4E56E871 /* FastingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF5F92C2D22230ED98EA9F50 /* FastingView.swift */; };
 		98D7D2F080B317C2F1B9A3AF /* RecvelSharedSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4840CBBAAF155B9732FF41FB /* RecvelSharedSnapshot.swift */; };
+		9AC5DFC02C2D0A6FC2191E40 /* StringCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA75EE9282A0282E69B463F6 /* StringCatalogTests.swift */; };
 		9B011ED80832CC619876186E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C0D5C1058A0FA18FA0D22695 /* README.md */; };
 		9BF7B9480CE407DA3EFB2A1E /* Wide_Grip_Lat_Pulldown_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 0C72D5D2375B5A126EF07A4A /* Wide_Grip_Lat_Pulldown_1.jpg */; };
 		9C39CDBDD3B440981663CAA3 /* Quad_Stretch_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 610A9A1F45CE8509299D7AA0 /* Quad_Stretch_1.jpg */; };
@@ -483,6 +484,7 @@
 		C58C4675D593F6A83AB6BEFE /* Ankle_Circles_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Ankle_Circles_1.jpg; sourceTree = "<group>"; };
 		C6946ADD811F7A00913684D0 /* Bent_Over_Barbell_Row_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Bent_Over_Barbell_Row_1.jpg; sourceTree = "<group>"; };
 		C97C7619F32EE18687CF6297 /* TrainingPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanViews.swift; sourceTree = "<group>"; };
+		CA75EE9282A0282E69B463F6 /* StringCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringCatalogTests.swift; sourceTree = "<group>"; };
 		CBD5AB6B40E512F6AA02537B /* NutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionView.swift; sourceTree = "<group>"; };
 		CF32D515BFB9839528C7FA1A /* MealPortionScaler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPortionScaler.swift; sourceTree = "<group>"; };
 		CF481284A19AB648797BD27B /* Ankle_Circles_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Ankle_Circles_0.jpg; sourceTree = "<group>"; };
@@ -722,6 +724,7 @@
 				CFF6962DC201A0F6496FA1A4 /* HardcodedStringsTests.swift */,
 				088C30ECF3384EE04A95F6A8 /* LocalizationTests.swift */,
 				2262DC2A6D69744F5218F6AE /* SharedSurfaceTests.swift */,
+				CA75EE9282A0282E69B463F6 /* StringCatalogTests.swift */,
 			);
 			path = RecvelTests;
 			sourceTree = "<group>";
@@ -1371,6 +1374,7 @@
 				FF5B101BF80457B9F79E3D72 /* HardcodedStringsTests.swift in Sources */,
 				3087FC4FFE4B6762A03AFB26 /* LocalizationTests.swift in Sources */,
 				0E0DA5AA89323CC1313DA92D /* SharedSurfaceTests.swift in Sources */,
+				9AC5DFC02C2D0A6FC2191E40 /* StringCatalogTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
