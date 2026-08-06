@@ -1192,6 +1192,22 @@
         }
       }
     },
+    "6 respiraciones por minuto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 breaths per minute"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 respiraciones por minuto"
+          }
+        }
+      }
+    },
     "7 dias": {
       "extractionState": "stale",
       "localizations": {
@@ -1712,6 +1728,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "Al limite": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At the limit"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al límite"
           }
         }
       }
@@ -4336,6 +4368,22 @@
         }
       }
     },
+    "Cuatro fases iguales. Usada en entrenamiento militar por su simplicidad para sostener la atencion bajo presion.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Four equal phases. Used in military training for its simplicity in holding attention under pressure."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuatro fases iguales. Usada en entrenamiento militar por su simplicidad para sostener la atención bajo presión."
+          }
+        }
+      }
+    },
     "Cuenta como recuperación activa, no como día de esfuerzo.": {
       "localizations": {
         "en": {
@@ -4945,6 +4993,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dormiste con otra persona"
+          }
+        }
+      }
+    },
+    "Dos inhalaciones seguidas por la nariz y una exhalacion larga por la boca. Reinfla los alveolos colapsados y descarga CO2 de forma eficiente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two consecutive inhales through the nose and one long exhale through the mouth. It reinflates collapsed alveoli and offloads CO2 efficiently."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dos inhalaciones seguidas por la nariz y una exhalación larga por la boca. Reinfla los alvéolos colapsados y descarga CO2 de forma eficiente."
           }
         }
       }
@@ -6305,6 +6369,22 @@
         }
       }
     },
+    "Es la tecnica con mejor evidencia directa. En un ensayo aleatorizado de Stanford con 111 adultos durante 28 dias (5 min diarios), el suspiro ciclico produjo la mayor mejora diaria del animo positivo y la mayor reduccion de la frecuencia respiratoria en reposo, superando a la meditacion mindfulness y a las otras tecnicas de respiracion (Balban et al., Cell Reports Medicine 2023).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is the technique with the strongest direct evidence. In a Stanford randomized trial with 111 adults over 28 days (5 min daily), cyclic sighing produced the largest daily improvement in positive mood and the largest reduction in resting respiratory rate, beating mindfulness meditation and the other breathing techniques (Balban et al., Cell Reports Medicine 2023)."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es la técnica con mejor evidencia directa. En un ensayo aleatorizado de Stanford con 111 adultos durante 28 días (5 min diarios), el suspiro cíclico produjo la mayor mejora diaria del ánimo positivo y la mayor reducción de la frecuencia respiratoria en reposo, superando a la meditación mindfulness y a las otras técnicas de respiración (Balban et al., Cell Reports Medicine 2023)."
+          }
+        }
+      }
+    },
     "Es un buen momento para estar en cama y cerrar el dia con calma.": {
       "localizations": {
         "en": {
@@ -6770,6 +6850,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Excellent."
+          }
+        }
+      }
+    },
+    "Exhalacion mas larga que la inhalacion. La exhalacion prolongada favorece el tono parasimpatico.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A longer exhale than inhale. A prolonged exhale favors parasympathetic tone."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exhalación más larga que la inhalación. La exhalación prolongada favorece el tono parasimpático."
           }
         }
       }
@@ -8321,6 +8417,22 @@
         }
       }
     },
+    "La exhalacion prolongada se asocia con activacion parasimpatica, pero los estudios especificos de la pauta 4-7-8 son pequenos y de baja calidad metodologica. Uselo si le resulta comodo, sin esperar el efecto documentado del suspiro ciclico.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A prolonged exhale is associated with parasympathetic activation, but studies specific to the 4-7-8 pattern are small and methodologically weak. Use it if it feels comfortable, without expecting the documented effect of cyclic sighing."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La exhalación prolongada se asocia con activación parasimpática, pero los estudios específicos de la pauta 4-7-8 son pequeños y de baja calidad metodológica. Úsala si te resulta cómoda, sin esperar el efecto documentado del suspiro cíclico."
+          }
+        }
+      }
+    },
     "La experiencia y el objetivo cambian cómo se presenta la carga; nada se impone automáticamente.": {
       "localizations": {
         "en": {
@@ -9587,6 +9699,22 @@
         }
       }
     },
+    "Muy difundida por su uso en entrenamiento militar, pero su evidencia especifica es mas debil: en el mismo ensayo de Stanford mejoro el animo menos que el suspiro ciclico. Su ventaja real es la simplicidad y la facilidad para sostener la atencion.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widely known from military training, but its specific evidence is weaker: in the same Stanford trial it improved mood less than cyclic sighing. Its real advantage is simplicity and how easy it is to hold attention."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy difundida por su uso en entrenamiento militar, pero su evidencia específica es más débil: en el mismo ensayo de Stanford mejoró el ánimo menos que el suspiro cíclico. Su ventaja real es la simplicidad y la facilidad para sostener la atención."
+          }
+        }
+      }
+    },
     "NUTRICION ADAPTATIVA": {
       "extractionState": "stale",
       "localizations": {
@@ -9846,6 +9974,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "There are no active manual tags in this section."
+          }
+        }
+      }
+    },
+    "No hay una metrica seleccionada.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No metric is selected."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay una métrica seleccionada."
           }
         }
       }
@@ -12734,6 +12878,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Guided breathing"
+          }
+        }
+      }
+    },
+    "Respirar a unas 6 veces por minuto sincroniza el ritmo cardiaco con la respiracion y maximiza la arritmia sinusal respiratoria.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing at about 6 times a minute syncs heart rhythm with breathing and maximizes respiratory sinus arrhythmia."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respirar a unas 6 veces por minuto sincroniza el ritmo cardiaco con la respiración y maximiza la arritmia sinusal respiratoria."
+          }
+        }
+      }
+    },
+    "Respirar cerca de 6 respiraciones por minuto (la 'frecuencia de resonancia') maximiza la amplitud de la arritmia sinusal respiratoria y la HRV a corto plazo. La evidencia sobre su efecto sostenido en ansiedad es prometedora pero mas limitada que la del suspiro ciclico (Lehrer & Gevirtz, Front Psychol 2014).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing at around 6 breaths per minute (the 'resonance frequency') maximizes the amplitude of respiratory sinus arrhythmia and short-term HRV. The evidence for a sustained effect on anxiety is promising but more limited than for cyclic sighing (Lehrer & Gevirtz, Front Psychol 2014)."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respirar cerca de 6 respiraciones por minuto (la 'frecuencia de resonancia') maximiza la amplitud de la arritmia sinusal respiratoria y la HRV a corto plazo. La evidencia sobre su efecto sostenido en ansiedad es prometedora pero más limitada que la del suspiro cíclico (Lehrer & Gevirtz, Front Psychol 2014)."
           }
         }
       }
@@ -16471,6 +16647,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Amplía tu oportunidad de sueño"
+          }
+        }
+      }
+    },
+    "bio.daysCount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} days"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} días"
+          }
+        }
+      }
+    },
+    "bio.daysLogged": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} days logged"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} días registrados"
           }
         }
       }
@@ -21169,6 +21377,726 @@
           "stringUnit": {
             "state": "translated",
             "value": "tortilla"
+          }
+        }
+      }
+    },
+    "hdp.accessFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't request access to Apple Health"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo solicitar acceso a Apple Health"
+          }
+        }
+      }
+    },
+    "hdp.authorize": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorize Apple Health to get started"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriza Apple Health para comenzar"
+          }
+        }
+      }
+    },
+    "hdp.baselineProgress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baseline {days}/7 days"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referencia {days}/7 días"
+          }
+        }
+      }
+    },
+    "hdp.healthKitUnavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit isn't available"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit no está disponible"
+          }
+        }
+      }
+    },
+    "hdp.healthKitUnavailableTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit unavailable"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit no disponible"
+          }
+        }
+      }
+    },
+    "hdp.noData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We didn't find data in the authorized categories"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No encontramos datos en las categorías autorizadas"
+          }
+        }
+      }
+    },
+    "hdp.partialData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial data · check permissions and sources"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datos parciales · revisa permisos y fuentes"
+          }
+        }
+      }
+    },
+    "hie.bioage.30dayContext": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30-day context"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contexto de 30 días"
+          }
+        }
+      }
+    },
+    "hie.bioage.rhrNote": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Context; doesn't change your age"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contexto; no cambia la edad"
+          }
+        }
+      }
+    },
+    "hie.bioage.sleepConsistency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep consistency"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consistencia de sueño"
+          }
+        }
+      }
+    },
+    "hie.plan.weeksOld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've been on this plan for more than {weeks} weeks."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas más de {weeks} semanas con este plan."
+          }
+        }
+      }
+    },
+    "hie.readiness.betterWithRecovery": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recovery is at {recovery}% and {session} works better with high recovery. Consider lowering the volume."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Recuperación está en {recovery}% y la {session} rinde mejor con recuperación alta. Considera bajar el volumen."
+          }
+        }
+      }
+    },
+    "hie.readiness.consecutive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're {days} days in a row: this light session consolidates adaptations without adding fatigue."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas {days} días seguidos: esta sesión ligera consolida adaptaciones sin sumar fatiga."
+          }
+        }
+      }
+    },
+    "hie.readiness.freshNervousSystem": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recovery is at {recovery}% and {session} works better with a rested nervous system. Moving it to tomorrow usually gives more quality than forcing it today."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Recuperación está en {recovery}% y la {session} rinde mejor con el sistema nervioso descansado. Moverla a mañana suele dar más calidad que forzarla hoy."
+          }
+        }
+      }
+    },
+    "hie.readiness.hardLastSession": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last session was demanding (effort {effort}/10) and your recovery isn't back in your range yet. Keep today in a comfortable zone."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu última sesión fue exigente (esfuerzo {effort}/10) y tu recuperación aún no vuelve a tu rango. Mantén hoy en zona cómoda."
+          }
+        }
+      }
+    },
+    "hie.readiness.hardLastSession2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last session was demanding (effort {effort}/10) and your recovery isn't back in your range yet. Keep the volume but drop the intensity a point."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu última sesión fue exigente (esfuerzo {effort}/10) y tu recuperación aún no vuelve a tu rango. Mantén el volumen pero baja un punto la intensidad."
+          }
+        }
+      }
+    },
+    "hie.readiness.otherGroup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last work was {group}. A different group recovers sooner, so you can train normally today."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu último trabajo fue de {group}. Un grupo distinto se recupera antes, así que hoy puedes entrenar con normalidad."
+          }
+        }
+      }
+    },
+    "hie.readiness.otherGroup2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last work was {group}. A different group recovers sooner, so today is a good day for {focus}."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu último trabajo fue de {group}. Un grupo distinto se recupera antes, así que hoy es buen día para {focus}."
+          }
+        }
+      }
+    },
+    "hie.readiness.reduceMinutes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your previous entry is below your best range. Try {minutes} min around RPE {rpe}."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu registro previo está por debajo de tu mejor rango. Prueba {minutes} min alrededor de RPE {rpe}."
+          }
+        }
+      }
+    },
+    "hie.readiness.reduceMinutes2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your previous entry is below your best range. Try {minutes} min around RPE {rpe}/10 and reassess after the warm-up."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu registro previo está por debajo de tu mejor rango. Prueba {minutes} min alrededor de RPE {rpe}/10 y vuelve a evaluar después del calentamiento."
+          }
+        }
+      }
+    },
+    "hie.readiness.sameGroupRecent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained {group} {hours} h ago. Take the warm-up seriously and match the load to how it responds."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenaste {group} hace {hours} h. Valora el calentamiento y ajusta la carga a como responda."
+          }
+        }
+      }
+    },
+    "hie.readiness.sameGroupRecent2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained {group} {hours} h ago. Take the warm-up seriously and keep the session only if movement and performance feel normal."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenaste {group} hace {hours} h. Valora el calentamiento y conserva la sesión solo si el movimiento y el rendimiento se sienten habituales."
+          }
+        }
+      }
+    },
+    "hie.readiness.sameGroupSore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained {group} {hours} h ago and reported soreness. Consider another group or a light session."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenaste {group} hace {hours} h y reportaste molestias. Considera otro grupo o una sesión ligera."
+          }
+        }
+      }
+    },
+    "hie.readiness.sameGroupSore2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained {group} {hours} h ago and reported high soreness. Consider another area, or cut sets if it doesn't improve with the warm-up."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenaste {group} hace {hours} h y reportaste molestias altas. Considera otra zona o reduce series si no mejora con el calentamiento."
+          }
+        }
+      }
+    },
+    "hie.readiness.shiftEarlier": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The intense session would end very close to your bedtime. If you can, move it about {minutes} min earlier."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La sesión intensa terminaría muy cerca de tu hora de dormir. Si puedes, muévela unos {minutes} min antes."
+          }
+        }
+      }
+    },
+    "hie.readiness.shiftEarlier2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The intense session would end very close to your bedtime. If you can, move it about {minutes} min earlier and watch how your sleep responds."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La sesión intensa terminaría muy cerca de tu hora de dormir. Si puedes, muévela unos {minutes} min antes y observa cómo responde tu sueño."
+          }
+        }
+      }
+    },
+    "hie.readiness.soreness": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You reported high soreness and {session} demands high-quality reactive movement. Switch to something lower impact."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reportaste molestias altas y la {session} exige movimiento reactivo de alta calidad. Cambia a algo de menor impacto."
+          }
+        }
+      }
+    },
+    "hie.readiness.soreness2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You reported high soreness and {session} demands quality reactive movement. Consider swapping it for mobility or recovery, or cut the volume in half."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reportaste molestias altas y la {session} exige movimiento reactivo de calidad. Considera cambiarla por movilidad o recuperación, o reduce el volumen a la mitad."
+          }
+        }
+      }
+    },
+    "hie.readiness.streak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That's {days} days in a row. A rest day or a light session helps consolidate what you've already done."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son {days} días seguidos. Un día de descanso o una sesión ligera ayuda a consolidar lo que ya hiciste."
+          }
+        }
+      }
+    },
+    "hie.readiness.streak2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That's {days} days in a row. A rest day or a light session helps consolidate the adaptations."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son {days} días seguidos. Un día de descanso o una sesión ligera ayuda a consolidar las adaptaciones."
+          }
+        }
+      }
+    },
+    "hie.readiness.streakLowRecovery": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That's {days} days training without rest and your recovery is low. Moving the workout to tomorrow usually works better."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son {days} días entrenando sin descanso y tu recuperación está baja. Mover el entrenamiento a mañana suele rendir más."
+          }
+        }
+      }
+    },
+    "hie.readiness.streakLowRecovery2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That's {days} days training without rest and your recovery is low. Moving the workout to tomorrow or doing a light session usually works better than forcing it."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son {days} días entrenando sin descanso y tu recuperación está baja. Mover el entrenamiento a mañana o hacer una sesión ligera suele rendir más que forzar."
+          }
+        }
+      }
+    },
+    "hie.shortSleep": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You slept {hours} h last night. Short sleep is associated with more physiological pressure the next day."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dormiste {hours} h anoche. El sueño corto se asocia con más presión fisiológica al día siguiente."
+          }
+        }
+      }
+    },
+    "hie.singleEmotion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You logged feeling {label}. Take a minute for yourself."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registraste que te sientes {label}. Tómate un minuto para ti."
+          }
+        }
+      }
+    },
+    "hie.sleep.aimMoreHours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You slept {hours} h. Moving your bedtime earlier usually works better than trying to catch up on the weekend."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dormiste {hours} h. Adelantar la hora de acostarte suele rendir más que intentar recuperar el fin de semana."
+          }
+        }
+      }
+    },
+    "hie.sleep.debtDetail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your {days}-day balance is {hours} h. Recovery is gradual: adding 30-60 min a night over several nights works better than one long night."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu balance de {days} días es {hours} h. Recuperar es gradual: sumar 30-60 min por noche varias noches funciona mejor que una noche larga."
+          }
+        }
+      }
+    },
+    "hie.sleep.debtTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're carrying accumulated debt"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas deuda acumulada"
+          }
+        }
+      }
+    },
+    "hie.sleep.deepEvidence": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow-wave sleep typically takes up 13-23% of the night in adults; alcohol suppresses it in the second half (Ebrahim et al., Alcohol Clin Exp Res 2013). Watch stages are estimates, not polysomnography."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El sueño de ondas lentas ocupa típicamente 13-23% de la noche en adultos; el alcohol lo suprime en la segunda mitad (Ebrahim et al., Alcohol Clin Exp Res 2013). Las etapas del reloj son estimaciones, no polisomnografía."
+          }
+        }
+      }
+    },
+    "hie.sleep.deepShare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep sleep was {percent}% of the night. Alcohol and intense late exercise are usually associated with less deep sleep in the first half."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El profundo fue {percent}% de la noche. El alcohol y el ejercicio intenso tarde suelen asociarse con menos profundo en la primera mitad."
+          }
+        }
+      }
+    },
+    "hie.sleep.efficiency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your efficiency was {percent}%. Using the bed only for sleep, and getting out of it if you don't fall asleep in ~20 min, is the basis of stimulus control."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu eficiencia fue {percent}%. Usar la cama solo para dormir y salir de ella si no concilias en ~20 min es la base del control de estímulos."
+          }
+        }
+      }
+    },
+    "hie.sleep.variability": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sleep times vary ~{minutes} min between nights. A consistent schedule reinforces your circadian rhythm."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus horas de dormir varían ~{minutes} min entre noches. Un horario constante refuerza tu ritmo circadiano."
+          }
+        }
+      }
+    },
+    "hie.split.belowFrequency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With {days} strength days and one group per day, several groups fall below twice a week."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con {days} días de fuerza y un grupo por día, varios grupos quedan por debajo de 2 veces por semana."
+          }
+        }
+      }
+    },
+    "hie.split.belowFrequency2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With {days} strength days and one group per day, several groups fall below twice a week. Consider upper/lower or full body for those days."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con {days} días de fuerza y un grupo por día, varios grupos quedan por debajo de 2 veces por semana. Considera torso/pierna o full body para esos días."
+          }
+        }
+      }
+    },
+    "hie.split.rotationGap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your split rotates {rotation} focuses but there are only {days} strength days: one would be left out each week."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu split rota {rotation} focos pero solo hay {days} días de fuerza: cada semana quedaría uno fuera."
+          }
+        }
+      }
+    },
+    "hie.split.rotationGap2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your split rotates {rotation} focuses but there are only {days} strength days: one focus would go untrained each week. Add a day or switch to full body."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu split rota {rotation} focos pero solo hay {days} días de fuerza: cada semana quedaría un foco sin entrenar. Añade un día o cambia a full body."
           }
         }
       }
@@ -26198,6 +27126,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "min luz día"
+          }
+        }
+      }
+    },
+    "models.daysCount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} days"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} días"
           }
         }
       }

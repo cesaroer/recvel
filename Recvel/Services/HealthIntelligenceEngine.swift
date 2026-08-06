@@ -222,7 +222,7 @@ extension StressEngine {
             hints.append(StressHint(
                 id: "shortSleep",
                 icon: "moon.zzz",
-                text: String(format: "Dormiste %.1f h anoche. El sueno corto se asocia con mas presion fisiologica al dia siguiente.", sleepHours),
+                text: RecvelL10n.text("hie.shortSleep", values: ["hours": String(format: "%.1f", sleepHours)]),
                 microAction: RecvelL10n.text("Tomate 1 minuto de respiracion y protege tu ventana de sueno de hoy."),
                 kind: .sleep,
                 offersBreathing: true
@@ -263,7 +263,7 @@ extension StressEngine {
                 id: "emotion-day-tense",
                 icon: "heart.text.square",
                 text: emotions.count == 1
-                    ? "Registraste que te sientes \(label). Tomate un minuto para ti."
+                    ? RecvelL10n.text("hie.singleEmotion", values: ["label": label])
                     : RecvelL10n.text("Hoy el promedio de tus registros emocionales va tenso. Eso no es un diagnostico; es una senal para cuidarte."),
                 microAction: RecvelL10n.text("Prueba respiracion, una caminata corta, hidratacion o reducir cafeina tarde."),
                 kind: .emotion,
@@ -427,10 +427,10 @@ struct BioAgeEngine {
         }
         if let rhr = snapshot.restingHeartRate {
             let typical = baseline.median(history.compactMap(\.restingHeartRate))
-            factors.append(BioAgeFactor(name: "FC en reposo", value: "\(Int(rhr.rounded())) lpm", note: "Contexto; no cambia la edad", favorable: typical.map { rhr <= $0 }))
+            factors.append(BioAgeFactor(name: RecvelL10n.text("FC en reposo"), value: "\(Int(rhr.rounded())) lpm", note: RecvelL10n.text("hie.bioage.rhrNote"), favorable: typical.map { rhr <= $0 }))
         }
         if let consistency = snapshot.sleepDetails?.consistencyMinutes {
-            factors.append(BioAgeFactor(name: "Consistencia de sueno", value: "±\(Int(consistency.rounded())) min", note: "Contexto de 30 dias", favorable: consistency <= 45))
+            factors.append(BioAgeFactor(name: RecvelL10n.text("hie.bioage.sleepConsistency"), value: "±\(Int(consistency.rounded())) min", note: RecvelL10n.text("hie.bioage.30dayContext"), favorable: consistency <= 45))
         }
         if let steps = snapshot.steps {
             factors.append(BioAgeFactor(name: "Actividad", value: steps.formatted(.number.locale(RecvelL10n.locale)), note: RecvelL10n.text("Pasos del dia; no cambia la edad"), favorable: steps >= 7_000))
@@ -579,7 +579,7 @@ struct SleepCoachingEngine {
             tips.append(SleepCoachingTip(
                 kind: .duration,
                 title: RecvelL10n.text("Apunta a mas horas de oportunidad"),
-                detail: String(format: "Dormiste %.1f h. Adelantar la hora de acostarte suele rendir mas que intentar recuperar el fin de semana.", hours),
+                detail: RecvelL10n.text("hie.sleep.aimMoreHours", values: ["hours": String(format: "%.1f", hours)]),
                 evidence: RecvelL10n.text("El consenso de la American Academy of Sleep Medicine y la Sleep Research Society situa 7 h o mas por noche para adultos."),
                 symbol: "bed.double.fill"
             ))
@@ -590,8 +590,8 @@ struct SleepCoachingEngine {
         if bank.hasEnoughData, bank.balanceHours < -3 {
             tips.append(SleepCoachingTip(
                 kind: .duration,
-                title: "Llevas deuda acumulada",
-                detail: String(format: "Tu balance de %d dias es %.1f h. Recuperar es gradual: sumar 30-60 min por noche varias noches funciona mejor que una noche larga.", SleepBankEngine.windowDays, bank.balanceHours),
+                title: RecvelL10n.text("hie.sleep.debtTitle"),
+                detail: RecvelL10n.text("hie.sleep.debtDetail", values: ["days": "\(SleepBankEngine.windowDays)", "hours": String(format: "%.1f", bank.balanceHours)]),
                 evidence: RecvelL10n.text("La restriccion cronica de sueno acumula deficit de rendimiento; el sueno de recuperacion de fin de semana compensa solo parcialmente (Van Dongen et al., Sleep 2003)."),
                 symbol: "chart.line.downtrend.xyaxis"
             ))
@@ -603,7 +603,7 @@ struct SleepCoachingEngine {
             tips.append(SleepCoachingTip(
                 kind: .consistency,
                 title: RecvelL10n.text("Estabiliza tu horario"),
-                detail: String(format: "Tus horas de dormir varian ~%.0f min entre noches. Un horario constante refuerza tu ritmo circadiano.", variability),
+                detail: RecvelL10n.text("hie.sleep.variability", values: ["minutes": String(format: "%.0f", variability)]),
                 evidence: RecvelL10n.text("La irregularidad del horario de sueno se asocia de forma independiente con peor calidad de sueno y riesgo cardiometabolico (Huang & Redline, Diabetes Care 2019)."),
                 symbol: "clock.arrow.circlepath"
             ))
@@ -614,7 +614,7 @@ struct SleepCoachingEngine {
             tips.append(SleepCoachingTip(
                 kind: .efficiency,
                 title: RecvelL10n.text("Pasas tiempo en cama sin dormir"),
-                detail: String(format: "Tu eficiencia fue %.0f%%. Usar la cama solo para dormir y salir de ella si no concilias en ~20 min es la base del control de estimulos.", efficiency),
+                detail: RecvelL10n.text("hie.sleep.efficiency", values: ["percent": String(format: "%.0f", efficiency)]),
                 evidence: RecvelL10n.text("El control de estimulos y la restriccion de tiempo en cama son componentes centrales de la terapia cognitivo-conductual para el insomnio (CBT-I), primera linea segun la AASM."),
                 symbol: "bed.double.circle"
             ))
@@ -627,8 +627,8 @@ struct SleepCoachingEngine {
                 tips.append(SleepCoachingTip(
                     kind: .stages,
                     title: RecvelL10n.text("Tu sueno profundo fue bajo"),
-                    detail: String(format: "El profundo fue %.0f%% de la noche. El alcohol y el ejercicio intenso tarde suelen asociarse con menos profundo en la primera mitad.", deepShare * 100),
-                    evidence: "El sueno de ondas lentas ocupa tipicamente 13-23% de la noche en adultos; el alcohol lo suprime en la segunda mitad (Ebrahim et al., Alcohol Clin Exp Res 2013). Las etapas del reloj son estimaciones, no polisomnografia.",
+                    detail: RecvelL10n.text("hie.sleep.deepShare", values: ["percent": String(format: "%.0f", deepShare * 100)]),
+                    evidence: RecvelL10n.text("hie.sleep.deepEvidence"),
                     symbol: "moon.stars.fill"
                 ))
             }
@@ -968,8 +968,8 @@ struct TrainingCoachingEngine {
                     kind: .readiness,
                     title: RecvelL10n.text("La sesión de hoy pide estar fresco"),
                     detail: sorenessHigh
-                        ? "Reportaste molestias altas y la \(plannedKind.shortLabel.lowercased()) exige movimiento reactivo de calidad. Considera cambiarla por movilidad o recuperación, o reduce el volumen a la mitad."
-                        : "Tu Recuperación está en \(recovery ?? 0)% y la \(plannedKind.shortLabel.lowercased()) rinde mejor con el sistema nervioso descansado. Moverla a mañana suele dar más calidad que forzarla hoy.",
+                        ? RecvelL10n.text("hie.readiness.soreness2", values: ["session": plannedKind.shortLabel.lowercased()])
+                        : RecvelL10n.text("hie.readiness.freshNervousSystem", values: ["recovery": "\(recovery ?? 0)", "session": plannedKind.shortLabel.lowercased()]),
                     evidence: RecvelL10n.text("Los métodos de potencia (pliometría, sprints, contraste) se programan al inicio de la sesión y con baja fatiga: la fatiga reduce la producción de fuerza explosiva y degrada la técnica (Verkhoshansky; revisado en Science for Sport)."),
                     symbol: "bolt.trianglebadge.exclamationmark.fill"
                 ))
@@ -984,7 +984,7 @@ struct TrainingCoachingEngine {
                 kind: .positive,
                 title: RecvelL10n.text("Buena elección para hoy"),
                 detail: consecutiveTrainingDays >= 3
-                    ? "Llevas \(consecutiveTrainingDays) días seguidos: esta sesión ligera consolida adaptaciones sin sumar fatiga."
+                    ? RecvelL10n.text("hie.readiness.consecutive", values: ["days": "\(consecutiveTrainingDays)"])
                     : RecvelL10n.text("Con tu Recuperación baja, la sesión ligera de hoy aporta flujo sanguíneo y rango de movimiento sin apenas carga."),
                 evidence: RecvelL10n.text("La recuperación activa de baja intensidad puede mantener la adherencia y el bienestar sin interferir la adaptación; la carga total semanal es lo que determina el estímulo (Kellmann et al., consenso IOC 2018)."),
                 symbol: "leaf.fill"
@@ -1007,7 +1007,7 @@ struct TrainingCoachingEngine {
                 tips.append(TrainingCoachingTip(
                     kind: .readiness,
                     title: RecvelL10n.text("Reduce la carga de hoy"),
-                    detail: "Tu registro previo está por debajo de tu mejor rango. Prueba \(reducedMinutes) min alrededor de RPE \(reducedRPE)/10 y vuelve a evaluar después del calentamiento.",
+                    detail: RecvelL10n.text("hie.readiness.reduceMinutes2", values: ["minutes": "\(reducedMinutes)", "rpe": "\(reducedRPE)"]),
                     evidence: RecvelL10n.text("El RPE de sesión es una medida válida de carga interna y permite ajustar volumen e intensidad a la respuesta diaria (Haddad et al., IJSPP 2017, PMID 29163016)."),
                     symbol: "slider.horizontal.below.square.filled.and.square"
                 ))
@@ -1024,8 +1024,8 @@ struct TrainingCoachingEngine {
                     kind: .muscleReadiness,
                     title: sorenessHigh ? RecvelL10n.text("Revisa el foco muscular") : RecvelL10n.text("Hay carga reciente en este grupo"),
                     detail: sorenessHigh
-                        ? "Entrenaste \(last.muscleGroup.lowercased()) hace \(max(Int(hoursSince), 0)) h y reportaste molestias altas. Considera otra zona o reduce series si no mejora con el calentamiento."
-                        : "Entrenaste \(last.muscleGroup.lowercased()) hace \(max(Int(hoursSince), 0)) h. Valora el calentamiento y conserva la sesión solo si el movimiento y el rendimiento se sienten habituales.",
+                        ? RecvelL10n.text("hie.readiness.sameGroupSore2", values: ["group": last.muscleGroup.lowercased(), "hours": "\(max(Int(hoursSince), 0))"])
+                        : RecvelL10n.text("hie.readiness.sameGroupRecent2", values: ["group": last.muscleGroup.lowercased(), "hours": "\(max(Int(hoursSince), 0))"]),
                     evidence: RecvelL10n.text("No existe una espera universal de 48 h. La frecuencia puede organizarse de distintas formas cuando el volumen semanal se iguala; la respuesta individual ayuda a decidir (Ramos-Campo et al. 2024, PMID 38595233)."),
                     symbol: "figure.cooldown"
                 ))
@@ -1034,7 +1034,7 @@ struct TrainingCoachingEngine {
                 tips.append(TrainingCoachingTip(
                     kind: .muscleReadiness,
                     title: RecvelL10n.text("Puedes entrenar otra zona hoy"),
-                    detail: "Tu último trabajo fue de \(last.muscleGroup.lowercased()). Un grupo distinto se recupera antes, así que hoy es buen día para \(todayFocus.lowercased()).",
+                    detail: RecvelL10n.text("hie.readiness.otherGroup2", values: ["group": last.muscleGroup.lowercased(), "focus": todayFocus.lowercased()]),
                     evidence: RecvelL10n.text("Distribuir el volumen entre grupos y días es compatible con distintas rutinas; full body y rutinas divididas son similares cuando el volumen se iguala (Ramos-Campo et al. 2024, PMID 38595233)."),
                     symbol: "arrow.triangle.2.circlepath"
                 ))
@@ -1048,8 +1048,8 @@ struct TrainingCoachingEngine {
                 kind: .deload,
                 title: recoveryLow ? RecvelL10n.text("Considera una sesión de recuperación") : RecvelL10n.text("Llevas varios días consecutivos"),
                 detail: recoveryLow
-                    ? "Son \(consecutiveTrainingDays) días entrenando sin descanso y tu recuperación está baja. Mover el entrenamiento a mañana o hacer una sesión ligera suele rendir más que forzar."
-                    : "Son \(consecutiveTrainingDays) días seguidos. Un día de descanso o una sesión ligera ayuda a consolidar las adaptaciones.",
+                    ? RecvelL10n.text("hie.readiness.streakLowRecovery2", values: ["days": "\(consecutiveTrainingDays)"])
+                    : RecvelL10n.text("hie.readiness.streak2", values: ["days": "\(consecutiveTrainingDays)"]),
                 evidence: RecvelL10n.text("La recuperación forma parte de la planificación de carga. Una racha por sí sola no diagnostica sobreentrenamiento; debe interpretarse junto con rendimiento y respuesta personal (Kellmann et al., consenso IOC 2018)."),
                 symbol: "bed.double.fill"
             ))
@@ -1060,7 +1060,7 @@ struct TrainingCoachingEngine {
             tips.append(TrainingCoachingTip(
                 kind: .recovery,
                 title: RecvelL10n.text("Modera la intensidad hoy"),
-                detail: "Tu última sesión fue exigente (esfuerzo \(effort)/10) y tu recuperación aún no vuelve a tu rango. Mantén el volumen pero baja un punto la intensidad.",
+                detail: RecvelL10n.text("hie.readiness.hardLastSession2", values: ["effort": "\(effort)"]),
                 evidence: RecvelL10n.text("La recuperación autonómica incompleta (HRV baja) tras cargas altas se asocia con menor readiness; ajustar la intensidad al estado diario mejora la adaptación (Bellenger et al., Sports Med 2016)."),
                 symbol: "gauge.with.dots.needle.33percent"
             ))
@@ -1081,7 +1081,7 @@ struct TrainingCoachingEngine {
                     kind: .timing,
                     title: canMove ? RecvelL10n.text("Separa esta sesión de tu hora de dormir") : RecvelL10n.text("Modera la parte final de la sesión"),
                     detail: canMove
-                        ? "La sesión intensa terminaría muy cerca de tu hora de dormir. Si puedes, muévela unos \(shift) min antes y observa cómo responde tu sueño."
+                        ? RecvelL10n.text("hie.readiness.shiftEarlier2", values: ["minutes": "\(shift)"])
                         : RecvelL10n.text("Tu horario es fijo y la sesión intensa terminaría cerca de dormir. Conserva la hora, pero evita terminar al máximo esfuerzo y registra cómo duermes."),
                     evidence: RecvelL10n.text("El ejercicio nocturno no empeora el sueño de forma universal. La intensidad alta muy próxima a dormir puede reducir modestamente el sueño REM en algunas personas (PMID 36540196; PMID 41032147)."),
                     symbol: "clock.badge.exclamationmark",
@@ -1208,7 +1208,7 @@ enum RoutineAssessmentEngine {
             return RoutineAssessment(
                 verdict: .caution,
                 headline: RecvelL10n.text("Coach: este split necesita mas dias"),
-                detail: appending("Con \(strengthDays) dias de fuerza y un grupo por dia, varios grupos quedan por debajo de 2 veces por semana. Considera torso/pierna o full body para esos dias.", staleNote),
+                detail: appending(RecvelL10n.text("hie.split.belowFrequency2", values: ["days": "\(strengthDays)"]), staleNote),
                 evidence: RecvelL10n.text("El volumen semanal POR GRUPO es el driver principal; frecuencias de 2-3x/semana por grupo facilitan acumularlo (Schoenfeld et al., 2016/2019).")
             )
         }
@@ -1216,7 +1216,7 @@ enum RoutineAssessmentEngine {
             return RoutineAssessment(
                 verdict: .caution,
                 headline: RecvelL10n.text("Coach: la rotacion no se completa"),
-                detail: appending("Tu split rota \(rotation) focos pero solo hay \(strengthDays) dias de fuerza: cada semana quedaria un foco sin entrenar. Anade un dia o cambia a full body.", staleNote),
+                detail: appending(RecvelL10n.text("hie.split.rotationGap2", values: ["rotation": "\(rotation)", "days": "\(strengthDays)"]), staleNote),
                 evidence: RecvelL10n.text("Completar la rotacion cada semana mantiene la frecuencia por grupo; con dias insuficientes, un split mas corto rinde mas (Schoenfeld et al., 2016/2019).")
             )
         }
@@ -1293,7 +1293,7 @@ enum RoutineAssessmentEngine {
         let weeks = now.timeIntervalSince(createdAt) / (7 * 24 * 3600)
         let threshold = Double(max(planWeeks, staleWeeksThreshold))
         guard weeks > threshold else { return nil }
-        return "Llevas mas de \(Int(weeks)) semanas con este plan."
+        return RecvelL10n.text("hie.plan.weeksOld", values: ["weeks": "\(Int(weeks))"])
     }
 
     private static func appending(_ base: String, _ note: String?) -> String {

@@ -47,7 +47,7 @@ final class HealthDataProvider: ObservableObject {
             activation = []
             dataMode = .empty
             permissionState = HKHealthStore.isHealthDataAvailable() ? .notRequested : .unavailable
-            authorizationMessage = HKHealthStore.isHealthDataAvailable() ? "Conecta Apple Health" : "HealthKit no disponible"
+            authorizationMessage = HKHealthStore.isHealthDataAvailable() ? "Conecta Apple Health" : RecvelL10n.text("hdp.healthKitUnavailableTitle")
         }
         SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
     }
@@ -57,7 +57,7 @@ final class HealthDataProvider: ObservableObject {
     func requestAuthorization() async {
         guard isHealthDataAvailable else {
             permissionState = .unavailable
-            authorizationMessage = "HealthKit no esta disponible"
+            authorizationMessage = RecvelL10n.text("hdp.healthKitUnavailable")
             return
         }
 
@@ -69,7 +69,7 @@ final class HealthDataProvider: ObservableObject {
             permissionState = .requested
             await refresh(forceHealthKit: true)
         } catch {
-            authorizationMessage = "No se pudo solicitar acceso a Apple Health"
+            authorizationMessage = RecvelL10n.text("hdp.accessFailed")
         }
     }
 
@@ -111,8 +111,8 @@ final class HealthDataProvider: ObservableObject {
             corePhase = .empty
             activationPhase = .empty
             authorizationMessage = permissionState == .notRequested
-                ? "Autoriza Apple Health para comenzar"
-                : "No encontramos datos en las categorias autorizadas"
+                ? RecvelL10n.text("hdp.authorize")
+                : RecvelL10n.text("hdp.noData")
             SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
             return
         }
@@ -151,10 +151,10 @@ final class HealthDataProvider: ObservableObject {
 
         if days.count < 7 {
             dataMode = .buildingBaseline
-            authorizationMessage = "Baseline \(days.count)/7 dias"
+            authorizationMessage = RecvelL10n.text("hdp.baselineProgress", values: ["days": "\(days.count)"])
         } else if snapshot.availableSignalCount < 5 {
             dataMode = .partial
-            authorizationMessage = "Datos parciales · revisa permisos y fuentes"
+            authorizationMessage = RecvelL10n.text("hdp.partialData")
         } else {
             dataMode = .healthKit
             authorizationMessage = "Apple Health · \(snapshot.sourceNames.count) fuente(s)"

@@ -2090,6 +2090,12 @@ struct ExerciseCatalogItem: Identifiable, Hashable {
 enum ExerciseLibrary {
     // Simbolo = patron de movimiento (empuje, jalon, bisagra, etc.), no generico,
     // para que la silueta "cuente" el ejercicio como las ilustraciones de Bevel.
+    //
+    // NO-LOCALIZAR: `name`, `group` y `equipment` son IDENTIDAD, no texto visible.
+    // Se persisten en `ExerciseEntry`, los indexa `MuscleMapCatalog`, los emite
+    // `DailyChallengeEngine` y los busca `ExerciseMechanicsCatalog`. Traducirlos
+    // aqui rompe cuatro tests de integridad a la vez. Para pintar en pantalla
+    // estan `displayName`, `displayGroup` y `displayEquipment`.
     static let items: [ExerciseCatalogItem] = [
         // Pecho
         .init(name: "Press de banca", group: "Pecho", equipment: "Barra", symbol: "figure.wrestling", accent: .orange),

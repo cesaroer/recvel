@@ -68,7 +68,7 @@ struct LegacyJournalView: View {
             .frame(width: 66, height: 66)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(RecvelL10n.text(answeredToday == habits.count ? "Check-in completo" : "Tu registro de hoy"))
+                Text(RecvelL10n.text(answeredToday == habits.count ? "Check-in completo" : RecvelL10n.text("Tu registro de hoy")))
                     .font(.headline)
                 Text(nextAction)
                     .font(.subheadline)

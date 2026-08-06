@@ -815,7 +815,7 @@ enum WorkoutFeeling: String, CaseIterable, Identifiable {
         case .comfortable: "Comodo"
         case .solid: "Solido"
         case .hard: "Duro"
-        case .maximal: "Al limite"
+        case .maximal: RecvelL10n.text("Al limite")
         }
     }
 
@@ -1384,8 +1384,8 @@ enum WorkoutTemplateKind: String, Codable, CaseIterable, Identifiable {
         case .strength: "Fuerza"
         case .cardio: "Cardio"
         case .mobility: "Movilidad"
-        case .recovery: "Recuperación"
-        case .dailyChallenge: "Desafío diario"
+        case .recovery: RecvelL10n.text("Recuperación")
+        case .dailyChallenge: RecvelL10n.text("Desafío diario")
         case .performance: "Rendimiento"
         }
     }
@@ -1506,13 +1506,13 @@ extension MetricDescriptor {
     /// Fallback defensivo para un catalogo vacio (no deberia ocurrir).
     static let unavailable = MetricDescriptor(
         key: "unavailable",
-        title: "Sin datos",
+        title: RecvelL10n.text("Sin datos"),
         symbol: "questionmark.circle",
         unit: "",
         decimals: 0,
         higherIsBetter: true,
         color: .secondary,
-        explanation: "No hay una metrica seleccionada.",
+        explanation: RecvelL10n.text("No hay una metrica seleccionada."),
         resources: []
     )
 }
@@ -1586,7 +1586,7 @@ enum BreathingTechnique: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .cyclicSigh: "Doble inhalacion, exhalacion larga"
-        case .resonance: "6 respiraciones por minuto"
+        case .resonance: RecvelL10n.text("6 respiraciones por minuto")
         case .box: "4-4-4-4"
         case .relaxing: "Exhalacion extendida"
         }
@@ -1634,13 +1634,13 @@ enum BreathingTechnique: String, CaseIterable, Identifiable {
     var explanation: String {
         switch self {
         case .cyclicSigh:
-            "Dos inhalaciones seguidas por la nariz y una exhalacion larga por la boca. Reinfla los alveolos colapsados y descarga CO2 de forma eficiente."
+            RecvelL10n.text("Dos inhalaciones seguidas por la nariz y una exhalacion larga por la boca. Reinfla los alveolos colapsados y descarga CO2 de forma eficiente.")
         case .resonance:
-            "Respirar a unas 6 veces por minuto sincroniza el ritmo cardiaco con la respiracion y maximiza la arritmia sinusal respiratoria."
+            RecvelL10n.text("Respirar a unas 6 veces por minuto sincroniza el ritmo cardiaco con la respiracion y maximiza la arritmia sinusal respiratoria.")
         case .box:
-            "Cuatro fases iguales. Usada en entrenamiento militar por su simplicidad para sostener la atencion bajo presion."
+            RecvelL10n.text("Cuatro fases iguales. Usada en entrenamiento militar por su simplicidad para sostener la atencion bajo presion.")
         case .relaxing:
-            "Exhalacion mas larga que la inhalacion. La exhalacion prolongada favorece el tono parasimpatico."
+            RecvelL10n.text("Exhalacion mas larga que la inhalacion. La exhalacion prolongada favorece el tono parasimpatico.")
         }
     }
 
@@ -1649,13 +1649,13 @@ enum BreathingTechnique: String, CaseIterable, Identifiable {
     var evidence: String {
         switch self {
         case .cyclicSigh:
-            "Es la tecnica con mejor evidencia directa. En un ensayo aleatorizado de Stanford con 111 adultos durante 28 dias (5 min diarios), el suspiro ciclico produjo la mayor mejora diaria del animo positivo y la mayor reduccion de la frecuencia respiratoria en reposo, superando a la meditacion mindfulness y a las otras tecnicas de respiracion (Balban et al., Cell Reports Medicine 2023)."
+            RecvelL10n.text("Es la tecnica con mejor evidencia directa. En un ensayo aleatorizado de Stanford con 111 adultos durante 28 dias (5 min diarios), el suspiro ciclico produjo la mayor mejora diaria del animo positivo y la mayor reduccion de la frecuencia respiratoria en reposo, superando a la meditacion mindfulness y a las otras tecnicas de respiracion (Balban et al., Cell Reports Medicine 2023).")
         case .resonance:
-            "Respirar cerca de 6 respiraciones por minuto (la 'frecuencia de resonancia') maximiza la amplitud de la arritmia sinusal respiratoria y la HRV a corto plazo. La evidencia sobre su efecto sostenido en ansiedad es prometedora pero mas limitada que la del suspiro ciclico (Lehrer & Gevirtz, Front Psychol 2014)."
+            RecvelL10n.text("Respirar cerca de 6 respiraciones por minuto (la 'frecuencia de resonancia') maximiza la amplitud de la arritmia sinusal respiratoria y la HRV a corto plazo. La evidencia sobre su efecto sostenido en ansiedad es prometedora pero mas limitada que la del suspiro ciclico (Lehrer & Gevirtz, Front Psychol 2014).")
         case .box:
-            "Muy difundida por su uso en entrenamiento militar, pero su evidencia especifica es mas debil: en el mismo ensayo de Stanford mejoro el animo menos que el suspiro ciclico. Su ventaja real es la simplicidad y la facilidad para sostener la atencion."
+            RecvelL10n.text("Muy difundida por su uso en entrenamiento militar, pero su evidencia especifica es mas debil: en el mismo ensayo de Stanford mejoro el animo menos que el suspiro ciclico. Su ventaja real es la simplicidad y la facilidad para sostener la atencion.")
         case .relaxing:
-            "La exhalacion prolongada se asocia con activacion parasimpatica, pero los estudios especificos de la pauta 4-7-8 son pequenos y de baja calidad metodologica. Uselo si le resulta comodo, sin esperar el efecto documentado del suspiro ciclico."
+            RecvelL10n.text("La exhalacion prolongada se asocia con activacion parasimpatica, pero los estudios especificos de la pauta 4-7-8 son pequenos y de baja calidad metodologica. Uselo si le resulta comodo, sin esperar el efecto documentado del suspiro ciclico.")
         }
     }
 
