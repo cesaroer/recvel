@@ -210,10 +210,10 @@ enum NutritionNetworkError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidResponse: "No se pudo leer la respuesta del servicio."
-        case .missingProduct: "No encontramos ese codigo en Open Food Facts."
-        case .missingAPIKey: "Agrega una API key en Ajustes."
-        case .invalidModelOutput: "El modelo no devolvio una estimacion editable."
+        case .invalidResponse: RecvelL10n.text("No se pudo leer la respuesta del servicio.")
+        case .missingProduct: RecvelL10n.text("No encontramos ese codigo en Open Food Facts.")
+        case .missingAPIKey: RecvelL10n.text("Agrega una API key en Ajustes.")
+        case .invalidModelOutput: RecvelL10n.text("El modelo no devolvio una estimacion editable.")
         }
     }
 }
@@ -242,7 +242,7 @@ struct OpenFoodFactsClient {
             carbohydrates: Int((product.nutriments.carbohydratesServing ?? product.nutriments.carbohydrates100g ?? 0).rounded()),
             fat: Int((product.nutriments.fatServing ?? product.nutriments.fat100g ?? 0).rounded()),
             confidence: servingKnown ? .high : .medium,
-            uncertainties: servingKnown ? [] : ["Valores por 100 g", "Confirma la porcion"],
+            uncertainties: servingKnown ? [] : [RecvelL10n.text("Valores por 100 g"), RecvelL10n.text("Confirma la porcion")],
             source: "barcode"
         )
     }

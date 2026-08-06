@@ -126,24 +126,24 @@ struct LaboratoryView: View {
             isPresented: $showsResetConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Borrar todo y reiniciar con perfil demo", role: .destructive) {
+            Button(RecvelL10n.text("Borrar todo y reiniciar con perfil demo"), role: .destructive) {
                 performReset()
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Borra comidas, journal y scores; activa datos mock para todos los features; rellena un perfil demo (Sara, 7:00, 8.0 h) y te lleva al onboarding.")
+            Text(RecvelL10n.text("Borra comidas, journal y scores; activa datos mock para todos los features; rellena un perfil demo (Sara, 7:00, 8.0 h) y te lleva al onboarding."))
         }
         .confirmationDialog(
-            "Eliminar datos y reiniciar",
+            RecvelL10n.text("Eliminar datos y reiniciar"),
             isPresented: $showsFreshInstallConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Eliminar todo y empezar de cero", role: .destructive) {
+            Button(RecvelL10n.text("Eliminar todo y empezar de cero"), role: .destructive) {
                 performFreshInstall()
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Borra todos los datos locales de Recvel (SwiftData, preferencias, agenda, mocks, API key y notificaciones) y vuelve al onboarding como una instalacion nueva. No revoca permisos de Apple Health.")
+            Text(RecvelL10n.text("Borra todos los datos locales de Recvel (SwiftData, preferencias, agenda, mocks, API key y notificaciones) y vuelve al onboarding como una instalacion nueva. No revoca permisos de Apple Health."))
         }
     }
 
@@ -153,9 +153,9 @@ struct LaboratoryView: View {
                 .font(.caption2.weight(.heavy))
                 .tracking(1.3)
                 .foregroundStyle(ScoreKind.energy.color)
-            Text("Datos mock por feature")
+            Text(RecvelL10n.text("Datos mock por feature"))
                 .font(.system(size: 31, weight: .bold))
-            Text("Enciende o apaga los datos demo para cada modulo. Util para previsualizar la app sin Apple Health.")
+            Text(RecvelL10n.text("Enciende o apaga los datos demo para cada modulo. Util para previsualizar la app sin Apple Health."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -167,7 +167,7 @@ struct LaboratoryView: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "flask.fill")
                 .foregroundStyle(ScoreKind.energy.color)
-            Text("Cada switch guarda su estado en este dispositivo. No afecta a Apple Health ni a tus datos reales.")
+            Text(RecvelL10n.text("Cada switch guarda su estado en este dispositivo. No afecta a Apple Health ni a tus datos reales."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -233,7 +233,7 @@ struct LaboratoryView: View {
                 MockFeature.allCases.forEach { MockFeatureFlags.setEnabled($0, true) }
                 reloadFlags()
             } label: {
-                Label("Encender todos los mocks", systemImage: "checkmark.circle.fill")
+                Label(RecvelL10n.text("Encender todos los mocks"), systemImage: "checkmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -243,7 +243,7 @@ struct LaboratoryView: View {
                 MockFeature.allCases.forEach { MockFeatureFlags.setEnabled($0, false) }
                 reloadFlags()
             } label: {
-                Label("Apagar todos los mocks", systemImage: "xmark.circle.fill")
+                Label(RecvelL10n.text("Apagar todos los mocks"), systemImage: "xmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -259,7 +259,7 @@ struct LaboratoryView: View {
                 .font(.headline)
                 .foregroundStyle(ScoreKind.strain.color)
 
-            Text("Borra comidas, journal y scores guardados; activa los mocks de todos los features; rellena un perfil demo (Sara, despertar 7:00, sueno 8.0 h) y te lleva al onboarding para verlo desde cero.")
+            Text(RecvelL10n.text("Borra comidas, journal y scores guardados; activa los mocks de todos los features; rellena un perfil demo (Sara, despertar 7:00, sueno 8.0 h) y te lleva al onboarding para verlo desde cero."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -280,7 +280,7 @@ struct LaboratoryView: View {
             .tint(ScoreKind.strain.color)
             .disabled(resetInProgress)
 
-            Text("Esto no borra datos de Apple Health ni revoca sus permisos.")
+            Text(RecvelL10n.text("Esto no borra datos de Apple Health ni revoca sus permisos."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -294,7 +294,7 @@ struct LaboratoryView: View {
                 .font(.headline)
                 .foregroundStyle(.red)
 
-            Text("Elimina todos los datos de Recvel en este dispositivo y reinicia la app como si acabaras de instalarla: sin perfil, sin mocks, sin comidas ni rutinas, de vuelta al onboarding.")
+            Text(RecvelL10n.text("Elimina todos los datos de Recvel en este dispositivo y reinicia la app como si acabaras de instalarla: sin perfil, sin mocks, sin comidas ni rutinas, de vuelta al onboarding."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -306,7 +306,7 @@ struct LaboratoryView: View {
                     if resetInProgress {
                         ProgressView().tint(.white)
                     } else {
-                        Label("Eliminar datos y reiniciar", systemImage: "trash")
+                        Label(RecvelL10n.text("Eliminar datos y reiniciar"), systemImage: "trash")
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 54)
@@ -316,7 +316,7 @@ struct LaboratoryView: View {
             .disabled(resetInProgress)
             .accessibilityIdentifier("lab.freshInstall")
 
-            Text("No puede revocar permisos de Apple Health (iOS los gestiona). Puedes hacerlo en Ajustes > Privacidad > Salud.")
+            Text(RecvelL10n.text("No puede revocar permisos de Apple Health (iOS los gestiona). Puedes hacerlo en Ajustes > Privacidad > Salud."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

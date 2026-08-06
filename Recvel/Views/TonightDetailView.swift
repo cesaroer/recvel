@@ -21,7 +21,7 @@ struct TonightHomeCard: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(ScoreKind.sleep.color)
                 Spacer()
-                Text("VER DETALLE")
+                Text(RecvelL10n.text("VER DETALLE"))
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.tertiary)
                 Image(systemName: "chevron.right")
@@ -31,7 +31,7 @@ struct TonightHomeCard: View {
 
             HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Disciplina de sueno")
+                    Text(RecvelL10n.text("Disciplina de sueno"))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tertiary)
                     if let disciplineScore {
@@ -69,7 +69,7 @@ struct TonightHomeCard: View {
             HStack(spacing: 0) {
                 miniTimeline(label: "Desconecta", date: disconnect, color: .cyan)
                 miniLine
-                miniTimeline(label: "En cama", date: bedtime, color: ScoreKind.sleep.color)
+                miniTimeline(label: RecvelL10n.text("En cama"), date: bedtime, color: ScoreKind.sleep.color)
                 miniLine
                 miniTimeline(label: "Despierta", date: wake, color: ScoreKind.recovery.color)
             }
@@ -150,15 +150,15 @@ struct TonightDetailView: View {
 
     private var sleepNeedReason: String {
         if brief.sleepDebtHours > 0.2 && strainToday > 75 {
-            return "Sube por deuda reciente y carga alta de hoy."
+            return RecvelL10n.text("Sube por deuda reciente y carga alta de hoy.")
         }
         if brief.sleepDebtHours > 0.2 {
-            return String(format: "Incluye ~%.1f h por promedio bajo de los ultimos dias.", brief.sleepDebtHours)
+            return RecvelL10n.text("tonight.debtReason", values: ["hours": String(format: "%.1f", brief.sleepDebtHours)])
         }
         if strainToday > 75 {
-            return "Hoy tu carga fue alta; sumamos un poco mas de oportunidad."
+            return RecvelL10n.text("Hoy tu carga fue alta; sumamos un poco mas de oportunidad.")
         }
-        return "Tu promedio reciente esta cerca de tu base; mantenemos una noche estable."
+        return RecvelL10n.text("Tu promedio reciente esta cerca de tu base; mantenemos una noche estable.")
     }
 
     private var tonightWake: Date {
@@ -305,7 +305,7 @@ struct TonightDetailView: View {
             HStack(spacing: 0) {
                 timelineTime(label: "Desconecta", date: windDownStart, color: .cyan)
                 timelineLine
-                timelineTime(label: "En cama", date: displayBedtime, color: ScoreKind.sleep.color)
+                timelineTime(label: RecvelL10n.text("En cama"), date: displayBedtime, color: ScoreKind.sleep.color)
                 timelineLine
                 timelineTime(label: "Despierta", date: activeCycleOption.wakeTime, color: ScoreKind.recovery.color)
             }
@@ -319,13 +319,13 @@ struct TonightDetailView: View {
 
             sleepDisciplineSection
 
-            Text("Los ciclos (~90 min) son una heuristica para planear; la duracion real varia entre personas y noches. No es consejo medico.")
+            Text(RecvelL10n.text("Los ciclos (~90 min) son una heuristica para planear; la duracion real varia entre personas y noches. No es consejo medico."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
 
             DatePicker(
-                "Hora objetivo para despertar",
+                RecvelL10n.text("Hora objetivo para despertar"),
                 selection: Binding(
                     get: { wakeDate },
                     set: {
@@ -352,11 +352,11 @@ struct TonightDetailView: View {
 
     private var sleepReminderToggles: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Recordatorios de esta noche")
+            Text(RecvelL10n.text("Recordatorios de esta noche"))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.tertiary)
 
-            Toggle("Avisarme para rutina y cama", isOn: Binding(
+            Toggle(RecvelL10n.text("Avisarme para rutina y cama"), isOn: Binding(
                 get: { sleepReminderEnabled },
                 set: { updateSleepReminders($0) }
             ))
@@ -377,7 +377,7 @@ struct TonightDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text("Hasta 3 avisos suaves al dia (rutina, en cama, luces). Locales y opcionales.")
+            Text(RecvelL10n.text("Hasta 3 avisos suaves al dia (rutina, en cama, luces). Locales y opcionales."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -385,11 +385,11 @@ struct TonightDetailView: View {
 
     private var sleepRoutineSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Rutina previa al sueno")
+            Text(RecvelL10n.text("Rutina previa al sueno"))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.tertiary)
 
-            Text("Cada paso tiene una duracion. Se encadenan hacia atras desde la cama: el ultimo termina al acostarte y los anteriores empiezan antes.")
+            Text(RecvelL10n.text("Cada paso tiene una duracion. Se encadenan hacia atras desde la cama: el ultimo termina al acostarte y los anteriores empiezan antes."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -433,7 +433,7 @@ struct TonightDetailView: View {
             .accessibilityIdentifier("plan.tonight.routinePresets")
 
             HStack(spacing: 8) {
-                TextField("Paso propio (ej. te)", text: $customStepTitle)
+                TextField(RecvelL10n.text("Paso propio (ej. te)"), text: $customStepTitle)
                     .textFieldStyle(.plain)
                     .font(.subheadline)
                     .padding(.horizontal, 10)
@@ -535,7 +535,7 @@ struct TonightDetailView: View {
         ).cycleCount
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Ajusta por ciclos")
+            Text(RecvelL10n.text("Ajusta por ciclos"))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.tertiary)
 
@@ -586,8 +586,8 @@ struct TonightDetailView: View {
             Divider().overlay(Color.white.opacity(0.08))
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Disciplina de sueno").font(.headline)
-                    Text("Plan guardado vs. inicio real en Apple Health")
+                    Text(RecvelL10n.text("Disciplina de sueno")).font(.headline)
+                    Text(RecvelL10n.text("Plan guardado vs. inicio real en Apple Health"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -607,7 +607,7 @@ struct TonightDetailView: View {
                 disciplineLegend(.followed, "Seguido")
                 disciplineLegend(.close, "Cerca")
                 disciplineLegend(.missed, "Fuera")
-                disciplineLegend(.noData, "Sin datos")
+                disciplineLegend(.noData, RecvelL10n.text("Sin datos"))
             }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 7), spacing: 6) {
@@ -643,7 +643,7 @@ struct TonightDetailView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
 
-            Text("Score: hora de inicio 70%, duracion 20% y consistencia de despertar 10%. Una rutina no se marca como cumplida: Apple Health no registra que completaste sus pasos.")
+            Text(RecvelL10n.text("tonight.discipline.formula"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -656,13 +656,16 @@ struct TonightDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(night.nightDate.formatted(.dateTime.weekday(.wide).day().month().locale(RecvelL10n.locale)))
                 .font(.caption.weight(.bold))
-            Text("Plan \(night.plannedBedtime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))) · real \(night.actualSleepStart?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)) ?? "sin datos")")
+            Text("Plan \(night.plannedBedtime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))) · real \(night.actualSleepStart?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)) ?? RecvelL10n.text("tonight.noData"))")
                 .font(.caption).monospacedDigit()
             if let delta = night.bedtimeDeltaMinutes {
-                Text("\(Int(delta.rounded())) min de diferencia · \(Int((night.points ?? 0).rounded()))/100 esa noche")
+                Text(RecvelL10n.text("tonight.nightDelta", values: [
+                    "minutes": "\(Int(delta.rounded()))",
+                    "points": "\(Int((night.points ?? 0).rounded()))"
+                ]))
                     .font(.caption2).foregroundStyle(.secondary)
             } else {
-                Text("No hay una sesión de Apple Health para comparar; esta noche no se incluye en la puntuación.")
+                Text(RecvelL10n.text("No hay una sesión de Apple Health para comparar; esta noche no se incluye en la puntuación."))
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
@@ -804,7 +807,7 @@ struct TonightDetailView: View {
             let ok = await notifications.requestAuthorization()
             guard ok else {
                 sleepReminderEnabled = false
-                sleepReminderMessage = "Activa notificaciones en Ajustes de iOS para usar recordatorios."
+                sleepReminderMessage = RecvelL10n.text("Activa notificaciones en Ajustes de iOS para usar recordatorios.")
                 await notifications.schedulePlanSleepReminders(enabled: false, slots: [])
                 return
             }
@@ -813,7 +816,7 @@ struct TonightDetailView: View {
         await notifications.schedulePlanSleepReminders(enabled: enabled, slots: slots)
         if announce {
             sleepReminderMessage = enabled
-                ? "Te avisaremos para la rutina, estar en cama y apagar luces."
+                ? RecvelL10n.text("Te avisaremos para la rutina, estar en cama y apagar luces.")
                 : ""
         }
     }

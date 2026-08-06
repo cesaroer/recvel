@@ -53,18 +53,18 @@ struct MorningReportView: View {
                 VStack(alignment: .leading, spacing: 26) {
                     DualDialHero(report: report)
 
-                    module(0, "Índices del día", "los cuatro scores") { indexRow }
-                    module(1, "Coaching", "una sola cosa") { coaching }
-                    module(2, "Sueño", "noche medida") { sleepPanel }
-                    module(3, "Carga", "objetivo adaptable") { loadPanel }
+                    module(0, RecvelL10n.text("Índices del día"), RecvelL10n.text("los cuatro scores")) { indexRow }
+                    module(1, "Coaching", RecvelL10n.text("una sola cosa")) { coaching }
+                    module(2, RecvelL10n.text("Sueño"), "noche medida") { sleepPanel }
+                    module(3, RecvelL10n.text("Carga"), "objetivo adaptable") { loadPanel }
                     if !report.signals.isEmpty {
-                        module(4, "Señales de la noche", "lectura · tu rango") { signalsPanel }
+                        module(4, RecvelL10n.text("Señales de la noche"), RecvelL10n.text("lectura · tu rango")) { signalsPanel }
                     }
                     if report.stressLevel != nil || !report.emotions.isEmpty {
-                        module(5, "Estrés y ánimo", "últimas 24 h") { stressPanel }
+                        module(5, RecvelL10n.text("Estrés y ánimo"), RecvelL10n.text("últimas 24 h")) { stressPanel }
                     }
                     if report.fastingHeadline != nil || report.nutritionHeadline != nil {
-                        module(6, "Ayuno y nutrición", "plan de hoy") { fuelPanel }
+                        module(6, RecvelL10n.text("Ayuno y nutrición"), RecvelL10n.text("plan de hoy")) { fuelPanel }
                     }
                     disclaimer
                 }
@@ -99,7 +99,7 @@ struct MorningReportView: View {
         .buttonStyle(.plain)
         .padding(.trailing, 18)
         .padding(.top, 10)
-        .accessibilityLabel("Cerrar")
+        .accessibilityLabel(RecvelL10n.text("Cerrar"))
         .accessibilityIdentifier("morningReport.close")
     }
 
@@ -141,11 +141,11 @@ struct MorningReportView: View {
     private var indexRow: some View {
         HStack(spacing: 10) {
             MiniGauge(value: report.recoveryValue, label: "Recup.", tint: LabInk.recovery)
-            MiniGauge(value: report.sleepValue, label: "Sueño", tint: LabInk.sleep)
-            MiniGauge(value: report.energyValue, label: "Energía", tint: LabInk.energy)
+            MiniGauge(value: report.sleepValue, label: RecvelL10n.text("Sueño"), tint: LabInk.sleep)
+            MiniGauge(value: report.energyValue, label: RecvelL10n.text("Energía"), tint: LabInk.energy)
             MiniGauge(
                 value: report.loadPercentOfTarget,
-                label: "Carga",
+                label: RecvelL10n.text("Carga"),
                 tint: report.hasStrainRoom ? LabInk.load : LabInk.warn
             )
         }
@@ -239,10 +239,10 @@ struct MorningReportView: View {
             )
 
             if let session = report.plannedSession {
-                labRow(icon: "figure.strengthtraining.traditional", caption: "HOY TOCA", value: session)
+                labRow(icon: "figure.strengthtraining.traditional", caption: RecvelL10n.text("HOY TOCA"), value: session)
                     .accessibilityIdentifier("morningReport.plannedSession")
             } else if !report.hasStrainRoom {
-                Text("Ya alcanzaste el objetivo de hoy. El resto del día puede enfocarse en recuperar.")
+                Text(RecvelL10n.text("Ya alcanzaste el objetivo de hoy. El resto del día puede enfocarse en recuperar."))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -313,7 +313,7 @@ struct MorningReportView: View {
                     Spacer(minLength: 0)
                 }
             } else {
-                Text("Sin emociones registradas todavía.")
+                Text(RecvelL10n.text("Sin emociones registradas todavía."))
                     .font(.system(size: 13))
                     .foregroundStyle(.tertiary)
             }
@@ -339,7 +339,7 @@ struct MorningReportView: View {
                 Rectangle().fill(LabInk.hairline).frame(height: 1)
             }
             if let headline = report.nutritionHeadline {
-                labRow(icon: "fork.knife", caption: "NUTRICIÓN", value: headline, detail: report.nutritionDetail)
+                labRow(icon: "fork.knife", caption: RecvelL10n.text("NUTRICIÓN"), value: headline, detail: report.nutritionDetail)
             }
         }
         .padding(16)
@@ -407,7 +407,7 @@ struct MorningReportView: View {
     }
 
     private var disclaimer: some View {
-        Text("Estimaciones de bienestar calculadas en tu iPhone con Apple Health y tus rangos personales. No son diagnóstico.")
+        Text(RecvelL10n.text("Estimaciones de bienestar calculadas en tu iPhone con Apple Health y tus rangos personales. No son diagnóstico."))
             .font(.system(size: 11))
             .foregroundStyle(.tertiary)
             .fixedSize(horizontal: false, vertical: true)
@@ -420,7 +420,7 @@ struct MorningReportView: View {
             dismiss()
         } label: {
             HStack(spacing: 8) {
-                Text("Ver mi día").font(.system(size: 17, weight: .semibold))
+                Text(RecvelL10n.text("Ver mi día")).font(.system(size: 17, weight: .semibold))
                 Image(systemName: "arrow.right").font(.footnote.weight(.bold))
             }
             .foregroundStyle(.black)
@@ -587,7 +587,7 @@ private struct DualDialHero: View {
     var body: some View {
         VStack(spacing: 6) {
             // Titulo sobre el dial, como "Biological Age / As of July 13".
-            Text("Reporte del día")
+            Text(RecvelL10n.text("Reporte del día"))
                 .font(.system(size: 25, weight: .bold))
             Text(report.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
                 .font(.system(size: 14))
@@ -654,7 +654,7 @@ private struct DualDialHero: View {
                 .allowsHitTesting(false)
 
                 VStack(spacing: 2) {
-                    Text("RECUPERACIÓN")
+                    Text(RecvelL10n.text("RECUPERACIÓN"))
                         .font(.system(size: 10, weight: .black))
                         .kerning(1.6)
                         .foregroundStyle(LabInk.recovery.opacity(0.9))
@@ -682,7 +682,7 @@ private struct DualDialHero: View {
 
                 // Etiquetas rotadas tangencialmente, fuera del surco exterior.
                 dialLabel("RECUP.", tint: LabInk.recovery, angle: 138, rotation: 48, diameter: side)
-                dialLabel("ENERGÍA", tint: LabInk.energy, angle: 42, rotation: -48, diameter: side)
+                dialLabel(RecvelL10n.text("ENERGÍA"), tint: LabInk.energy, angle: 42, rotation: -48, diameter: side)
 
             }
             .frame(width: geo.size.width, height: geo.size.width)
@@ -932,7 +932,7 @@ private struct SignalRow: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.tertiary)
                 } else {
-                    Text("sin rango personal todavía")
+                    Text(RecvelL10n.text("sin rango personal todavía"))
                         .font(.system(size: 11))
                         .foregroundStyle(.tertiary)
                 }

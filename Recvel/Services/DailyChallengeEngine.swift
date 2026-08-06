@@ -134,7 +134,7 @@ struct DailyChallengeEngine {
         // convencional en dolor cronico inespecifico; series cortas 5-3-1.
         MaintenancePack(
             title: "Espalda fuerte",
-            focus: "Core y espalda",
+            focus: RecvelL10n.text("Core y espalda"),
             bucket: .back,
             durationMinutes: 10,
             variants: [
@@ -145,7 +145,7 @@ struct DailyChallengeEngine {
         ),
         // Pilates mat: control del centro con fuerza, sin equipo.
         MaintenancePack(
-            title: "Pilates de centro",
+            title: RecvelL10n.text("Pilates de centro"),
             focus: "Core",
             bucket: .other,
             durationMinutes: 12,
@@ -169,7 +169,7 @@ struct DailyChallengeEngine {
         ),
         // Yoga de fuerza: posturas sostenidas, no estiramiento pasivo.
         MaintenancePack(
-            title: "Yoga de fuerza",
+            title: RecvelL10n.text("Yoga de fuerza"),
             focus: "Estabilidad",
             bucket: .other,
             durationMinutes: 10,
@@ -181,7 +181,7 @@ struct DailyChallengeEngine {
         ),
         // Activacion de manana: de pie + banda + pasos.
         MaintenancePack(
-            title: "Rutina de mañana",
+            title: RecvelL10n.text("Rutina de mañana"),
             focus: "Activacion general",
             bucket: .other,
             durationMinutes: 10,
@@ -275,7 +275,7 @@ struct DailyChallengeEngine {
         case .rest:
             return restDayChallenge(weekday: weekday, forbidden: forbidden)
         case .plyometrics, .speed, .technique:
-            return mobilityChallenge(forbidden: forbidden.union([.legs, .lower]), title: "Movilidad de descarga")
+            return mobilityChallenge(forbidden: forbidden.union([.legs, .lower]), title: RecvelL10n.text("Movilidad de descarga"))
         }
     }
 
@@ -296,7 +296,7 @@ struct DailyChallengeEngine {
         let safe = resolveFocus(preferred: opposite, forbidden: forbidden) ?? .other
         if safe == .lower || safe == .legs {
             return DailyChallengeDay(
-                title: "Desafío de tren inferior",
+                title: RecvelL10n.text("Desafío de tren inferior"),
                 kind: .strengthOpposite,
                 focus: "Tren inferior",
                 exercisesText: Self.lowerChallengeVariants[weekday % Self.lowerChallengeVariants.count],
@@ -305,7 +305,7 @@ struct DailyChallengeEngine {
         }
         if safe == .upper || safe == .push || safe == .pull || safe == .chest || safe == .back || safe == .shoulders || safe == .arms {
             return DailyChallengeDay(
-                title: "Desafío de tren superior",
+                title: RecvelL10n.text("Desafío de tren superior"),
                 kind: .strengthOpposite,
                 focus: "Tren superior",
                 exercisesText: Self.upperChallengeVariants[weekday % Self.upperChallengeVariants.count],
@@ -341,7 +341,7 @@ struct DailyChallengeEngine {
         let safe = resolveFocus(preferred: preferred, forbidden: forbidden) ?? .other
         if safe == .other || safe == .cardio {
             return DailyChallengeDay(
-                title: "Movilidad de descanso",
+                title: RecvelL10n.text("Movilidad de descanso"),
                 kind: .mobility,
                 focus: "Movilidad general",
                 exercisesText: """
@@ -353,7 +353,7 @@ struct DailyChallengeEngine {
             )
         }
         return DailyChallengeDay(
-            title: "Movilidad de descanso",
+            title: RecvelL10n.text("Movilidad de descanso"),
             kind: .mobility,
             focus: safe.label,
             exercisesText: mobilityPreset(for: safe),
@@ -403,7 +403,7 @@ struct DailyChallengeEngine {
             case .mobility:
                 result[weekday] = "Movilidad"
             case .recovery:
-                result[weekday] = "Recuperación"
+                result[weekday] = RecvelL10n.text("Recuperación")
             case .contrast:
                 result[weekday] = rotation.isEmpty ? "Full body" : rotation[strengthIndex % rotation.count]
                 strengthIndex += 1

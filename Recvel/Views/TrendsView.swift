@@ -38,8 +38,8 @@ struct TrendsView: View {
                         hrvCard
 
                         Text(health.dataMode == .demo
-                             ? "Vista demo. Conecta Apple Health desde Hoy para ver tus tendencias."
-                             : "Tendencias calculadas localmente con datos de Apple Health.")
+                             ? RecvelL10n.text("Vista demo. Conecta Apple Health desde Hoy para ver tus tendencias.")
+                             : RecvelL10n.text("Tendencias calculadas localmente con datos de Apple Health."))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, 4)
@@ -71,7 +71,7 @@ struct TrendsView: View {
 
                 Chart(recoveryWeek, id: \.date) { day in
                     BarMark(
-                        x: .value("Dia", day.date, unit: .day),
+                        x: .value(RecvelL10n.text("Dia"), day.date, unit: .day),
                         y: .value(ScoreKind.recovery.displayName, day.value),
                         width: .fixed(14)
                     )
@@ -102,7 +102,7 @@ struct TrendsView: View {
                     .foregroundStyle(ScoreKind.sleep.color)
                 Chart(week) { day in
                     BarMark(
-                        x: .value("Dia", day.date, unit: .day),
+                        x: .value(RecvelL10n.text("Dia"), day.date, unit: .day),
                         y: .value("Horas", day.sleepHours ?? 0),
                         width: .fixed(14)
                     )
@@ -125,12 +125,12 @@ struct TrendsView: View {
 
         return LiquidGlassCard {
             VStack(alignment: .leading, spacing: 14) {
-                Label("HRV y referencia personal", systemImage: "waveform.path.ecg")
+                Label(RecvelL10n.text("HRV y referencia personal"), systemImage: "waveform.path.ecg")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.recovery.color)
                 Chart(week) { day in
                     LineMark(
-                        x: .value("Dia", day.date, unit: .day),
+                        x: .value(RecvelL10n.text("Dia"), day.date, unit: .day),
                         y: .value("HRV", day.hrv ?? 0)
                     )
                     .interpolationMethod(.catmullRom)
@@ -138,7 +138,7 @@ struct TrendsView: View {
                     .symbol(.circle)
 
                     AreaMark(
-                        x: .value("Dia", day.date, unit: .day),
+                        x: .value(RecvelL10n.text("Dia"), day.date, unit: .day),
                         y: .value("HRV", day.hrv ?? 0)
                     )
                     .interpolationMethod(.catmullRom)

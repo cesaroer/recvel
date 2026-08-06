@@ -77,7 +77,7 @@ struct MuscleFocus: Hashable {
 }
 
 enum MuscleMapCatalog {
-    static let attribution = "Mapa muscular: wger (wger.de)"
+    static let attribution = RecvelL10n.text("Mapa muscular: wger (wger.de)")
 
     static func focus(for exercise: String) -> MuscleFocus? {
         let trimmed = exercise.trimmingCharacters(in: .whitespacesAndNewlines)

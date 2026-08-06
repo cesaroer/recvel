@@ -53,11 +53,19 @@ final class StringCatalogTests: XCTestCase {
     /// zucchini" se marcaba como español por la tilde.
     private static let accentedEnglishLoanwords = ["sauté", "sautée", "café", "purée", "jalapeño", "entrée"]
 
+    /// Dominios y URLs: "wger.de" contiene "de" y disparaba un falso positivo.
+    private static let domainLike = try! NSRegularExpression(pattern: "\\b[\\w-]+\\.[a-z]{2,}\\b")
+
     private func looksSpanish(_ text: String) -> Bool {
         var candidate = text.lowercased()
         for loanword in Self.accentedEnglishLoanwords {
             candidate = candidate.replacingOccurrences(of: loanword, with: "")
         }
+        candidate = Self.domainLike.stringByReplacingMatches(
+            in: candidate,
+            range: NSRange(candidate.startIndex..., in: candidate),
+            withTemplate: ""
+        )
         return Self.spanish.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)) != nil
     }
 

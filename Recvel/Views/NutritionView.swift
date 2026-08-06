@@ -494,7 +494,7 @@ private struct MealEditorView: View {
 
     var body: some View {
         Form {
-            Section("Comida") {
+            Section(RecvelL10n.text("Comida")) {
                 TextField("Nombre", text: $meal.title)
                     .snappyTextInput()
                 DatePicker("Fecha", selection: $meal.createdAt)
@@ -505,7 +505,7 @@ private struct MealEditorView: View {
                     ForEach(MealType.allCases) { Text($0.displayName).tag($0) }
                 }
             }
-            Section("Energía y macronutrientes") {
+            Section(RecvelL10n.text("Energía y macronutrientes")) {
                 Stepper("\(meal.calories) kcal", value: $meal.calories.hapticStep(), in: 0...5_000, step: 10)
                 Stepper("Proteina · \(meal.protein) g", value: $meal.protein.hapticStep(), in: 0...500)
                 Stepper("Carbohidratos · \(meal.carbohydrates) g", value: $meal.carbohydrates.hapticStep(), in: 0...800)
@@ -1215,7 +1215,7 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
         defer { isAnalyzing = false }
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data), let cgImage = image.cgImage else {
-            message = "No se pudo leer la foto."
+            message = RecvelL10n.text("No se pudo leer la foto.")
             return
         }
         selectedPhotoData = data
@@ -1235,13 +1235,13 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
                 carbohydrates: local.carbohydrates,
                 fat: local.fat,
                 confidence: .low,
-                uncertainties: ["Clasificacion visual generica", "Porcion no medida", "Confirma ingredientes"],
+                uncertainties: ["Clasificacion visual generica", RecvelL10n.text("Porcion no medida"), "Confirma ingredientes"],
                 source: "photo-local"
             )
             prepareEstimate()
         } else {
-            composer.text = "Describe los alimentos y la porcion que aparecen en la foto"
-            message = "La clasificacion local no identifico suficientes alimentos. Agrega una descripcion o usa la IA experimental."
+            composer.text = RecvelL10n.text("Describe los alimentos y la porcion que aparecen en la foto")
+            message = RecvelL10n.text("La clasificacion local no identifico suficientes alimentos. Agrega una descripcion o usa la IA experimental.")
         }
     }
 
@@ -1250,7 +1250,7 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
         defer { isAnalyzing = false }
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data), let cgImage = image.cgImage else {
-            message = "No se pudo leer la imagen del codigo."
+            message = RecvelL10n.text("No se pudo leer la imagen del codigo.")
             return
         }
         let payload: String? = await Task.detached {
@@ -1260,7 +1260,7 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
             return request.results?.first?.payloadStringValue
         }.value
         guard let payload else {
-            message = "No encontramos un codigo legible. Prueba con una foto mas cercana y bien iluminada."
+            message = RecvelL10n.text("No encontramos un codigo legible. Prueba con una foto mas cercana y bien iluminada.")
             return
         }
         do {
@@ -1274,7 +1274,7 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
 
     private func estimateWithExternalAI() async {
         guard let key = KeychainStore.get("nutrition.gemini.apiKey"), !key.isEmpty else {
-            message = "Agrega tu API key de Gemini en Ajustes para usar el modo experimental."
+            message = RecvelL10n.text("Agrega tu API key de Gemini en Ajustes para usar el modo experimental.")
             return
         }
         isAnalyzing = true

@@ -2232,9 +2232,15 @@ final class EngineTests: XCTestCase {
             hardSessions: 4,
             restDays: 0
         ))
-        XCTAssertTrue(expectation.cautions.contains { $0.localizedCaseInsensitiveContains("descanso") })
+        // Se comprueba QUE avisa, no como se escribe: el texto sale del catalogo
+        // y cambia con el idioma (y con los acentos).
+        XCTAssertTrue(expectation.cautions.contains {
+            $0 == RecvelL10n.text("No hay dias de descanso programados: considera al menos uno (o recuperacion activa) cada semana.")
+        })
         XCTAssertTrue(expectation.cautions.contains { $0.contains("RPE 8+") })
-        XCTAssertTrue(expectation.cautions.contains { $0.localizedCaseInsensitiveContains("base tecnica") })
+        XCTAssertTrue(expectation.cautions.contains {
+            $0 == RecvelL10n.text("La pliometria y el contraste piden base tecnica: en nivel inicial conviene dominar primero fuerza y tecnica.")
+        })
         XCTAssertFalse(expectation.bullets.isEmpty, "Siempre hay expectativas del objetivo")
     }
 
@@ -2373,7 +2379,7 @@ final class EngineTests: XCTestCase {
         )
         let result = RoutineAssessmentEngine.assess(input)
         XCTAssertEqual(result.verdict, .caution)
-        XCTAssertTrue(result.headline.localizedCaseInsensitiveContains("rotacion"))
+        XCTAssertEqual(result.headline, RecvelL10n.text("Coach: la rotacion no se completa"))
     }
 
     func testCoachBlessesBalancedWeekWithVariationReminder() {

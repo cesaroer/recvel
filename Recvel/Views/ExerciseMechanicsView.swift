@@ -39,7 +39,7 @@ struct ExerciseMechanicsSheet: View {
                                 .accessibilityIdentifier("fitness.mechanics.summary")
 
                             if let focus = MuscleMapCatalog.focus(for: exerciseName) {
-                                section(title: "Musculos que trabajas", systemImage: "figure.arms.open") {
+                                section(title: RecvelL10n.text("Musculos que trabajas"), systemImage: "figure.arms.open") {
                                     VStack(spacing: 12) {
                                         MuscleMapView(focus: focus)
                                         MuscleLegend(focus: focus)
@@ -90,9 +90,9 @@ struct ExerciseMechanicsSheet: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Aun no tenemos la mecanica de este ejercicio")
+                                Text(RecvelL10n.text("Aun no tenemos la mecanica de este ejercicio"))
                                     .font(.body.weight(.semibold))
-                                Text("Es un ejercicio personalizado. Ejecutalo con el rango que controles, sin dolor, y manteniendo la columna neutra.")
+                                Text(RecvelL10n.text("Es un ejercicio personalizado. Ejecutalo con el rango que controles, sin dolor, y manteniendo la columna neutra."))
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
                             }
@@ -224,7 +224,7 @@ struct ExerciseMechanicsPlayer: View {
                     Image(systemName: fallback.symbol)
                         .font(.system(size: 72, weight: .light))
                         .foregroundStyle(.white.opacity(0.9))
-                    Text("Sin demostracion visual")
+                    Text(RecvelL10n.text("Sin demostracion visual"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -316,7 +316,7 @@ struct ExerciseMechanicsButton: View {
             HStack(spacing: 8) {
                 Image(systemName: "play.rectangle.fill")
                     .font(.footnote.weight(.semibold))
-                Text("Ver mecanica del ejercicio")
+                Text(RecvelL10n.text("Ver mecanica del ejercicio"))
                     .font(.footnote.weight(.semibold))
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")

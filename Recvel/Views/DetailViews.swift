@@ -619,11 +619,11 @@ private struct DataProvenanceCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Calidad y fuente", systemImage: "checkmark.shield.fill")
+            Label(RecvelL10n.text("Calidad y fuente"), systemImage: "checkmark.shield.fill")
                 .font(.headline)
                 .foregroundStyle(color)
 
-            Text(snapshot.sourceNames.isEmpty ? "Apple Health no reportó una fuente para estas señales." : snapshot.sourceNames.joined(separator: " · "))
+            Text(snapshot.sourceNames.isEmpty ? RecvelL10n.text("Apple Health no reportó una fuente para estas señales.") : snapshot.sourceNames.joined(separator: " · "))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -646,10 +646,10 @@ private struct DataProvenanceCard: View {
 
     private func issueLabel(_ issue: DataQualityIssue) -> String {
         switch issue {
-        case .partialDay: "Dia en progreso"
-        case .insufficientHistory: "Baseline en formacion"
+        case .partialDay: RecvelL10n.text("Dia en progreso")
+        case .insufficientHistory: RecvelL10n.text("Baseline en formacion")
         case .mixedSources: "Varias fuentes"
-        case .missingSleepStages: "Sin etapas de sueno"
+        case .missingSleepStages: RecvelL10n.text("Sin etapas de sueno")
         }
     }
 }
@@ -740,12 +740,12 @@ struct SleepDetailView: View {
             if let sleep = snapshot.sleepDetails {
                 DetailStatStrip(stats: [
                     DetailStat(label: "Tiempo dormido", value: hoursText(sleep.asleepHours + sleep.napHours), icon: "moon.fill", color: ScoreKind.sleep.color),
-                    DetailStat(label: "Tiempo en cama", value: hoursText(sleep.inBedHours), icon: "bed.double.fill", color: .cyan)
+                    DetailStat(label: RecvelL10n.text("Tiempo en cama"), value: hoursText(sleep.inBedHours), icon: "bed.double.fill", color: .cyan)
                 ])
 
                 tonightPlanCard
 
-                DetailSectionTitle(title: "Tu noche", detail: sleep.sourceName)
+                DetailSectionTitle(title: RecvelL10n.text("Tu noche"), detail: sleep.sourceName)
                 sleepWindow(sleep)
                 stagesCard(sleep)
                 sleepBankCard
@@ -753,14 +753,14 @@ struct SleepDetailView: View {
 
                 coachingSection
 
-                DetailSectionTitle(title: "Tendencias", detail: "TOCA PARA VER EL DETALLE")
+                DetailSectionTitle(title: "Tendencias", detail: RecvelL10n.text("TOCA PARA VER EL DETALLE"))
                 sleepTrendCards
                 DataProvenanceCard(snapshot: snapshot, color: ScoreKind.sleep.color)
             } else {
                 missingSleepCard
             }
 
-            CaveatFootnote(text: "Las etapas de sueño son estimaciones del dispositivo, no polisomnografía. Recvel muestra una composición agregada porque Apple Health no siempre proporciona una secuencia suficientemente consistente para reconstruir un hipnograma sin completar intervalos.")
+            CaveatFootnote(text: RecvelL10n.text("Las etapas de sueño son estimaciones del dispositivo, no polisomnografía. Recvel muestra una composición agregada porque Apple Health no siempre proporciona una secuencia suficientemente consistente para reconstruir un hipnograma sin completar intervalos."))
         }
         .sheet(item: $metricKey) { selection in
             MetricDetailView(
@@ -794,7 +794,7 @@ struct SleepDetailView: View {
                     Text(RecvelL10n.text("detail.tonightPlan"))
                         .font(.caption2.weight(.heavy))
                         .foregroundStyle(ScoreKind.sleep.color)
-                    Text("Empieza a bajar revoluciones a las \(timeText(plan.windDownStart))")
+                    Text(RecvelL10n.text("detail.windDownAt", values: ["time": timeText(plan.windDownStart)]))
                         .font(.title3.weight(.bold))
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -808,7 +808,7 @@ struct SleepDetailView: View {
             HStack(spacing: 0) {
                 planMilestone(icon: "sparkles", label: "Desconecta", value: timeText(plan.windDownStart), color: .cyan)
                 planConnector
-                planMilestone(icon: "bed.double.fill", label: "En cama", value: timeText(plan.bedtime), color: ScoreKind.sleep.color)
+                planMilestone(icon: "bed.double.fill", label: RecvelL10n.text("En cama"), value: timeText(plan.bedtime), color: ScoreKind.sleep.color)
                 planConnector
                 planMilestone(icon: "alarm.fill", label: "Despierta", value: timeText(plan.wakeTime), color: ScoreKind.recovery.color)
             }
@@ -826,7 +826,7 @@ struct SleepDetailView: View {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "cup.and.saucer.fill")
                     .foregroundStyle(ScoreKind.energy.color)
-                Text("Si consumes una dosis grande de cafeina, evita hacerlo despues de las \(timeText(plan.caffeineCutoff)). La sensibilidad y la dosis cambian el efecto.")
+                Text(RecvelL10n.text("detail.caffeineCutoff", values: ["time": timeText(plan.caffeineCutoff)]))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1000,7 +1000,7 @@ struct SleepDetailView: View {
                             .foregroundStyle(accent)
                         Text(bank.hasEnoughData ? (bank.isSurplus ? "Superavit" : "Deuda acumulada") : "Calibrando")
                             .font(.title3.weight(.bold))
-                        Text("Últimos \(SleepBankEngine.windowDays) días · meta \(String(format: "%.1f", sleepGoalHours)) h")
+                        Text(RecvelL10n.text("detail.lastDaysGoal", values: ["days": "\(SleepBankEngine.windowDays)", "goal": String(format: "%.1f", sleepGoalHours)]))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1020,7 +1020,7 @@ struct SleepDetailView: View {
                 if bank.nightly.count > 1 {
                     Chart(bank.nightly) { point in
                         BarMark(
-                            x: .value("Dia", point.date, unit: .day),
+                            x: .value(RecvelL10n.text("Dia"), point.date, unit: .day),
                             y: .value("Balance", point.value)
                         )
                         .foregroundStyle(point.value >= 0 ? ScoreKind.recovery.color : ScoreKind.sleep.color)
@@ -1064,7 +1064,7 @@ struct SleepDetailView: View {
     /// Meta de sueno debajo del Sleep Bank (fuera del boton para no pelear gestos).
     private var sleepGoalStepper: some View {
         Stepper(value: $sleepGoalHours, in: 6...10, step: 0.5) {
-            Text("Meta por noche: \(String(format: "%.1f", sleepGoalHours)) h")
+            Text(RecvelL10n.text("detail.goalPerNight", values: ["goal": String(format: "%.1f", sleepGoalHours)]))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
@@ -1087,7 +1087,7 @@ struct SleepDetailView: View {
         return Group {
             if !tips.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    DetailSectionTitle(title: "Recomendaciones", detail: "según tu puntuación y tus señales")
+                    DetailSectionTitle(title: "Recomendaciones", detail: RecvelL10n.text("según tu puntuación y tus señales"))
                     VStack(spacing: 10) {
                         ForEach(tips) { tip in SleepCoachingCard(tip: tip) }
                     }
@@ -1101,8 +1101,8 @@ struct SleepDetailView: View {
     @ViewBuilder
     private var sleepTrendCards: some View {
         tappableTrendCard(key: "timeAsleep", title: "Tiempo dormido", icon: "moon.fill", values: orderedWeek.compactMap { day in day.sleepHours.map { DetailPoint(date: day.date, value: $0) } }, current: snapshot.sleepHours, unit: "h", higherIsBetter: true, decimals: 1)
-        tappableTrendCard(key: "deep", title: "Sueño profundo", icon: "moon.stars.fill", values: orderedWeek.compactMap { day in day.sleepDetails.map { DetailPoint(date: day.date, value: $0.deepHours) } }, current: snapshot.sleepDetails?.deepHours, unit: "h", higherIsBetter: true, decimals: 1)
-        tappableTrendCard(key: "rem", title: "Sueño REM", icon: "brain.head.profile", values: orderedWeek.compactMap { day in day.sleepDetails.map { DetailPoint(date: day.date, value: $0.remHours) } }, current: snapshot.sleepDetails?.remHours, unit: "h", higherIsBetter: true, decimals: 1)
+        tappableTrendCard(key: "deep", title: RecvelL10n.text("Sueño profundo"), icon: "moon.stars.fill", values: orderedWeek.compactMap { day in day.sleepDetails.map { DetailPoint(date: day.date, value: $0.deepHours) } }, current: snapshot.sleepDetails?.deepHours, unit: "h", higherIsBetter: true, decimals: 1)
+        tappableTrendCard(key: "rem", title: RecvelL10n.text("Sueño REM"), icon: "brain.head.profile", values: orderedWeek.compactMap { day in day.sleepDetails.map { DetailPoint(date: day.date, value: $0.remHours) } }, current: snapshot.sleepDetails?.remHours, unit: "h", higherIsBetter: true, decimals: 1)
         tappableTrendCard(key: "latency", title: "Latencia", icon: "hourglass", values: orderedWeek.compactMap { day in day.sleepDetails?.latencyMinutes.map { DetailPoint(date: day.date, value: $0) } }, current: snapshot.sleepDetails?.latencyMinutes, unit: "min", higherIsBetter: false, decimals: 0)
         tappableTrendCard(key: "efficiency", title: "Eficiencia", icon: "gauge.with.dots.needle.67percent", values: orderedWeek.compactMap { day in day.sleepDetails?.efficiency.map { DetailPoint(date: day.date, value: $0) } }, current: snapshot.sleepDetails?.efficiency, unit: "%", higherIsBetter: true, decimals: 0)
         tappableTrendCard(key: "consistency", title: "Consistencia", icon: "clock.arrow.2.circlepath", values: orderedWeek.compactMap { day in day.sleepDetails?.consistencyMinutes.map { DetailPoint(date: day.date, value: $0) } }, current: snapshot.sleepDetails?.consistencyMinutes, unit: "min", higherIsBetter: false, decimals: 0)
@@ -1126,7 +1126,7 @@ struct SleepDetailView: View {
         return DetailTrendCard(
             title: title,
             icon: icon,
-            valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? "Sin dato",
+            valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? RecvelL10n.text("Sin dato"),
             typicalText: typical.map { "Tipico \(number($0, decimals: decimals, unit: unit))" } ?? "Baseline pendiente",
             status: detailStatus(current: current, band: band, higherIsBetter: higherIsBetter),
             points: values,
@@ -1157,7 +1157,7 @@ struct SleepDetailView: View {
             SleepStageSlice(name: "Despierto", hours: sleep.awakeHours, color: ScoreKind.strain.color, icon: "eye.fill")
         ]
         if sleep.unspecifiedHours > 0.05 {
-            stages.insert(SleepStageSlice(name: "Sin clasificar", hours: sleep.unspecifiedHours, color: .gray, icon: "questionmark"), at: 3)
+            stages.insert(SleepStageSlice(name: RecvelL10n.text("Sin clasificar"), hours: sleep.unspecifiedHours, color: .gray, icon: "questionmark"), at: 3)
         }
         return stages.filter { $0.hours > 0.01 }
     }
@@ -1218,14 +1218,17 @@ struct RecoveryDetailView: View {
                 identifier: "detail.recovery.advice"
             )
 
-            DetailSectionTitle(title: "Qué influyó en tu Recuperación", detail: "VS. TU REFERENCIA")
+            DetailSectionTitle(title: RecvelL10n.text("Qué influyó en tu Recuperación"), detail: RecvelL10n.text("VS. TU REFERENCIA"))
             driversCard
 
-            DetailSectionTitle(title: "Senales", detail: "ULTIMOS \(min(orderedWeek.count, 14)) DIAS")
+            DetailSectionTitle(
+                title: RecvelL10n.text("detail.signals"),
+                detail: RecvelL10n.text("detail.lastNDays", values: ["days": "\(min(orderedWeek.count, 14))"])
+            )
             recoveryTrendCards
             DataProvenanceCard(snapshot: snapshot, color: ScoreKind.recovery.color)
 
-            CaveatFootnote(text: "HRV y RHR cambian con alcohol, enfermedad, sueño, postura y calidad de medición. Recuperación resume tendencias de bienestar y no diagnostica fatiga, enfermedad ni capacidad deportiva.")
+            CaveatFootnote(text: RecvelL10n.text("HRV y RHR cambian con alcohol, enfermedad, sueño, postura y calidad de medición. Recuperación resume tendencias de bienestar y no diagnostica fatiga, enfermedad ni capacidad deportiva."))
         }
         .sheet(item: $metricKey) { selection in
             MetricDetailView(
@@ -1302,11 +1305,11 @@ struct RecoveryDetailView: View {
         let recoveryPoints = recoveryScoreSeries.map { DetailPoint(date: $0.date, value: $0.value) }
         tappableTrendCard(key: "recoveryScore", title: ScoreKind.recovery.displayName, icon: "heart.fill", values: recoveryPoints, current: Double(score.value), unit: "%", higherIsBetter: true, decimals: 0, color: ScoreKind.recovery.color)
         tappableTrendCard(key: "hrv", title: "HRV", icon: "waveform.path.ecg", values: points(\.hrv), current: snapshot.hrv, unit: "ms", higherIsBetter: true, decimals: 0, color: ScoreKind.recovery.color)
-        tappableTrendCard(key: "rhr", title: "FC en reposo", icon: "heart.fill", values: points(\.restingHeartRate), current: snapshot.restingHeartRate, unit: "bpm", higherIsBetter: false, decimals: 0, color: .cyan)
+        tappableTrendCard(key: "rhr", title: RecvelL10n.text("FC en reposo"), icon: "heart.fill", values: points(\.restingHeartRate), current: snapshot.restingHeartRate, unit: "bpm", higherIsBetter: false, decimals: 0, color: .cyan)
         tappableTrendCard(key: "respiratory", title: "Respiracion", icon: "lungs.fill", values: points(\.respiratoryRate), current: snapshot.respiratoryRate, unit: "rpm", higherIsBetter: false, decimals: 1, color: Color(red: 0.35, green: 0.72, blue: 0.95))
         // SpO2 y temperatura de muneca: presentes en Bevel, faltaban en Recvel.
-        tappableTrendCard(key: "spo2", title: "Saturacion de oxigeno", icon: "drop.degreesign.fill", values: oxygenPoints, current: normalizedOxygen(snapshot.oxygenSaturation), unit: "%", higherIsBetter: true, decimals: 1, color: Color(red: 0.45, green: 0.65, blue: 1.0))
-        tappableTrendCard(key: "wristTemperature", title: "Temperatura de muneca", icon: "thermometer.medium", values: points(\.wristTemperature), current: snapshot.wristTemperature, unit: "°C", higherIsBetter: false, decimals: 1, color: ScoreKind.energy.color)
+        tappableTrendCard(key: "spo2", title: RecvelL10n.text("Saturacion de oxigeno"), icon: "drop.degreesign.fill", values: oxygenPoints, current: normalizedOxygen(snapshot.oxygenSaturation), unit: "%", higherIsBetter: true, decimals: 1, color: Color(red: 0.45, green: 0.65, blue: 1.0))
+        tappableTrendCard(key: "wristTemperature", title: RecvelL10n.text("Temperatura de muneca"), icon: "thermometer.medium", values: points(\.wristTemperature), current: snapshot.wristTemperature, unit: "°C", higherIsBetter: false, decimals: 1, color: ScoreKind.energy.color)
         tappableTrendCard(key: "timeAsleep", title: "Tiempo dormido", icon: "moon.fill", values: points(\.sleepHours), current: snapshot.sleepHours, unit: "h", higherIsBetter: true, decimals: 1, color: ScoreKind.sleep.color)
     }
 
@@ -1343,7 +1346,7 @@ struct RecoveryDetailView: View {
         return DetailTrendCard(
             title: title,
             icon: icon,
-            valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? "Sin dato",
+            valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? RecvelL10n.text("Sin dato"),
             typicalText: typical.map { "Tipico \(number($0, decimals: decimals, unit: unit))" } ?? "Baseline pendiente",
             status: detailStatus(current: current, band: band, higherIsBetter: higherIsBetter),
             points: values,
@@ -1410,20 +1413,20 @@ struct StrainDetailView: View {
     private var classificationGap: String {
         let profile = profiles.first { $0.setupCompleted }
         guard let profile else {
-            return "Completa tu perfil (fecha de nacimiento y sexo de referencia) para comparar tu VO2 max con las tablas FRIEND."
+            return RecvelL10n.text("Completa tu perfil (fecha de nacimiento y sexo de referencia) para comparar tu VO2 max con las tablas FRIEND.")
         }
         let sex = NutritionSex(rawValue: profile.sexOptional)
         if sex != .male && sex != .female {
-            return "Selecciona un sexo de referencia en tu perfil: las tablas FRIEND publican percentiles separados por sexo."
+            return RecvelL10n.text("Selecciona un sexo de referencia en tu perfil: las tablas FRIEND publican percentiles separados por sexo.")
         }
         let age = Calendar.current.dateComponents([.year], from: profile.birthDate, to: .now).year ?? 0
         if age < 20 || age > 79 {
-            return "Las tablas FRIEND publican percentiles de 20 a 79 anos. Fuera de ese rango no extrapolamos."
+            return RecvelL10n.text("Las tablas FRIEND publican percentiles de 20 a 79 anos. Fuera de ese rango no extrapolamos.")
         }
         if orderedWeek.last(where: { $0.vo2Max != nil }) == nil {
-            return "Se necesita una estimación reciente de VO₂ máx. en Apple Health. Apple puede generarla durante caminatas, carreras o senderismo al aire libre."
+            return RecvelL10n.text("Se necesita una estimación reciente de VO₂ máx. en Apple Health. Apple puede generarla durante caminatas, carreras o senderismo al aire libre.")
         }
-        return "Faltan datos para clasificar tu aptitud cardiorrespiratoria."
+        return RecvelL10n.text("Faltan datos para clasificar tu aptitud cardiorrespiratoria.")
     }
 
     private var advice: DetailAdvice {
@@ -1447,7 +1450,10 @@ struct StrainDetailView: View {
                     score: score,
                     valueText: String(format: "%.1f", loadValue(score.value)),
                     unitText: "/21",
-                    statusText: String(format: "Objetivo de hoy %.1f–%.1f", targetLoad.lowerBound, targetLoad.upperBound),
+                    statusText: RecvelL10n.text("detail.todayTarget", values: [
+                        "low": String(format: "%.1f", targetLoad.lowerBound),
+                        "high": String(format: "%.1f", targetLoad.upperBound)
+                    ]),
                     targetBand: targetPercent
                 )
             }
@@ -1455,8 +1461,8 @@ struct StrainDetailView: View {
             .accessibilityIdentifier("detail.strain.scoreCard")
 
             DetailStatStrip(stats: [
-                DetailStat(label: "Duración", value: snapshot.workoutMinutes.map { "\(Int($0)) min" } ?? "0 min", icon: "stopwatch.fill", color: ScoreKind.strain.color),
-                DetailStat(label: "Energía activa", value: snapshot.activeEnergy.map { "\(Int($0)) kcal" } ?? "Sin dato", icon: "flame.fill", color: ScoreKind.energy.color)
+                DetailStat(label: RecvelL10n.text("Duración"), value: snapshot.workoutMinutes.map { "\(Int($0)) min" } ?? "0 min", icon: "stopwatch.fill", color: ScoreKind.strain.color),
+                DetailStat(label: RecvelL10n.text("Energía activa"), value: snapshot.activeEnergy.map { "\(Int($0)) kcal" } ?? "Sin dato", icon: "flame.fill", color: ScoreKind.energy.color)
             ])
 
             DetailAdviceCard(
@@ -1477,16 +1483,16 @@ struct StrainDetailView: View {
             DetailSectionTitle(title: RecvelL10n.text("load.activityTimeline.title"), detail: "\(snapshot.workouts.count) ACTIVIDADES")
             workoutTimeline
 
-            DetailSectionTitle(title: "Zonas cardiacas", detail: "DISTRIBUCION DE HOY")
+            DetailSectionTitle(title: "Zonas cardiacas", detail: RecvelL10n.text("DISTRIBUCION DE HOY"))
             zonesCard
 
             calibrationCard
 
-            DetailSectionTitle(title: "Tendencias", detail: "TOCA PARA VER EL DETALLE")
+            DetailSectionTitle(title: "Tendencias", detail: RecvelL10n.text("TOCA PARA VER EL DETALLE"))
             strainTrendCards
             DataProvenanceCard(snapshot: snapshot, color: ScoreKind.strain.color)
 
-            CaveatFootnote(text: "Carga estima el esfuerzo cardiovascular con actividad, energía y zonas de frecuencia cardíaca. No predice lesiones ni sustituye la percepción de esfuerzo, dolor, enfermedad o indicaciones profesionales.")
+            CaveatFootnote(text: RecvelL10n.text("Carga estima el esfuerzo cardiovascular con actividad, energía y zonas de frecuencia cardíaca. No predice lesiones ni sustituye la percepción de esfuerzo, dolor, enfermedad o indicaciones profesionales."))
         }
         .sheet(item: $metricKey) { selection in
             MetricDetailView(
@@ -1625,7 +1631,7 @@ struct StrainDetailView: View {
                     .font(.headline)
                     .foregroundStyle(ScoreKind.strain.color)
                 Spacer()
-                Text("\(days)/14 días").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                Text(RecvelL10n.text("detail.daysOf14", values: ["days": "\(days)"])).font(.caption.weight(.bold)).foregroundStyle(.secondary)
             }
             ProgressView(value: Double(days), total: 14)
                 .tint(ScoreKind.strain.color)
@@ -1666,7 +1672,7 @@ struct StrainDetailView: View {
             DetailTrendCard(
                 title: title,
                 icon: icon,
-                valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? "Sin dato",
+                valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? RecvelL10n.text("Sin dato"),
                 typicalText: typical.map { "Tipico \(number($0, decimals: decimals, unit: unit))" } ?? "Baseline pendiente",
                 status: detailStatus(current: current, band: band, higherIsBetter: true),
                 points: values,
@@ -1742,16 +1748,16 @@ struct EnergyDetailView: View {
                 identifier: "detail.energy.advice"
             )
 
-            DetailSectionTitle(title: "Balance del dia", detail: "SENALES DISPONIBLES")
+            DetailSectionTitle(title: RecvelL10n.text("Balance del dia"), detail: "SENALES DISPONIBLES")
             contributorsCard
             contextCard
             daylightAndCaffeineCard
 
-            DetailSectionTitle(title: "Tendencias", detail: "TOCA PARA VER EL DETALLE")
+            DetailSectionTitle(title: "Tendencias", detail: RecvelL10n.text("TOCA PARA VER EL DETALLE"))
             energyTrendCards
             DataProvenanceCard(snapshot: snapshot, color: ScoreKind.energy.color)
 
-            CaveatFootnote(text: "Energía es una estimación diaria de capacidad basada en Recuperación, Sueño y Carga. La luz diurna y la cafeína aportan contexto medido; no representan una batería fisiológica ni una curva intradía de carga y descarga.")
+            CaveatFootnote(text: RecvelL10n.text("Energía es una estimación diaria de capacidad basada en Recuperación, Sueño y Carga. La luz diurna y la cafeína aportan contexto medido; no representan una batería fisiológica ni una curva intradía de carga y descarga."))
         }
         .sheet(item: $metricKey) { selection in
             MetricDetailView(
@@ -1813,7 +1819,7 @@ struct EnergyDetailView: View {
         HStack(spacing: 0) {
             tappableContextMetric(key: "activeEnergy", icon: "bolt.fill", value: snapshot.activeEnergy.map { "\(Int($0))" } ?? "—", label: "kcal activas", color: ScoreKind.energy.color)
             Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 52)
-            tappableContextMetric(key: "workoutMinutes", icon: "figure.run", value: snapshot.workoutMinutes.map { "\(Int($0))" } ?? "0", label: "min de entrenamiento", color: ScoreKind.strain.color)
+            tappableContextMetric(key: "workoutMinutes", icon: "figure.run", value: snapshot.workoutMinutes.map { "\(Int($0))" } ?? "0", label: RecvelL10n.text("detail.workoutMinutesShort"), color: ScoreKind.strain.color)
             Rectangle().fill(Color.white.opacity(0.09)).frame(width: 1, height: 52)
             tappableContextMetric(key: "steps", icon: "figure.walk", value: snapshot.steps?.formatted(.number.locale(RecvelL10n.locale)) ?? "—", label: "pasos", color: ScoreKind.recovery.color)
         }
@@ -1852,7 +1858,7 @@ struct EnergyDetailView: View {
                         key: "daylight",
                         icon: "sun.max.fill",
                         value: snapshot.daylightMinutes.map { "\(Int($0))" } ?? "—",
-                        label: "min luz dia",
+                        label: RecvelL10n.text("min luz dia"),
                         color: ScoreKind.energy.color
                     )
                 }
@@ -1958,7 +1964,7 @@ struct EnergyDetailView: View {
             DetailTrendCard(
                 title: title,
                 icon: icon,
-                valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? "Sin dato",
+                valueText: current.map { number($0, decimals: decimals, unit: unit) } ?? RecvelL10n.text("Sin dato"),
                 typicalText: typical.map { "Tipico \(number($0, decimals: decimals, unit: unit))" } ?? "Baseline pendiente",
                 status: detailStatus(current: current, band: band, higherIsBetter: higherIsBetter),
                 points: values,
@@ -1982,13 +1988,13 @@ private func personalBand(_ values: [Double]) -> ClosedRange<Double>? {
 }
 
 private func detailStatus(current: Double?, band: ClosedRange<Double>?, higherIsBetter: Bool) -> DetailStatus {
-    guard let current else { return DetailStatus(text: "Sin dato", color: .gray) }
+    guard let current else { return DetailStatus(text: RecvelL10n.text("Sin dato"), color: .gray) }
     guard let band else { return DetailStatus(text: "Construyendo referencia personal", color: ScoreKind.energy.color) }
-    if band.contains(current) { return DetailStatus(text: "En tu rango", color: ScoreKind.recovery.color) }
+    if band.contains(current) { return DetailStatus(text: RecvelL10n.text("En tu rango"), color: ScoreKind.recovery.color) }
     if current > band.upperBound {
-        return DetailStatus(text: "Sobre tu rango", color: higherIsBetter ? ScoreKind.recovery.color : ScoreKind.strain.color)
+        return DetailStatus(text: RecvelL10n.text("Sobre tu rango"), color: higherIsBetter ? ScoreKind.recovery.color : ScoreKind.strain.color)
     }
-    return DetailStatus(text: "Bajo tu rango", color: higherIsBetter ? ScoreKind.strain.color : ScoreKind.recovery.color)
+    return DetailStatus(text: RecvelL10n.text("Bajo tu rango"), color: higherIsBetter ? ScoreKind.strain.color : ScoreKind.recovery.color)
 }
 
 private func number(_ value: Double, decimals: Int, unit: String) -> String {
@@ -2120,7 +2126,7 @@ struct MetricDetailView: View {
             HStack(spacing: 8) {
                 Text(allPoints.last?.date.formatted(
                     .dateTime.day().month(.abbreviated).year().locale(RecvelL10n.locale)
-                ) ?? "Sin dato")
+                ) ?? RecvelL10n.text("Sin dato"))
                 if let band {
                     Text("·")
                     Image(systemName: "chart.bar.fill").font(.caption2)
@@ -2183,7 +2189,7 @@ struct MetricDetailView: View {
             if windowPoints.count > 1 {
                 metricChart
             } else {
-                Text("Aun no hay suficientes puntos en esta ventana.")
+                Text(RecvelL10n.text("Aun no hay suficientes puntos en esta ventana."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 180)
@@ -2208,7 +2214,7 @@ struct MetricDetailView: View {
         guard window.days > 30, let first = allPoints.first else { return nil }
         let covered = Calendar.current.dateComponents([.day], from: first.date, to: .now).day ?? 0
         guard covered < window.days - 5 else { return nil }
-        return "Recvel lee los ultimos 30 dias de Apple Health. Esta ventana muestra los \(max(covered, 1)) dias con datos, no un hueco en tu historial."
+        return RecvelL10n.text("detail.windowNote", values: ["days": "\(max(covered, 1))"])
     }
 
     private var metricChart: some View {
@@ -2290,7 +2296,7 @@ struct MetricDetailView: View {
     /// Tabla "Trends Analysis" de Bevel: cambio por ventana + sparkline.
     private var trendsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            DetailSectionTitle(title: "Analisis de tendencia", detail: "vs periodo anterior")
+            DetailSectionTitle(title: RecvelL10n.text("Analisis de tendencia"), detail: "vs periodo anterior")
             VStack(spacing: 0) {
                 ForEach(trendEngine.rows(for: allPoints)) { row in
                     trendRow(row)
@@ -2320,7 +2326,7 @@ struct MetricDetailView: View {
             HStack(spacing: 5) {
                 Image(systemName: directionSymbol(direction))
                     .font(.caption.weight(.bold))
-                Text(row.change.map { changeText($0) } ?? "Sin dato")
+                Text(row.change.map { changeText($0) } ?? RecvelL10n.text("Sin dato"))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
             }
@@ -2377,7 +2383,7 @@ struct MetricDetailView: View {
                 .foregroundStyle(descriptor.color)
                 .frame(width: 26)
             VStack(alignment: .leading, spacing: 5) {
-                Text("Qué es \(descriptor.title)")
+                Text(RecvelL10n.text("detail.whatIs", values: ["title": descriptor.title]))
                     .font(.subheadline.weight(.bold))
                 Text(descriptor.explanation)
                     .font(.caption)
@@ -2393,7 +2399,7 @@ struct MetricDetailView: View {
     /// "Resources" de Bevel: articulos educativos por metrica.
     private var resourcesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            DetailSectionTitle(title: "Recursos", detail: "con evidencia citada")
+            DetailSectionTitle(title: "Recursos", detail: RecvelL10n.text("con evidencia citada"))
             ScrollView(.horizontal) {
                 HStack(spacing: 10) {
                     ForEach(descriptor.resources) { resource in
@@ -2503,7 +2509,7 @@ private struct SleepCoachingCard: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "text.book.closed")
-                    Text(showEvidence ? "Ocultar evidencia" : "Ver evidencia")
+                    Text(showEvidence ? "Ocultar evidencia" : RecvelL10n.text("Ver evidencia"))
                     Image(systemName: showEvidence ? "chevron.up" : "chevron.down")
                         .font(.system(size: 9, weight: .bold))
                 }
@@ -2540,11 +2546,11 @@ enum SleepMetricCatalog {
             MetricDescriptor(
                 key: "sleepScore", title: RecvelL10n.text("sleep.score.title"), symbol: "moon.stars.fill",
                 unit: "%", decimals: 0, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Resume la noche en un solo numero combinando duracion, composicion por etapas y consistencia de horario. Es una herramienta de tendencia: un numero aislado importa menos que hacia donde va.",
+                explanation: RecvelL10n.text("Resume la noche en un solo numero combinando duracion, composicion por etapas y consistencia de horario. Es una herramienta de tendencia: un numero aislado importa menos que hacia donde va."),
                 resources: [
                     MetricResource(
-                        title: "Qué es la puntuación de Sueño",
-                        subtitle: "Como se calcula",
+                        title: RecvelL10n.text("Qué es la puntuación de Sueño"),
+                        subtitle: RecvelL10n.text("Como se calcula"),
                         symbol: "function",
                         body: """
                         La puntuación de Sueño de Recvel resume tu noche en un valor de 0 a 100 a partir de tres bloques:
@@ -2559,8 +2565,8 @@ enum SleepMetricCatalog {
                         """
                     ),
                     MetricResource(
-                        title: "Cómo mejorar tu puntuación",
-                        subtitle: "Intervenciones con respaldo",
+                        title: RecvelL10n.text("Cómo mejorar tu puntuación"),
+                        subtitle: RecvelL10n.text("Intervenciones con respaldo"),
                         symbol: "sparkles",
                         body: """
                         Las intervenciones con mejor respaldo, en orden de evidencia:
@@ -2581,11 +2587,11 @@ enum SleepMetricCatalog {
             MetricDescriptor(
                 key: "timeAsleep", title: "Tiempo dormido", symbol: "moon.fill",
                 unit: "h", decimals: 1, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Horas efectivamente dormidas, sin contar el tiempo en cama despierto. Es la senal con mas respaldo de todas las del sueno.",
+                explanation: RecvelL10n.text("Horas efectivamente dormidas, sin contar el tiempo en cama despierto. Es la senal con mas respaldo de todas las del sueno."),
                 resources: [
                     MetricResource(
-                        title: "Cuanto sueno necesitas",
-                        subtitle: "El consenso y sus matices",
+                        title: RecvelL10n.text("Cuanto sueno necesitas"),
+                        subtitle: RecvelL10n.text("El consenso y sus matices"),
                         symbol: "bed.double.fill",
                         body: """
                         La American Academy of Sleep Medicine y la Sleep Research Society recomiendan 7 h o mas por noche de forma regular para adultos de 18 a 60 anos. Dormir menos de 7 h de forma habitual se asocia con peores resultados cardiometabolicos, inmunes y cognitivos.
@@ -2600,11 +2606,11 @@ enum SleepMetricCatalog {
             MetricDescriptor(
                 key: "sleepBank", title: RecvelL10n.text("sleep.balance.title"), symbol: "banknote",
                 unit: "h", decimals: 1, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Balance acumulado de horas por encima o por debajo de tu meta durante los últimos 14 días. Un valor positivo indica superávit; uno negativo indica deuda.",
+                explanation: RecvelL10n.text("Balance acumulado de horas por encima o por debajo de tu meta durante los últimos 14 días. Un valor positivo indica superávit; uno negativo indica deuda."),
                 resources: [
                     MetricResource(
-                        title: "Deuda de sueno",
-                        subtitle: "Qué puede recuperarse y cuáles son los límites",
+                        title: RecvelL10n.text("Deuda de sueno"),
+                        subtitle: RecvelL10n.text("Qué puede recuperarse y cuáles son los límites"),
                         symbol: "creditcard",
                         body: """
                         La deuda de sueno es la diferencia acumulada entre lo que duermes y lo que tu cuerpo necesita. Convencionalmente se mide en ventanas de 7 a 14 dias; Recvel usa 14 para capturar el patron semanal completo, fin de semana incluido.
@@ -2621,15 +2627,15 @@ enum SleepMetricCatalog {
                 ]
             ),
             MetricDescriptor(
-                key: "deep", title: "Sueño profundo", symbol: "moon.zzz.fill",
+                key: "deep", title: RecvelL10n.text("Sueño profundo"), symbol: "moon.zzz.fill",
                 unit: "h", decimals: 1, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Sueño de ondas lentas asociado con recuperación física y consolidación de la memoria. Se concentra en la primera mitad de la noche. Es una estimación del reloj, no una polisomnografía.",
+                explanation: RecvelL10n.text("Sueño de ondas lentas asociado con recuperación física y consolidación de la memoria. Se concentra en la primera mitad de la noche. Es una estimación del reloj, no una polisomnografía."),
                 resources: []
             ),
             MetricDescriptor(
-                key: "rem", title: "Sueño REM", symbol: "brain.head.profile",
+                key: "rem", title: RecvelL10n.text("Sueño REM"), symbol: "brain.head.profile",
                 unit: "h", decimals: 1, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Fase asociada con la consolidación de la memoria emocional y procedimental. Se concentra en la segunda mitad de la noche; acortar ese periodo puede reducir el tiempo REM de forma desproporcionada.",
+                explanation: RecvelL10n.text("Fase asociada con la consolidación de la memoria emocional y procedimental. Se concentra en la segunda mitad de la noche; acortar ese periodo puede reducir el tiempo REM de forma desproporcionada."),
                 resources: []
             ),
             MetricDescriptor(
@@ -2641,13 +2647,13 @@ enum SleepMetricCatalog {
             MetricDescriptor(
                 key: "latency", title: "Latencia", symbol: "hourglass",
                 unit: "min", decimals: 0, higherIsBetter: false, color: ScoreKind.sleep.color,
-                explanation: "Cuanto tardas en conciliar el sueno. Una latencia muy corta de forma constante puede ser senal de deuda de sueno, no de buen dormir.",
+                explanation: RecvelL10n.text("Cuanto tardas en conciliar el sueno. Una latencia muy corta de forma constante puede ser senal de deuda de sueno, no de buen dormir."),
                 resources: []
             ),
             MetricDescriptor(
                 key: "consistency", title: "Consistencia", symbol: "clock.arrow.2.circlepath",
                 unit: "min", decimals: 0, higherIsBetter: false, color: ScoreKind.sleep.color,
-                explanation: "Cuanto varia tu horario de sueno. La regularidad predice la calidad de forma independiente a la duracion.",
+                explanation: RecvelL10n.text("Cuanto varia tu horario de sueno. La regularidad predice la calidad de forma independiente a la duracion."),
                 resources: []
             )
         ]
@@ -2694,11 +2700,11 @@ enum RecoveryMetricCatalog {
             MetricDescriptor(
                 key: "recoveryScore", title: ScoreKind.recovery.displayName, symbol: "heart.fill",
                 unit: "%", decimals: 0, higherIsBetter: true, color: ScoreKind.recovery.color,
-                explanation: "Resume tu disposición para asumir carga al comparar las señales de hoy con tu rango habitual, no con otras personas.",
+                explanation: RecvelL10n.text("Resume tu disposición para asumir carga al comparar las señales de hoy con tu rango habitual, no con otras personas."),
                 resources: [
                     MetricResource(
-                        title: "Qué es la puntuación de Recuperación",
-                        subtitle: "Qué incluye y cuáles son sus límites",
+                        title: RecvelL10n.text("Qué es la puntuación de Recuperación"),
+                        subtitle: RecvelL10n.text("Qué incluye y cuáles son sus límites"),
                         symbol: "function",
                         body: """
                         La Recuperación de Recvel compara las señales de hoy con tu rango personal reciente. Las señales principales son:
@@ -2721,11 +2727,11 @@ enum RecoveryMetricCatalog {
             MetricDescriptor(
                 key: "hrv", title: "HRV", symbol: "waveform.path.ecg",
                 unit: "ms", decimals: 0, higherIsBetter: true, color: ScoreKind.recovery.color,
-                explanation: "Variación del tiempo entre latidos. Es una señal muy personal y se interpreta frente a tu propio rango habitual.",
+                explanation: RecvelL10n.text("Variación del tiempo entre latidos. Es una señal muy personal y se interpreta frente a tu propio rango habitual."),
                 resources: [
                     MetricResource(
-                        title: "Cómo interpretar tu HRV",
-                        subtitle: "Por qué importa tu referencia personal",
+                        title: RecvelL10n.text("Cómo interpretar tu HRV"),
+                        subtitle: RecvelL10n.text("Por qué importa tu referencia personal"),
                         symbol: "waveform.path.ecg.rectangle",
                         body: """
                         La HRV mide la variacion en los intervalos entre latidos consecutivos. Una HRV mas alta se asocia con un sistema nervioso autonomo mas adaptable.
@@ -2740,25 +2746,25 @@ enum RecoveryMetricCatalog {
                 ]
             ),
             MetricDescriptor(
-                key: "rhr", title: "FC en reposo", symbol: "heart.fill",
+                key: "rhr", title: RecvelL10n.text("FC en reposo"), symbol: "heart.fill",
                 unit: "bpm", decimals: 0, higherIsBetter: false, color: .cyan,
-                explanation: "Latidos por minuto en reposo completo. Sube con estres, enfermedad, alcohol, calor y sueno insuficiente. Una FC en reposo mas baja suele acompanar mejor aptitud cardiorrespiratoria.",
+                explanation: RecvelL10n.text("Latidos por minuto en reposo completo. Sube con estres, enfermedad, alcohol, calor y sueno insuficiente. Una FC en reposo mas baja suele acompanar mejor aptitud cardiorrespiratoria."),
                 resources: []
             ),
             MetricDescriptor(
-                key: "respiratory", title: "Respiración", symbol: "lungs.fill",
+                key: "respiratory", title: RecvelL10n.text("Respiración"), symbol: "lungs.fill",
                 unit: "rpm", decimals: 1, higherIsBetter: false, color: Color(red: 0.35, green: 0.72, blue: 0.95),
-                explanation: "Respiraciones por minuto durante el sueño. Esta señal suele ser estable entre noches, por lo que una desviación sostenida aporta más contexto que una lectura aislada.",
+                explanation: RecvelL10n.text("Respiraciones por minuto durante el sueño. Esta señal suele ser estable entre noches, por lo que una desviación sostenida aporta más contexto que una lectura aislada."),
                 resources: []
             ),
             MetricDescriptor(
-                key: "spo2", title: "Saturacion de oxigeno", symbol: "drop.degreesign.fill",
+                key: "spo2", title: RecvelL10n.text("Saturacion de oxigeno"), symbol: "drop.degreesign.fill",
                 unit: "%", decimals: 1, higherIsBetter: true, color: Color(red: 0.45, green: 0.65, blue: 1.0),
-                explanation: "Porcentaje de hemoglobina saturada de oxigeno. En el reloj es una lectura de bienestar sujeta a ajuste, movimiento, perfusion y tono de piel: usa la tendencia del mismo dispositivo, no el valor puntual.",
+                explanation: RecvelL10n.text("Porcentaje de hemoglobina saturada de oxigeno. En el reloj es una lectura de bienestar sujeta a ajuste, movimiento, perfusion y tono de piel: usa la tendencia del mismo dispositivo, no el valor puntual."),
                 resources: [
                     MetricResource(
-                        title: "SpO2 en la muneca",
-                        subtitle: "Qué indica y cuáles son sus límites",
+                        title: RecvelL10n.text("SpO2 en la muneca"),
+                        subtitle: RecvelL10n.text("Qué indica y cuáles son sus límites"),
                         symbol: "drop.degreesign",
                         body: """
                         La SpO2 estima el porcentaje de hemoglobina que lleva oxigeno. En una persona sana a nivel del mar suele situarse entre 95% y 100%, y desciende con la altitud.
@@ -2777,13 +2783,13 @@ enum RecoveryMetricCatalog {
                 ]
             ),
             MetricDescriptor(
-                key: "wristTemperature", title: "Temperatura de muneca", symbol: "thermometer.medium",
+                key: "wristTemperature", title: RecvelL10n.text("Temperatura de muneca"), symbol: "thermometer.medium",
                 unit: "°C", decimals: 1, higherIsBetter: false, color: ScoreKind.energy.color,
-                explanation: "Temperatura de la piel de la muñeca medida mientras duermes. No es temperatura corporal ni un termómetro; lo útil es la desviación frente a tu referencia personal.",
+                explanation: RecvelL10n.text("Temperatura de la piel de la muñeca medida mientras duermes. No es temperatura corporal ni un termómetro; lo útil es la desviación frente a tu referencia personal."),
                 resources: [
                     MetricResource(
-                        title: "Temperatura de muneca",
-                        subtitle: "Para que sirve y para que no",
+                        title: RecvelL10n.text("Temperatura de muneca"),
+                        subtitle: RecvelL10n.text("Para que sirve y para que no"),
                         symbol: "thermometer.variable",
                         body: """
                         Apple Watch (Series 8 y posteriores) mide la temperatura de la PIEL de tu muneca mientras duermes. Necesita unas 5 noches para establecer tu baseline, y a partir de ahi reporta desviaciones, no valores absolutos.
@@ -2808,7 +2814,7 @@ enum RecoveryMetricCatalog {
             MetricDescriptor(
                 key: "timeAsleep", title: "Tiempo dormido", symbol: "moon.fill",
                 unit: "h", decimals: 1, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Horas dormidas la noche previa. Es uno de los factores con mas peso sobre tu disposicion del dia siguiente.",
+                explanation: RecvelL10n.text("Horas dormidas la noche previa. Es uno de los factores con mas peso sobre tu disposicion del dia siguiente."),
                 resources: []
             )
         ]
@@ -2844,11 +2850,11 @@ enum StrainMetricCatalog {
             MetricDescriptor(
                 key: "strainScore", title: ScoreKind.strain.displayName, symbol: "flame.fill",
                 unit: "/21", decimals: 1, higherIsBetter: true, color: ScoreKind.strain.color,
-                explanation: "Estima la carga cardiovascular del día a partir de energía activa, entrenamientos y zonas de frecuencia cardíaca. Se expresa en una escala de 0 a 21.",
+                explanation: RecvelL10n.text("Estima la carga cardiovascular del día a partir de energía activa, entrenamientos y zonas de frecuencia cardíaca. Se expresa en una escala de 0 a 21."),
                 resources: [
                     MetricResource(
-                        title: "Qué es la Carga",
-                        subtitle: "Carga, no rendimiento",
+                        title: RecvelL10n.text("Qué es la Carga"),
+                        subtitle: RecvelL10n.text("Carga, no rendimiento"),
                         symbol: "function",
                         body: """
                         La Carga de Recvel resume el esfuerzo cardiovascular acumulado durante el día. Combina:
@@ -2864,19 +2870,19 @@ enum StrainMetricCatalog {
                 ]
             ),
             MetricDescriptor(
-                key: "workoutMinutes", title: "Duración", symbol: "stopwatch.fill",
+                key: "workoutMinutes", title: RecvelL10n.text("Duración"), symbol: "stopwatch.fill",
                 unit: "min", decimals: 0, higherIsBetter: true, color: .cyan,
-                explanation: "Minutos de entrenamiento registrados hoy. Indican volumen, no intensidad: 60 min de caminata no equivalen a 60 min de intervalos.",
+                explanation: RecvelL10n.text("Minutos de entrenamiento registrados hoy. Indican volumen, no intensidad: 60 min de caminata no equivalen a 60 min de intervalos."),
                 resources: []
             ),
             MetricDescriptor(
-                key: "activeEnergy", title: "Energía activa", symbol: "bolt.fill",
+                key: "activeEnergy", title: RecvelL10n.text("Energía activa"), symbol: "bolt.fill",
                 unit: "kcal", decimals: 0, higherIsBetter: true, color: ScoreKind.energy.color,
-                explanation: "Kilocalorías quemadas por encima del metabolismo basal según Apple Health. Es una de las señales con más peso en Carga.",
+                explanation: RecvelL10n.text("Kilocalorías quemadas por encima del metabolismo basal según Apple Health. Es una de las señales con más peso en Carga."),
                 resources: [
                     MetricResource(
-                        title: "Energía activa y energía total",
-                        subtitle: "Qué mide el reloj",
+                        title: RecvelL10n.text("Energía activa y energía total"),
+                        subtitle: RecvelL10n.text("Qué mide el reloj"),
                         symbol: "flame.fill",
                         body: """
                         Apple Health separa energia activa (movimiento) de energia basal (reposo). Recvel usa la activa porque refleja esfuerzo voluntario y es la que mas se mueve dia a dia.
@@ -2889,7 +2895,7 @@ enum StrainMetricCatalog {
             MetricDescriptor(
                 key: "steps", title: "Pasos", symbol: "figure.walk",
                 unit: "", decimals: 0, higherIsBetter: true, color: ScoreKind.recovery.color,
-                explanation: "Conteo diario de pasos. Es útil como señal de movimiento espontáneo, pero no mide intensidad: muchos pasos lentos no equivalen a una Carga alta.",
+                explanation: RecvelL10n.text("Conteo diario de pasos. Es útil como señal de movimiento espontáneo, pero no mide intensidad: muchos pasos lentos no equivalen a una Carga alta."),
                 resources: []
             )
         ]
@@ -2915,13 +2921,13 @@ enum EnergyMetricCatalog {
     static func descriptors() -> [MetricDescriptor] {
         [
             MetricDescriptor(
-                key: "energyScore", title: "Energía", symbol: "bolt.fill",
+                key: "energyScore", title: RecvelL10n.text("Energía"), symbol: "bolt.fill",
                 unit: "%", decimals: 0, higherIsBetter: true, color: ScoreKind.energy.color,
-                explanation: "Estimación diaria de margen disponible a partir de Recuperación, Sueño y Carga. No es una batería fisiológica medida minuto a minuto.",
+                explanation: RecvelL10n.text("Estimación diaria de margen disponible a partir de Recuperación, Sueño y Carga. No es una batería fisiológica medida minuto a minuto."),
                 resources: [
                     MetricResource(
-                        title: "Cómo se estima la Energía",
-                        subtitle: "Capacidad, no calorias",
+                        title: RecvelL10n.text("Cómo se estima la Energía"),
+                        subtitle: RecvelL10n.text("Capacidad, no calorias"),
                         symbol: "function",
                         body: """
                         Recvel combina tres puntuaciones calculadas con tus datos:
@@ -2938,31 +2944,31 @@ enum EnergyMetricCatalog {
                 ]
             ),
             MetricDescriptor(
-                key: "activeEnergy", title: "Energía activa", symbol: "bolt.fill",
+                key: "activeEnergy", title: RecvelL10n.text("Energía activa"), symbol: "bolt.fill",
                 unit: "kcal", decimals: 0, higherIsBetter: true, color: ScoreKind.energy.color,
-                explanation: "Kilocalorías de movimiento del día. Aumentan la Carga y, por tanto, reducen el margen de Energía estimado.",
+                explanation: RecvelL10n.text("Kilocalorías de movimiento del día. Aumentan la Carga y, por tanto, reducen el margen de Energía estimado."),
                 resources: []
             ),
             MetricDescriptor(
                 key: "steps", title: "Pasos", symbol: "figure.walk",
                 unit: "", decimals: 0, higherIsBetter: true, color: ScoreKind.recovery.color,
-                explanation: "Movimiento espontáneo del día. Complementa la energía activa cuando no hay entrenamientos registrados.",
+                explanation: RecvelL10n.text("Movimiento espontáneo del día. Complementa la energía activa cuando no hay entrenamientos registrados."),
                 resources: []
             ),
             MetricDescriptor(
-                key: "workoutMinutes", title: "Minutos de entrenamiento", symbol: "figure.run",
+                key: "workoutMinutes", title: RecvelL10n.text("Minutos de entrenamiento"), symbol: "figure.run",
                 unit: "min", decimals: 0, higherIsBetter: true, color: ScoreKind.strain.color,
-                explanation: "Duración acumulada de las sesiones registradas. Aporta volumen a la Carga del día.",
+                explanation: RecvelL10n.text("Duración acumulada de las sesiones registradas. Aporta volumen a la Carga del día."),
                 resources: []
             ),
             MetricDescriptor(
                 key: "daylight", title: "Luz diurna", symbol: "sun.max.fill",
                 unit: "min", decimals: 0, higherIsBetter: true, color: ScoreKind.energy.color,
-                explanation: "Minutos de exposicion a luz diurna medidos por el reloj (timeInDaylight). La luz de dia ancla el ritmo circadiano y se asocia con mejor alerta; no es un suplemento de calorias.",
+                explanation: RecvelL10n.text("Minutos de exposicion a luz diurna medidos por el reloj (timeInDaylight). La luz de dia ancla el ritmo circadiano y se asocia con mejor alerta; no es un suplemento de calorias."),
                 resources: [
                     MetricResource(
-                        title: "Luz diurna y alerta",
-                        subtitle: "Por qué aparece en Energía",
+                        title: RecvelL10n.text("Luz diurna y alerta"),
+                        subtitle: RecvelL10n.text("Por qué aparece en Energía"),
                         symbol: "sun.max.fill",
                         body: """
                         La exposicion a luz brillante durante el dia refuerza el ritmo circadiano y mejora la alerta subjetiva en adultos sanos. Estudios de laboratorio muestran que la luz diurna (frente a luz tenue) adelanta y estabiliza la fase circadiana (Wright et al., Current Biology 2013).
@@ -2977,11 +2983,11 @@ enum EnergyMetricCatalog {
             MetricDescriptor(
                 key: "caffeine", title: "Cafeina", symbol: "cup.and.saucer.fill",
                 unit: "mg", decimals: 0, higherIsBetter: false, color: .cyan,
-                explanation: "Cafeina dietetica registrada en Apple Health. La vida media tipica es de 5-6 h: ayuda a la alerta a corto plazo, pero puede restar sueno si llega tarde.",
+                explanation: RecvelL10n.text("Cafeina dietetica registrada en Apple Health. La vida media tipica es de 5-6 h: ayuda a la alerta a corto plazo, pero puede restar sueno si llega tarde."),
                 resources: [
                     MetricResource(
-                        title: "Cafeina y energia percibida",
-                        subtitle: "Estimulante, no combustible",
+                        title: RecvelL10n.text("Cafeina y energia percibida"),
+                        subtitle: RecvelL10n.text("Estimulante, no combustible"),
                         symbol: "cup.and.saucer.fill",
                         body: """
                         La cafeina bloquea receptores de adenosina y aumenta la alerta percibida. No anade "energia metabolica": redistribuye la sensacion de fatiga.
@@ -2996,19 +3002,19 @@ enum EnergyMetricCatalog {
             MetricDescriptor(
                 key: "recoveryScore", title: ScoreKind.recovery.displayName, symbol: "heart.fill",
                 unit: "%", decimals: 0, higherIsBetter: true, color: ScoreKind.recovery.color,
-                explanation: "Aporta la mayor parte de la Energía estimada.",
+                explanation: RecvelL10n.text("Aporta la mayor parte de la Energía estimada."),
                 resources: []
             ),
             MetricDescriptor(
                 key: "sleepScore", title: ScoreKind.sleep.displayName, symbol: "moon.fill",
                 unit: "%", decimals: 0, higherIsBetter: true, color: ScoreKind.sleep.color,
-                explanation: "Restauración de la noche previa. Sin sueño suficiente, el margen de Energía disminuye aunque la Carga sea baja.",
+                explanation: RecvelL10n.text("Restauración de la noche previa. Sin sueño suficiente, el margen de Energía disminuye aunque la Carga sea baja."),
                 resources: []
             ),
             MetricDescriptor(
                 key: "strainScore", title: ScoreKind.strain.displayName, symbol: "flame.fill",
                 unit: "%", decimals: 0, higherIsBetter: false, color: ScoreKind.strain.color,
-                explanation: "Carga acumulada durante el día. Reduce el margen de Energía estimado.",
+                explanation: RecvelL10n.text("Carga acumulada durante el día. Reduce el margen de Energía estimado."),
                 resources: []
             )
         ]
@@ -3157,8 +3163,8 @@ struct FitnessClassDetailView: View {
                 .multilineTextAlignment(.center)
             HStack(spacing: 16) {
                 statBlock("VO2 max", String(format: "%.1f", classification.vo2Max), "ml/kg/min")
-                statBlock("Percentil", "\(Int(classification.percentile.rounded()))", "de 100")
-                statBlock("Tu grupo", classification.ageGroup, "anos")
+                statBlock("Percentil", "\(Int(classification.percentile.rounded()))", RecvelL10n.text("de 100"))
+                statBlock(RecvelL10n.text("Tu grupo"), classification.ageGroup, "anos")
             }
             .padding(.top, 4)
             HStack(spacing: 5) {
@@ -3237,7 +3243,10 @@ struct FitnessClassDetailView: View {
                 Text("\(RecvelL10n.text("fitness.nextLevel")): \(next.displayName)")
                     .font(.subheadline.weight(.bold))
             }
-            Text(String(format: "Necesitas un VO2 max de %.1f ml/kg/min (te faltan %.1f).", target, max(gap, 0)))
+            Text(RecvelL10n.text("detail.vo2Needed", values: [
+                "target": String(format: "%.1f", target),
+                "gap": String(format: "%.1f", max(gap, 0))
+            ]))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(RecvelL10n.text("detail.vo2.howToImprove"))

@@ -253,9 +253,9 @@ struct PlanView: View {
             Text("PLAN ADAPTATIVO")
                 .font(.caption2.weight(.heavy))
                 .foregroundStyle(ScoreKind.recovery.color)
-            Text("Hoy y esta semana")
+            Text(RecvelL10n.text("Hoy y esta semana"))
                 .font(.system(size: 31, weight: .bold))
-            Text("Ajusta el sueno de esta noche a tu deuda y carga, y sigue metas semanales reales. Sin anillos punitivos.")
+            Text(RecvelL10n.text("Ajusta el sueno de esta noche a tu deuda y carga, y sigue metas semanales reales. Sin anillos punitivos."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -289,14 +289,16 @@ struct PlanView: View {
             .frame(width: 72, height: 72)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Ritmo de la semana")
+                Text(RecvelL10n.text("Ritmo de la semana"))
                     .font(.headline)
                 Text("\(goalsMetCount) de 5 metas tocadas")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if softStreak > 0 {
                     Label(
-                        softStreak == 1 ? "1 día con una señal útil" : "\(softStreak) días con una señal útil",
+                        softStreak == 1
+                            ? RecvelL10n.text("plan.streakOne")
+                            : RecvelL10n.text("plan.streakMany", values: ["count": "\(softStreak)"]),
                         systemImage: "flame.fill"
                     )
                     .font(.caption.weight(.semibold))
@@ -317,7 +319,7 @@ struct PlanView: View {
 
     private var todayFocus: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ENFOQUE DE HOY")
+            Text(RecvelL10n.text("ENFOQUE DE HOY"))
                 .font(.caption2.weight(.heavy))
                 .tracking(1.1)
                 .foregroundStyle(ScoreKind.recovery.color)
@@ -332,7 +334,10 @@ struct PlanView: View {
                 Image(systemName: "flame.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(ScoreKind.strain.color)
-                Text(String(format: "Carga %.1f de %.1f sugerida", brief.currentLoad, brief.targetLoad))
+                Text(RecvelL10n.text("plan.loadSuggested", values: [
+                    "current": String(format: "%.1f", brief.currentLoad),
+                    "target": String(format: "%.1f", brief.targetLoad)
+                ]))
                     .font(.caption.weight(.medium))
                     .monospacedDigit()
                 Spacer()
@@ -373,7 +378,7 @@ struct PlanView: View {
     private var weekProgress: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Metas de esta semana")
+                Text(RecvelL10n.text("Metas de esta semana"))
                     .font(.headline)
                 Text(weekRangeCaption)
                     .font(.caption)
@@ -397,7 +402,7 @@ struct PlanView: View {
                 hit: { ($0.sleepHours ?? 0) >= 7.5 }
             )
             weekStrip(
-                title: "Carga equilibrada",
+                title: RecvelL10n.text("Carga equilibrada"),
                 icon: "scale.3d",
                 color: ScoreKind.recovery.color,
                 current: balancedDays,
@@ -431,13 +436,19 @@ struct PlanView: View {
 
     private var weekRangeCaption: String {
         guard let first = weekDaySlots.first, let last = weekDaySlots.last else {
-            return "Cuenta únicamente los días de esta semana con datos de Apple Health o registros propios"
+            return RecvelL10n.text("Cuenta únicamente los días de esta semana con datos de Apple Health o registros propios")
         }
         let formatter = DateFormatter()
         formatter.locale = RecvelL10n.locale
         formatter.setLocalizedDateFormatFromTemplate("Md")
-        let remaining = daysLeftInWeek == 0 ? "último día" : "quedan \(daysLeftInWeek) días"
-        return "\(formatter.string(from: first)) – \(formatter.string(from: last)) · \(remaining)"
+        let remaining = daysLeftInWeek == 0
+            ? RecvelL10n.text("plan.lastDay")
+            : RecvelL10n.text("plan.daysLeft", values: ["count": "\(daysLeftInWeek)"])
+        return RecvelL10n.text("plan.weekRange", values: [
+            "from": formatter.string(from: first),
+            "to": formatter.string(from: last),
+            "remaining": remaining
+        ])
     }
 
     private func weekStrip(
@@ -473,8 +484,10 @@ struct PlanView: View {
     ) -> some View {
         let remaining = max(goal - current, 0)
         let status = remaining == 0
-            ? "Meta alcanzada"
-            : (remaining == 1 ? "Falta 1 día" : "Faltan \(remaining) días")
+            ? RecvelL10n.text("plan.goalReached")
+            : (remaining == 1
+               ? RecvelL10n.text("plan.oneDayLeft")
+               : RecvelL10n.text("plan.daysToGo", values: ["count": "\(remaining)"]))
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -524,18 +537,18 @@ struct PlanView: View {
 
     private var goalEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ajustar metas de la semana").font(.headline)
-            Text("Estas metas solo modifican el seguimiento semanal. No cambian la recomendación de Sueño ni la Carga sugerida para hoy.")
+            Text(RecvelL10n.text("Ajustar metas de la semana")).font(.headline)
+            Text(RecvelL10n.text("Estas metas solo modifican el seguimiento semanal. No cambian la recomendación de Sueño ni la Carga sugerida para hoy."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             goalStepper(RecvelL10n.text("plan.goal.training20"), value: $workoutGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
-            goalStepper("Noches de 7.5+ h", value: $sleepGoal, range: 1...7)
+            goalStepper(RecvelL10n.text("Noches de 7.5+ h"), value: $sleepGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
-            goalStepper("Días con Carga equilibrada", value: $balancedGoal, range: 1...7)
+            goalStepper(RecvelL10n.text("Días con Carga equilibrada"), value: $balancedGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
-            goalStepper("Días con Nutrición registrada", value: $nutritionGoal, range: 1...7)
+            goalStepper(RecvelL10n.text("Días con Nutrición registrada"), value: $nutritionGoal, range: 1...7)
             Divider().overlay(Color.white.opacity(0.08))
             goalStepper(RecvelL10n.text("plan.goal.calmLogs"), value: $calmGoal, range: 1...7)
         }
@@ -549,7 +562,7 @@ struct PlanView: View {
             HStack {
                 Text(title).font(.subheadline)
                 Spacer()
-                Text("\(value.wrappedValue)/semana").font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(.secondary)
+                Text(RecvelL10n.text("plan.perWeek", values: ["count": "\(value.wrappedValue)"])).font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(.secondary)
             }
         }
     }
@@ -562,7 +575,7 @@ struct PlanView: View {
                 get: { workoutReminderEnabled },
                 set: { updateWorkoutReminder($0) }
             ))
-            Toggle("Recordar revisar el plan", isOn: Binding(
+            Toggle(RecvelL10n.text("Recordar revisar el plan"), isOn: Binding(
                 get: { checkInReminderEnabled },
                 set: { updateCheckInReminder($0) }
             ))
@@ -571,7 +584,7 @@ struct PlanView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("Locales en este dispositivo. Puedes apagarlos cuando quieras.")
+            Text(RecvelL10n.text("Locales en este dispositivo. Puedes apagarlos cuando quieras."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -581,7 +594,7 @@ struct PlanView: View {
     }
 
     private var methodology: some View {
-        Text("El enfoque y la Carga de hoy consideran tu Recuperación. El plan nocturno combina necesidad base, deuda reciente y Carga; la hora sugerida se aproxima a ciclos de 90 min y contempla 15 min para conciliar el sueño. La rutina previa es opcional. Nutrición cuenta días con comidas registradas y Calma considera mindfulness o un registro emocional. Son estimaciones de bienestar, no indicaciones clínicas.")
+        Text(RecvelL10n.text("El enfoque y la Carga de hoy consideran tu Recuperación. El plan nocturno combina necesidad base, deuda reciente y Carga; la hora sugerida se aproxima a ciclos de 90 min y contempla 15 min para conciliar el sueño. La rutina previa es opcional. Nutrición cuenta días con comidas registradas y Calma considera mindfulness o un registro emocional. Son estimaciones de bienestar, no indicaciones clínicas."))
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 3)
@@ -636,12 +649,12 @@ struct PlanView: View {
                 let ok = await notifications.requestAuthorization()
                 guard ok else {
                     workoutReminderEnabled = false
-                    reminderMessage = "Activa notificaciones en Ajustes de iOS para usar recordatorios."
+                    reminderMessage = RecvelL10n.text("Activa notificaciones en Ajustes de iOS para usar recordatorios.")
                     return
                 }
             }
             await notifications.schedulePlanWorkout(enabled: enabled, hour: 17, minute: 30)
-            reminderMessage = enabled ? "Te avisaremos cerca de la tarde para moverte." : ""
+            reminderMessage = enabled ? RecvelL10n.text("Te avisaremos cerca de la tarde para moverte.") : ""
         }
     }
 
@@ -652,12 +665,12 @@ struct PlanView: View {
                 let ok = await notifications.requestAuthorization()
                 guard ok else {
                     checkInReminderEnabled = false
-                    reminderMessage = "Activa notificaciones en Ajustes de iOS para usar recordatorios."
+                    reminderMessage = RecvelL10n.text("Activa notificaciones en Ajustes de iOS para usar recordatorios.")
                     return
                 }
             }
             await notifications.schedulePlanCheckIn(enabled: enabled, hour: 20, minute: 0)
-            reminderMessage = enabled ? "Te recordaremos revisar enfoque y metas." : ""
+            reminderMessage = enabled ? RecvelL10n.text("Te recordaremos revisar enfoque y metas.") : ""
         }
     }
 }
@@ -688,7 +701,7 @@ struct PlanHomeCard: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(ScoreKind.recovery.color)
                 Spacer()
-                Text("VER DETALLE")
+                Text(RecvelL10n.text("VER DETALLE"))
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.tertiary)
                 Image(systemName: "chevron.right")

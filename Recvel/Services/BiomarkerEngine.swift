@@ -45,22 +45,22 @@ enum BiomarkerCatalog {
     static let all: [BiomarkerDescriptor] = [
         .init(kind: .weight, title: "Peso corporal", shortTitle: "Peso", unit: "kg", symbol: "scalemass.fill", explanation: "Contexto para composicion corporal y tendencias. Un valor aislado no describe salud.", benchmark: "Usa tu propia tendencia", isLaboratory: false),
         .init(kind: .hrvBaseline, title: "HRV basal", shortTitle: "HRV", unit: "ms", symbol: "waveform.path.ecg", explanation: "Variacion de 60 dias de la HRV. Es sensible a sueno, carga, enfermedad y artefactos.", benchmark: "Comparacion personal de 60 dias", isLaboratory: false),
-        .init(kind: .rhrBaseline, title: "FC en reposo basal", shortTitle: "FC reposo", unit: "lpm", symbol: "heart.fill", explanation: "Tendencia de frecuencia cardiaca en reposo sobre 60 dias.", benchmark: "Comparacion personal de 60 dias", isLaboratory: false),
+        .init(kind: .rhrBaseline, title: RecvelL10n.text("FC en reposo basal"), shortTitle: "FC reposo", unit: "lpm", symbol: "heart.fill", explanation: RecvelL10n.text("Tendencia de frecuencia cardiaca en reposo sobre 60 dias."), benchmark: RecvelL10n.text("Comparacion personal de 60 dias"), isLaboratory: false),
         .init(kind: .bodyFat, title: "Grasa corporal", shortTitle: "Grasa", unit: "%", symbol: "percent", explanation: "Estimacion dependiente del metodo y dispositivo. Sigue cambios con la misma fuente.", benchmark: "Tendencia, no lectura aislada", isLaboratory: false),
         .init(kind: .leanBodyMass, title: "Masa corporal magra", shortTitle: "Masa magra", unit: "kg", symbol: "figure.strengthtraining.traditional", explanation: "Masa corporal sin grasa estimada por la fuente autorizada.", benchmark: "Mantener o mejorar con fuerza", isLaboratory: false),
-        .init(kind: .vo2Max, title: "VO2 max", shortTitle: "VO2 max", unit: "ml/kg/min", symbol: "lungs.fill", explanation: "Estimacion de aptitud cardiorrespiratoria. Es la base de la lente FRIEND.", benchmark: "Medianas FRIEND por edad y sexo", isLaboratory: false),
-        .init(kind: .systolicBloodPressure, title: "Presion sistolica", shortTitle: "Sistolica", unit: "mmHg", symbol: "gauge.with.dots.needle.50percent", explanation: "Presion durante la contraccion cardiaca. Recvel no interpreta urgencias ni diagnostica.", benchmark: "Consulta la lectura con un profesional", isLaboratory: false),
-        .init(kind: .diastolicBloodPressure, title: "Presion diastolica", shortTitle: "Diastolica", unit: "mmHg", symbol: "gauge.with.dots.needle.33percent", explanation: "Presion entre latidos. Repite mediciones con tecnica consistente.", benchmark: "Consulta la lectura con un profesional", isLaboratory: false),
-        .init(kind: .oxygenSaturation, title: "Oxigeno en sangre", shortTitle: "SpO2", unit: "%", symbol: "drop.degreesign.fill", explanation: "Lectura de bienestar sujeta a ajuste del reloj, movimiento y perfusion.", benchmark: "Tendencia del mismo dispositivo", isLaboratory: false),
-        .init(kind: .albumin, title: "Albumina", shortTitle: "Albumina", unit: "g/L", symbol: "testtube.2", explanation: "Uno de los nueve analitos publicados de PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true),
-        .init(kind: .creatinine, title: "Creatinina", shortTitle: "Creatinina", unit: "umol/L", symbol: "testtube.2", explanation: "Uno de los nueve analitos publicados de PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true),
-        .init(kind: .glucose, title: "Glucosa", shortTitle: "Glucosa", unit: "mmol/L", symbol: "testtube.2", explanation: "PhenoAge usa glucosa en mmol/L; no sustituye una evaluacion metabolica.", benchmark: "Rango del laboratorio", isLaboratory: true),
-        .init(kind: .crp, title: "Proteina C reactiva", shortTitle: "PCR", unit: "mg/L", symbol: "testtube.2", explanation: "PhenoAge utiliza el logaritmo natural de PCR. Debe ser mayor que cero.", benchmark: "Rango del laboratorio", isLaboratory: true),
+        .init(kind: .vo2Max, title: "VO2 max", shortTitle: "VO2 max", unit: "ml/kg/min", symbol: "lungs.fill", explanation: RecvelL10n.text("Estimacion de aptitud cardiorrespiratoria. Es la base de la lente FRIEND."), benchmark: RecvelL10n.text("Medianas FRIEND por edad y sexo"), isLaboratory: false),
+        .init(kind: .systolicBloodPressure, title: "Presion sistolica", shortTitle: "Sistolica", unit: "mmHg", symbol: "gauge.with.dots.needle.50percent", explanation: RecvelL10n.text("Presion durante la contraccion cardiaca. Recvel no interpreta urgencias ni diagnostica."), benchmark: RecvelL10n.text("Consulta la lectura con un profesional"), isLaboratory: false),
+        .init(kind: .diastolicBloodPressure, title: "Presion diastolica", shortTitle: "Diastolica", unit: "mmHg", symbol: "gauge.with.dots.needle.33percent", explanation: RecvelL10n.text("Presion entre latidos. Repite mediciones con tecnica consistente."), benchmark: RecvelL10n.text("Consulta la lectura con un profesional"), isLaboratory: false),
+        .init(kind: .oxygenSaturation, title: RecvelL10n.text("Oxigeno en sangre"), shortTitle: "SpO2", unit: "%", symbol: "drop.degreesign.fill", explanation: "Lectura de bienestar sujeta a ajuste del reloj, movimiento y perfusion.", benchmark: "Tendencia del mismo dispositivo", isLaboratory: false),
+        .init(kind: .albumin, title: "Albumina", shortTitle: "Albumina", unit: "g/L", symbol: "testtube.2", explanation: RecvelL10n.text("Uno de los nueve analitos publicados de PhenoAge."), benchmark: "Rango del laboratorio", isLaboratory: true),
+        .init(kind: .creatinine, title: "Creatinina", shortTitle: "Creatinina", unit: "umol/L", symbol: "testtube.2", explanation: RecvelL10n.text("Uno de los nueve analitos publicados de PhenoAge."), benchmark: "Rango del laboratorio", isLaboratory: true),
+        .init(kind: .glucose, title: "Glucosa", shortTitle: "Glucosa", unit: "mmol/L", symbol: "testtube.2", explanation: RecvelL10n.text("PhenoAge usa glucosa en mmol/L; no sustituye una evaluacion metabolica."), benchmark: "Rango del laboratorio", isLaboratory: true),
+        .init(kind: .crp, title: "Proteina C reactiva", shortTitle: "PCR", unit: "mg/L", symbol: "testtube.2", explanation: RecvelL10n.text("PhenoAge utiliza el logaritmo natural de PCR. Debe ser mayor que cero."), benchmark: "Rango del laboratorio", isLaboratory: true),
         .init(kind: .lymphocytePercent, title: "Linfocitos", shortTitle: "Linfocitos", unit: "%", symbol: "testtube.2", explanation: "Porcentaje de linfocitos requerido por PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true),
         .init(kind: .mcv, title: "Volumen corpuscular medio", shortTitle: "VCM", unit: "fL", symbol: "testtube.2", explanation: "Volumen corpuscular medio requerido por PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true),
         .init(kind: .rdw, title: "Amplitud eritrocitaria", shortTitle: "RDW", unit: "%", symbol: "testtube.2", explanation: "Red cell distribution width requerido por PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true),
-        .init(kind: .alkalinePhosphatase, title: "Fosfatasa alcalina", shortTitle: "Fosfatasa", unit: "U/L", symbol: "testtube.2", explanation: "Analito requerido por PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true),
-        .init(kind: .whiteBloodCellCount, title: "Leucocitos", shortTitle: "Leucocitos", unit: "10^9/L", symbol: "testtube.2", explanation: "Conteo de globulos blancos requerido por PhenoAge.", benchmark: "Rango del laboratorio", isLaboratory: true)
+        .init(kind: .alkalinePhosphatase, title: "Fosfatasa alcalina", shortTitle: "Fosfatasa", unit: "U/L", symbol: "testtube.2", explanation: RecvelL10n.text("Analito requerido por PhenoAge."), benchmark: "Rango del laboratorio", isLaboratory: true),
+        .init(kind: .whiteBloodCellCount, title: "Leucocitos", shortTitle: "Leucocitos", unit: "10^9/L", symbol: "testtube.2", explanation: RecvelL10n.text("Conteo de globulos blancos requerido por PhenoAge."), benchmark: "Rango del laboratorio", isLaboratory: true)
     ]
 
     static let phenoAgeKinds: [BiomarkerKind] = [
@@ -283,7 +283,7 @@ struct BioAgeReportEngine {
         let updated = lens == .blood ? (bloodDate ?? now) : (recent.compactMap(\.vo2MaxDate).max() ?? now)
         let summary: String
         if lens == .blood {
-            summary = "PhenoAge usa edad y nueve analitos publicados. No combina sueno o actividad con el numero principal."
+            summary = RecvelL10n.text("PhenoAge usa edad y nueve analitos publicados. No combina sueno o actividad con el numero principal.")
         } else {
             summary = cardio.summary
         }
@@ -320,18 +320,18 @@ struct BioAgeReportEngine {
             let status: BiomarkerStatus
             if let value { status = good.contains(value) ? .favorable : (fair.contains(value) ? .fair : .attention) }
             else { status = .missing }
-            return BioAgeDriver(id: id, title: title, value: value.map { String(format: $0 >= 100 ? "%.0f %@" : "%.1f %@", $0, unit) } ?? "Sin datos", benchmark: benchmark, status: status, priority: priority, points: points, source: source)
+            return BioAgeDriver(id: id, title: title, value: value.map { String(format: $0 >= 100 ? "%.0f %@" : "%.1f %@", $0, unit) } ?? RecvelL10n.text("Sin datos"), benchmark: benchmark, status: status, priority: priority, points: points, source: source)
         }
 
         var values: [BioAgeDriver] = [
-            driver("sleep.duration", "Tiempo de sueno", average(sleep), unit: "h", benchmark: "Referencia de bienestar: 7-9 h", good: 7...9, fair: 6...10, priority: 1, points: sleep),
-            driver("sleep.consistency", "Consistencia del sueno", average(consistency), unit: "min", benchmark: "Variacion menor a 45 min", good: 0...45, fair: 45...75, priority: 2, points: consistency),
-            driver("activity.steps", "Pasos", average(steps), unit: "pasos/dia", benchmark: "Objetivo contextual: 8,000/dia", good: 8000...50000, fair: 6000...7999, priority: 1, points: steps),
+            driver("sleep.duration", RecvelL10n.text("Tiempo de sueno"), average(sleep), unit: "h", benchmark: "Referencia de bienestar: 7-9 h", good: 7...9, fair: 6...10, priority: 1, points: sleep),
+            driver("sleep.consistency", RecvelL10n.text("Consistencia del sueno"), average(consistency), unit: "min", benchmark: "Variacion menor a 45 min", good: 0...45, fair: 45...75, priority: 2, points: consistency),
+            driver("activity.steps", "Pasos", average(steps), unit: RecvelL10n.text("pasos/dia"), benchmark: RecvelL10n.text("Objetivo contextual: 8,000/dia"), good: 8000...50000, fair: 6000...7999, priority: 1, points: steps),
             driver("activity.zone23", "Zonas 2-3", zone23, unit: "min/sem", benchmark: "Referencia general: 150 min/sem", good: 150...2000, fair: 90...149, priority: 2, points: [zone23]),
-            driver("activity.zone45", "Zonas 4-5", zone45, unit: "min/sem", benchmark: "Contexto de intensidad: 10+ min/sem", good: 10...1000, fair: 1...9.99, priority: 3, points: [zone45]),
+            driver("activity.zone45", "Zonas 4-5", zone45, unit: "min/sem", benchmark: RecvelL10n.text("Contexto de intensidad: 10+ min/sem"), good: 10...1000, fair: 1...9.99, priority: 3, points: [zone45]),
             driver("activity.strength", "Fuerza", strength, unit: "min/sem", benchmark: "Dos sesiones semanales", good: 40...2000, fair: 20...39.99, priority: 1, points: [strength]),
-            driver("cardio.vo2", "VO2 max", vo2.last, unit: "ml/kg/min", benchmark: "Comparacion FRIEND por edad y sexo", good: 40...100, fair: 30...39.99, priority: 1, points: vo2),
-            driver("cardio.rhr", "RHR", average(rhr), unit: "bpm", benchmark: "Referencia personal de 60 días", good: 40...65, fair: 65...75, priority: 2, points: rhr),
+            driver("cardio.vo2", "VO2 max", vo2.last, unit: "ml/kg/min", benchmark: RecvelL10n.text("Comparacion FRIEND por edad y sexo"), good: 40...100, fair: 30...39.99, priority: 1, points: vo2),
+            driver("cardio.rhr", "RHR", average(rhr), unit: "bpm", benchmark: RecvelL10n.text("Referencia personal de 60 días"), good: 40...65, fair: 65...75, priority: 2, points: rhr),
             driver("body.lean", "Masa magra", lean.last, unit: "kg", benchmark: "Seguir tendencia con la misma fuente", good: 1...300, fair: 0...0, priority: 3, points: lean)
         ]
         values.append(BioAgeDriver(id: "lifestyle.nutrition", title: RecvelL10n.text("tab.nutrition"), value: mealDays == 0 ? "Sin registros" : "\(mealDays) días registrados", benchmark: "La consistencia mejora el contexto", status: mealDays >= 20 ? .favorable : (mealDays >= 7 ? .fair : .calibrating), priority: 3, points: [], source: "Recvel local"))
@@ -397,8 +397,8 @@ enum ClinicalRecordsImportError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unavailable: "Clinical Records no esta disponible en este dispositivo."
-        case .unsupportedRecord: "No encontramos analitos PhenoAge compatibles en los registros autorizados."
+        case .unavailable: RecvelL10n.text("Clinical Records no esta disponible en este dispositivo.")
+        case .unsupportedRecord: RecvelL10n.text("No encontramos analitos PhenoAge compatibles en los registros autorizados.")
         }
     }
 }

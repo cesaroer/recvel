@@ -337,13 +337,13 @@ struct HabitSpec: Identifiable {
     var id: String { name }
 
     static let defaults = [
-        HabitSpec(name: "Alcohol", prompt: "Consumiste alcohol ayer", icon: "wineglass.fill", color: .pink, group: .recovery),
-        HabitSpec(name: "Cafeina tarde", prompt: "Cafeina despues de las 15:00", icon: "cup.and.saucer.fill", color: .orange, group: .recovery),
-        HabitSpec(name: "Cena tarde", prompt: "Comiste dentro de 2 h de dormir", icon: "clock.badge.exclamationmark", color: ScoreKind.strain.color, group: .recovery),
-        HabitSpec(name: "Pantallas noche", prompt: "Pantallas intensas cerca de dormir", icon: "iphone", color: .cyan, group: .recovery),
-        HabitSpec(name: "Meditacion", prompt: "Al menos 10 minutos", icon: "brain.head.profile", color: .cyan, group: .day),
-        HabitSpec(name: "Hidratacion", prompt: "Cumpliste tu objetivo de agua", icon: "drop.fill", color: ScoreKind.recovery.color, group: .day),
-        HabitSpec(name: "Luz natural", prompt: "Saliste o viste luz de dia", icon: "sun.max.fill", color: ScoreKind.energy.color, group: .day)
+        HabitSpec(name: "Alcohol", prompt: RecvelL10n.text("Consumiste alcohol ayer"), icon: "wineglass.fill", color: .pink, group: .recovery),
+        HabitSpec(name: "Cafeina tarde", prompt: RecvelL10n.text("Cafeina despues de las 15:00"), icon: "cup.and.saucer.fill", color: .orange, group: .recovery),
+        HabitSpec(name: "Cena tarde", prompt: RecvelL10n.text("Comiste dentro de 2 h de dormir"), icon: "clock.badge.exclamationmark", color: ScoreKind.strain.color, group: .recovery),
+        HabitSpec(name: "Pantallas noche", prompt: RecvelL10n.text("Pantallas intensas cerca de dormir"), icon: "iphone", color: .cyan, group: .recovery),
+        HabitSpec(name: "Meditacion", prompt: RecvelL10n.text("Al menos 10 minutos"), icon: "brain.head.profile", color: .cyan, group: .day),
+        HabitSpec(name: "Hidratacion", prompt: RecvelL10n.text("Cumpliste tu objetivo de agua"), icon: "drop.fill", color: ScoreKind.recovery.color, group: .day),
+        HabitSpec(name: "Luz natural", prompt: RecvelL10n.text("Saliste o viste luz de dia"), icon: "sun.max.fill", color: ScoreKind.energy.color, group: .day)
     ]
 }
 

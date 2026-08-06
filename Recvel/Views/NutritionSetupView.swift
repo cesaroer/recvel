@@ -79,7 +79,7 @@ struct NutritionSetupView: View {
                 .buttonStyle(.plain)
                 .opacity(step == 0 && profile == nil ? 0 : 1)
                 .disabled(step == 0 && profile == nil)
-                .accessibilityLabel(step > 0 ? "Atras" : "Cerrar")
+                .accessibilityLabel(step > 0 ? "Atras" : RecvelL10n.text("Cerrar"))
 
                 Spacer()
                 Text(profile == nil ? "Configurar Nutricion" : "Editar perfil")
@@ -112,9 +112,9 @@ struct NutritionSetupView: View {
 
     private var goalStep: some View {
         setupPage(
-            eyebrow: "TU DIRECCION",
-            title: "¿Que quieres que la nutricion haga por ti?",
-            detail: "Esto ajusta el rango de energia y la prioridad de macros. Puedes cambiarlo cuando quieras."
+            eyebrow: RecvelL10n.text("TU DIRECCION"),
+            title: RecvelL10n.text("¿Que quieres que la nutricion haga por ti?"),
+            detail: RecvelL10n.text("Esto ajusta el rango de energia y la prioridad de macros. Puedes cambiarlo cuando quieras.")
         ) {
             VStack(spacing: 9) {
                 ForEach(NutritionGoal.allCases) { item in
@@ -131,11 +131,11 @@ struct NutritionSetupView: View {
     private var bodyStep: some View {
         setupPage(
             eyebrow: "REFERENCIA PERSONAL",
-            title: "Tu punto de partida",
-            detail: "Escribe tu altura y peso, o gira la ruleta. Se usan solo en el dispositivo para el rango inicial."
+            title: RecvelL10n.text("Tu punto de partida"),
+            detail: RecvelL10n.text("Escribe tu altura y peso, o gira la ruleta. Se usan solo en el dispositivo para el rango inicial.")
         ) {
             VStack(spacing: 14) {
-                setupField("Fecha de nacimiento", icon: "calendar") {
+                setupField(RecvelL10n.text("Fecha de nacimiento"), icon: "calendar") {
                     DatePicker("", selection: $birthDate, in: ...Date.now, displayedComponents: .date)
                         .labelsHidden()
                 }
@@ -163,7 +163,7 @@ struct NutritionSetupView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 9) {
-                    Text("Sexo para la formula inicial").font(.caption).foregroundStyle(.secondary)
+                    Text(RecvelL10n.text("Sexo para la formula inicial")).font(.caption).foregroundStyle(.secondary)
                     Menu {
                         ForEach(NutritionSex.allCases) { item in
                             Button {
@@ -192,8 +192,8 @@ struct NutritionSetupView: View {
     private var movementStep: some View {
         setupPage(
             eyebrow: "RITMO REAL",
-            title: "¿Cuanto entrenas normalmente?",
-            detail: "La actividad cambia el rango, pero el plan diario seguira observando lo que realmente registras."
+            title: RecvelL10n.text("¿Cuanto entrenas normalmente?"),
+            detail: RecvelL10n.text("La actividad cambia el rango, pero el plan diario seguira observando lo que realmente registras.")
         ) {
             VStack(spacing: 10) {
                 ForEach(WeeklyWorkoutRange.allCases) { item in
@@ -205,7 +205,7 @@ struct NutritionSetupView: View {
                 }
 
                 HStack {
-                    Label("Comidas por dia", systemImage: "fork.knife")
+                    Label(RecvelL10n.text("Comidas por dia"), systemImage: "fork.knife")
                     Spacer()
                     Stepper("\(mealsPerDay)", value: $mealsPerDay.hapticStep(), in: 2...6)
                         .fixedSize()
@@ -219,9 +219,9 @@ struct NutritionSetupView: View {
 
     private var preferencesStep: some View {
         setupPage(
-            eyebrow: "COMER A TU MANERA",
-            title: "Haz que las sugerencias sean utiles",
-            detail: "Evitaremos lo que indiques en las ideas de comidas. Las alergias requieren siempre tu propia verificacion."
+            eyebrow: RecvelL10n.text("COMER A TU MANERA"),
+            title: RecvelL10n.text("Haz que las sugerencias sean utiles"),
+            detail: RecvelL10n.text("Evitaremos lo que indiques en las ideas de comidas. Las alergias requieren siempre tu propia verificacion.")
         ) {
             VStack(spacing: 14) {
                 Menu {
@@ -240,7 +240,7 @@ struct NutritionSetupView: View {
                 .hapticMenuLabel()
 
                 inputField(title: "Alergias", placeholder: "Ej. cacahuate, lacteos", text: $allergies, icon: "exclamationmark.shield.fill")
-                inputField(title: "Alimentos que no te gustan", placeholder: "Ej. atun, champiñones", text: $dislikedFoods, icon: "hand.thumbsdown.fill")
+                inputField(title: RecvelL10n.text("Alimentos que no te gustan"), placeholder: RecvelL10n.text("Ej. atun, champiñones"), text: $dislikedFoods, icon: "hand.thumbsdown.fill")
 
                 Picker("Unidades", selection: $units) {
                     ForEach(PreferredUnits.allCases) { Text($0.displayName).tag($0) }
@@ -483,7 +483,7 @@ private struct BodyMetricInput: View {
                 .accessibilityLabel("Ajustar \(title.lowercased()) con ruleta")
             }
 
-            Text("Escribe el valor o usa la ruleta")
+            Text(RecvelL10n.text("Escribe el valor o usa la ruleta"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

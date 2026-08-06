@@ -24,20 +24,20 @@ enum SleepWindDownScheduler {
 
         var title: String {
             switch self {
-            case .routineStart: return "Hora de empezar la rutina"
-            case .inBed: return "Hora de estar en cama"
-            case .lightsOut: return "Hora de apagar luces"
+            case .routineStart: return RecvelL10n.text("Hora de empezar la rutina")
+            case .inBed: return RecvelL10n.text("Hora de estar en cama")
+            case .lightsOut: return RecvelL10n.text("Hora de apagar luces")
             }
         }
 
         var body: String {
             switch self {
             case .routineStart:
-                return "Baja el ritmo: un wind-down corto acerca tu ventana de sueno."
+                return RecvelL10n.text("Baja el ritmo: un wind-down corto acerca tu ventana de sueno.")
             case .inBed:
-                return "Es un buen momento para estar en cama y cerrar el dia con calma."
+                return RecvelL10n.text("Es un buen momento para estar en cama y cerrar el dia con calma.")
             case .lightsOut:
-                return "Apaga luces y pantallas; deja que el cuerpo encare el descanso."
+                return RecvelL10n.text("Apaga luces y pantallas; deja que el cuerpo encare el descanso.")
             }
         }
     }
@@ -64,7 +64,7 @@ enum SleepWindDownScheduler {
     }
 
     static let presets: [Preset] = [
-        Preset(id: "screens", title: "Sin pantallas", iconName: "iphone.slash", durationMinutes: 30),
+        Preset(id: "screens", title: RecvelL10n.text("Sin pantallas"), iconName: "iphone.slash", durationMinutes: 30),
         Preset(id: "bath", title: "Bano", iconName: "drop.fill", durationMinutes: 20),
         Preset(id: "read", title: "Lectura", iconName: "book.fill", durationMinutes: 20),
         Preset(id: "stretch", title: "Estiramientos", iconName: "figure.flexibility", durationMinutes: 15),

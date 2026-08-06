@@ -94,22 +94,22 @@ enum PlanExpectationEngine {
 
         switch input.objective {
         case .hypertrophy:
-            result.bullets.append("Con volumen progresivo por grupo muscular (2-3 veces por semana), la hipertrofia medible suele aparecer tras 8-12 semanas de constancia; el split solo reparte ese volumen.")
+            result.bullets.append(RecvelL10n.text("Con volumen progresivo por grupo muscular (2-3 veces por semana), la hipertrofia medible suele aparecer tras 8-12 semanas de constancia; el split solo reparte ese volumen."))
         case .maximalStrength:
-            result.bullets.append("Las primeras ganancias de fuerza (semanas 1-6) son sobre todo neurales; la fuerza maxima sigue mejorando con semanas de carga progresiva y periodizada.")
+            result.bullets.append(RecvelL10n.text("Las primeras ganancias de fuerza (semanas 1-6) son sobre todo neurales; la fuerza maxima sigue mejorando con semanas de carga progresiva y periodizada."))
         case .endurance:
-            result.bullets.append("La base aerobica se construye con minutos constantes a intensidad baja; las mejoras de resistencia suelen notarse en 6-12 semanas.")
+            result.bullets.append(RecvelL10n.text("La base aerobica se construye con minutos constantes a intensidad baja; las mejoras de resistencia suelen notarse en 6-12 semanas."))
         case .sportPerformance:
-            result.bullets.append("La calidad manda: las sesiones de velocidad y potencia rinden mas frescas y al inicio de la sesion, nunca arrastrando fatiga.")
+            result.bullets.append(RecvelL10n.text("La calidad manda: las sesiones de velocidad y potencia rinden mas frescas y al inicio de la sesion, nunca arrastrando fatiga."))
         case .general:
             result.bullets.append("Los lineamientos internacionales sugieren 150-300 min semanales de actividad moderada y fuerza 2 dias; tu plan suma \(input.weeklyMinutes) min.")
         }
 
         switch input.experience {
         case .starting:
-            result.bullets.append("Prioridad a tecnica y constancia: las primeras 4-6 semanas construyen el habito y los patrones de movimiento.")
+            result.bullets.append(RecvelL10n.text("Prioridad a tecnica y constancia: las primeras 4-6 semanas construyen el habito y los patrones de movimiento."))
         case .advanced, .competitive:
-            result.bullets.append("Considera una semana de descarga cada 3-5 semanas de carga para sostener el progreso.")
+            result.bullets.append(RecvelL10n.text("Considera una semana de descarga cada 3-5 semanas de carga para sostener el progreso."))
         case .intermediate:
             break
         }
@@ -121,17 +121,17 @@ enum PlanExpectationEngine {
             result.bullets.append("Tus \(input.performanceDays) sesion(es) de potencia rinden mas tras descanso o sesiones ligeras; evita colocarlas en racha de dias duros.")
         }
         if input.mobilityRecoveryDays > 0 {
-            result.bullets.append("Incluir movilidad o recuperacion mejora la adherencia y hace la semana mas sostenible.")
+            result.bullets.append(RecvelL10n.text("Incluir movilidad o recuperacion mejora la adherencia y hace la semana mas sostenible."))
         }
 
         if input.restDays == 0 {
-            result.cautions.append("No hay dias de descanso programados: considera al menos uno (o recuperacion activa) cada semana.")
+            result.cautions.append(RecvelL10n.text("No hay dias de descanso programados: considera al menos uno (o recuperacion activa) cada semana."))
         }
         if input.hardSessions >= 3 {
             result.cautions.append("\(input.hardSessions) sesiones a RPE 8+ por semana son dificiles de sostener: alterna dias duros y suaves.")
         }
         if input.experience == .starting && input.performanceDays > 0 {
-            result.cautions.append("La pliometria y el contraste piden base tecnica: en nivel inicial conviene dominar primero fuerza y tecnica.")
+            result.cautions.append(RecvelL10n.text("La pliometria y el contraste piden base tecnica: en nivel inicial conviene dominar primero fuerza y tecnica."))
         }
         if input.objective != .general && input.weeklyMinutes < 120 {
             result.cautions.append("Tu plan suma \(input.weeklyMinutes) min semanales, por debajo de lo habitual para ver cambios; si puedes, acercate a 150+.")
@@ -176,12 +176,12 @@ struct SessionDetailEditor: View {
                 .pickerStyle(.segmented)
 
                 if details.flexibility != .flexible {
-                    DatePicker("Hora de inicio", selection: timeBinding, displayedComponents: .hourAndMinute)
+                    DatePicker(RecvelL10n.text("Hora de inicio"), selection: timeBinding, displayedComponents: .hourAndMinute)
                         .datePickerStyle(.compact)
                 }
 
                 sliderRow(
-                    title: "Duración",
+                    title: RecvelL10n.text("Duración"),
                     value: "\(details.durationMinutes) min",
                     tint: assignment.tintColor,
                     binding: intBinding(\.durationMinutes),
@@ -230,10 +230,10 @@ struct SessionDetailEditor: View {
                 }
             }
             Button { choose(.mobility) } label: {
-                Label("Flexibilidad y movilidad", systemImage: DayAssignment.mobility.icon)
+                Label(RecvelL10n.text("Flexibilidad y movilidad"), systemImage: DayAssignment.mobility.icon)
             }
             Button { choose(.recovery) } label: {
-                Label("Recuperación / fisioterapia", systemImage: DayAssignment.recovery.icon)
+                Label(RecvelL10n.text("Recuperación / fisioterapia"), systemImage: DayAssignment.recovery.icon)
             }
             Divider()
             ForEach(DayAssignment.performanceCases, id: \.shortLabel) { kind in
@@ -276,7 +276,7 @@ struct SessionDetailEditor: View {
     private var typeSpecificControls: some View {
         switch assignment {
         case .cardio:
-            Picker("Intención", selection: cardioIntentBinding) {
+            Picker(RecvelL10n.text("Intención"), selection: cardioIntentBinding) {
                 ForEach(CardioIntent.allCases) { intent in Text(intent.title).tag(Optional(intent)) }
             }
             .pickerStyle(.menu)
@@ -295,7 +295,7 @@ struct SessionDetailEditor: View {
                 in: 10...150, step: 5
             )
             .font(.subheadline.weight(.semibold))
-            Text("El volumen de pliometría se mide en contactos; 40-80 es un rango habitual por sesión.")
+            Text(RecvelL10n.text("El volumen de pliometría se mide en contactos; 40-80 es un rango habitual por sesión."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         case .contrast:
@@ -345,7 +345,7 @@ struct SessionDetailEditor: View {
         }
 
         if showProControls, assignment != .rest {
-            TextField("Nota de sesión (ejercicios, indicaciones)", text: noteBinding)
+            TextField(RecvelL10n.text("Nota de sesión (ejercicios, indicaciones)"), text: noteBinding)
                 .font(.caption)
                 .textInputAutocapitalization(.sentences)
                 .padding(.vertical, 6)
@@ -567,7 +567,7 @@ struct WeeklyPlanOnboardingView: View {
                 }
                 .padding(20)
             }
-            .navigationTitle("Tu plan semanal")
+            .navigationTitle(RecvelL10n.text("Tu plan semanal"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -576,7 +576,7 @@ struct WeeklyPlanOnboardingView: View {
                             Haptics.soft()
                             withAnimation(.snappy(duration: 0.25)) { stepIndex -= 1 }
                         } label: {
-                            Label("Atrás", systemImage: "chevron.left")
+                            Label(RecvelL10n.text("Atrás"), systemImage: "chevron.left")
                                 .frame(minWidth: 44, minHeight: 44)
                                 .contentShape(Rectangle())
                         }
@@ -586,11 +586,11 @@ struct WeeklyPlanOnboardingView: View {
                             Haptics.soft()
                             dismiss()
                         } label: {
-                            Text("Cerrar")
+                            Text(RecvelL10n.text("Cerrar"))
                                 .frame(minWidth: 44, minHeight: 44)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("Cerrar")
+                        .accessibilityLabel(RecvelL10n.text("Cerrar"))
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -599,7 +599,7 @@ struct WeeklyPlanOnboardingView: View {
                             Haptics.soft()
                             dismiss()
                         } label: {
-                            Text("Cerrar")
+                            Text(RecvelL10n.text("Cerrar"))
                                 .frame(minWidth: 44, minHeight: 44)
                                 .contentShape(Rectangle())
                         }
@@ -616,9 +616,9 @@ struct WeeklyPlanOnboardingView: View {
 
     private var profileStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Configura tu plan")
+            Text(RecvelL10n.text("Configura tu plan"))
                 .font(.title3.weight(.bold))
-            Text("La experiencia y el objetivo cambian cómo se presenta la carga; nada se impone automáticamente.")
+            Text(RecvelL10n.text("La experiencia y el objetivo cambian cómo se presenta la carga; nada se impone automáticamente."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -656,9 +656,9 @@ struct WeeklyPlanOnboardingView: View {
 
             Toggle(isOn: $advanced) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Opciones de alto rendimiento")
+                    Text(RecvelL10n.text("Opciones de alto rendimiento"))
                         .font(.subheadline.weight(.semibold))
-                    Text("Fase, tipos de sesión pro (pliometría, velocidad, contraste, técnica), marcas 1RM y control fino por día.")
+                    Text(RecvelL10n.text("Fase, tipos de sesión pro (pliometría, velocidad, contraste, técnica), marcas 1RM y control fino por día."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -672,16 +672,16 @@ struct WeeklyPlanOnboardingView: View {
 
     private var modalitiesStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("¿Qué incluye tu semana?")
+            Text(RecvelL10n.text("¿Qué incluye tu semana?"))
                 .font(.title3.weight(.bold))
-            Text("Puedes combinar modalidades; el plan las reparte entre tus días.")
+            Text(RecvelL10n.text("Puedes combinar modalidades; el plan las reparte entre tus días."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            modalityToggle("Fuerza", subtitle: "Rutinas con series, repeticiones y kilos.", icon: "dumbbell", isOn: $includeStrength)
+            modalityToggle("Fuerza", subtitle: RecvelL10n.text("Rutinas con series, repeticiones y kilos."), icon: "dumbbell", isOn: $includeStrength)
             if includeStrength {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Tipo de rutina").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                    Text(RecvelL10n.text("Tipo de rutina")).font(.caption.weight(.bold)).foregroundStyle(.secondary)
                     ForEach(SplitType.allCases) { option in
                         Button {
                             Haptics.selection()
@@ -715,7 +715,7 @@ struct WeeklyPlanOnboardingView: View {
                 }
             }
 
-            modalityToggle("Cardio", subtitle: "Elige el deporte, no un 'cardio' genérico.", icon: "figure.run", isOn: $includeCardio)
+            modalityToggle("Cardio", subtitle: RecvelL10n.text("Elige el deporte, no un 'cardio' genérico."), icon: "figure.run", isOn: $includeCardio)
             if includeCardio {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
                     ForEach(CardioSport.allCases) { sport in
@@ -738,19 +738,19 @@ struct WeeklyPlanOnboardingView: View {
                 }
             }
 
-            modalityToggle("Movilidad y recuperación", subtitle: "Un día ligero de flexibilidad o fisioterapia. Cuenta como recuperación activa, no como día de esfuerzo.", icon: "figure.mind.and.body", isOn: $includeMobility)
+            modalityToggle(RecvelL10n.text("Movilidad y recuperación"), subtitle: RecvelL10n.text("Un día ligero de flexibilidad o fisioterapia. Cuenta como recuperación activa, no como día de esfuerzo."), icon: "figure.mind.and.body", isOn: $includeMobility)
                 .accessibilityIdentifier("fitness.routineOnboarding.mobilityToggle")
 
             modalityToggle(
-                "Desafío diario",
-                subtitle: "Mini-rutina ligera distinta al estímulo del día. Editable y optativa.",
+                RecvelL10n.text("Desafío diario"),
+                subtitle: RecvelL10n.text("Mini-rutina ligera distinta al estímulo del día. Editable y optativa."),
                 icon: "flame",
                 isOn: $includeDailyChallenge
             )
             .accessibilityIdentifier("fitness.routineOnboarding.dailyChallenge")
 
             if advanced {
-                Label("En el paso «Diseña cada sesión» podrás asignar pliometría, velocidad, contraste, técnica o recuperación a días concretos.", systemImage: "info.circle")
+                Label(RecvelL10n.text("En el paso «Diseña cada sesión» podrás asignar pliometría, velocidad, contraste, técnica o recuperación a días concretos."), systemImage: "info.circle")
                     .font(.caption2)
                     .foregroundStyle(.cyan)
                     .fixedSize(horizontal: false, vertical: true)
@@ -812,9 +812,9 @@ struct WeeklyPlanOnboardingView: View {
             days: plan, splitType: splitType, goal: derivedGoal, planCreatedAt: nil, planWeeks: planWeeks
         ))
         return VStack(alignment: .leading, spacing: 16) {
-            Text("¿Cuántos días puedes entrenar?")
+            Text(RecvelL10n.text("¿Cuántos días puedes entrenar?"))
                 .font(.title3.weight(.bold))
-            Picker("Días", selection: Binding(
+            Picker(RecvelL10n.text("Días"), selection: Binding(
                 get: { daysCount },
                 set: { newValue in
                     Haptics.selection()
@@ -834,7 +834,7 @@ struct WeeklyPlanOnboardingView: View {
 
             if !advanced {
                 HStack {
-                    Text("Duración por sesión").font(.subheadline.weight(.semibold))
+                    Text(RecvelL10n.text("Duración por sesión")).font(.subheadline.weight(.semibold))
                     Spacer()
                     Text("\(minutes) min").font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(.cyan)
                 }
@@ -850,13 +850,13 @@ struct WeeklyPlanOnboardingView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             } else {
-                Label("Duración, intensidad y horario se ajustan por día en el paso de sesiones.", systemImage: "slider.horizontal.3")
+                Label(RecvelL10n.text("Duración, intensidad y horario se ajustan por día en el paso de sesiones."), systemImage: "slider.horizontal.3")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Tu semana sugerida")
+                Text(RecvelL10n.text("Tu semana sugerida"))
                     .font(.subheadline.weight(.bold))
                 Text("Tócala para ajustar: cada toque cambia el día entre \(cycleDescription).")
                     .font(.caption2)
@@ -1022,9 +1022,9 @@ struct WeeklyPlanOnboardingView: View {
 
     private var phaseStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("¿En qué fase estás?")
+            Text(RecvelL10n.text("¿En qué fase estás?"))
                 .font(.title3.weight(.bold))
-            Text("La fase da contexto a tus semanas y facilita programar descargas o una competencia.")
+            Text(RecvelL10n.text("La fase da contexto a tus semanas y facilita programar descargas o una competencia."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(TrainingProgramPhase.allCases) { option in
@@ -1032,7 +1032,7 @@ struct WeeklyPlanOnboardingView: View {
                     phase = option
                 }
             }
-            Toggle("Tengo una competencia o evento", isOn: $includesEvent)
+            Toggle(RecvelL10n.text("Tengo una competencia o evento"), isOn: $includesEvent)
                 .font(.subheadline.weight(.semibold))
                 .tint(.cyan)
                 .padding(.top, 4)
@@ -1048,9 +1048,9 @@ struct WeeklyPlanOnboardingView: View {
 
     private var sessionsStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Diseña cada sesión")
+            Text(RecvelL10n.text("Diseña cada sesión"))
                 .font(.title3.weight(.bold))
-            Text("Cambia el tipo de sesión en cada día y ajusta su intención. RPE 1 es muy fácil; RPE 10 es el máximo esfuerzo percibido.")
+            Text(RecvelL10n.text("Cambia el tipo de sesión en cada día y ajusta su intención. RPE 1 es muy fácil; RPE 10 es el máximo esfuerzo percibido."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -1074,7 +1074,7 @@ struct WeeklyPlanOnboardingView: View {
 
     private var recordsStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Tus marcas (opcional)")
+            Text(RecvelL10n.text("Tus marcas (opcional)"))
                 .font(.title3.weight(.bold))
             Text("Si conoces tu 1RM — lo máximo que cargas una sola vez — las sesiones de fuerza pueden guiarse por %1RM. Si no, Recvel lo estima desde tus series.")
                 .font(.caption)
@@ -1093,7 +1093,7 @@ struct WeeklyPlanOnboardingView: View {
                     Text("kg").font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Text("Déjalos vacíos si no los sabes: nunca inventamos marcas.")
+            Text(RecvelL10n.text("Déjalos vacíos si no los sabes: nunca inventamos marcas."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -1121,7 +1121,7 @@ struct WeeklyPlanOnboardingView: View {
             planWeeks: planWeeks
         ))
         return VStack(alignment: .leading, spacing: 16) {
-            Text("Tu plan semanal")
+            Text(RecvelL10n.text("Tu plan semanal"))
                 .font(.title3.weight(.bold))
 
             RoutineCoachCard(assessment: coach)
@@ -1188,7 +1188,7 @@ struct WeeklyPlanOnboardingView: View {
 
             if !expectation.bullets.isEmpty || !expectation.cautions.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("Qué esperar de este plan", systemImage: "sparkles")
+                    Label(RecvelL10n.text("Qué esperar de este plan"), systemImage: "sparkles")
                         .font(.subheadline.weight(.bold))
                     ForEach(expectation.bullets, id: \.self) { bullet in
                         Label(bullet, systemImage: "checkmark.circle")
@@ -1208,7 +1208,7 @@ struct WeeklyPlanOnboardingView: View {
                 .accessibilityIdentifier("fitness.routineOnboarding.expectations")
             }
 
-            Text("La carga prevista usa sRPE (minutos × RPE). Recvel ajusta consejos según tu respuesta real; nunca sustituye la valoración de un profesional.")
+            Text(RecvelL10n.text("La carga prevista usa sRPE (minutos × RPE). Recvel ajusta consejos según tu respuesta real; nunca sustituye la valoración de un profesional."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -1267,7 +1267,7 @@ struct WeeklyPlanOnboardingView: View {
                 save()
             }
         } label: {
-            Text(isLastStep ? "Guardar plan semanal" : "Continuar")
+            Text(isLastStep ? RecvelL10n.text("Guardar plan semanal") : "Continuar")
                 .font(.headline)
                 .primaryCapsuleChrome(tint: .cyan, minHeight: 52)
         }
@@ -1454,7 +1454,7 @@ struct WeeklyPlanOnboardingView: View {
         case .mobility:
             return (.mobility, details.focusOverride ?? "Movilidad general", custom.isEmpty ? DailyChallengeEngine().mobilityRoutine().exercisesText : custom)
         case .recovery:
-            return (.recovery, details.focusOverride ?? "Recuperación activa", custom.isEmpty ? DailyChallengeEngine().mobilityRoutine().exercisesText : custom)
+            return (.recovery, details.focusOverride ?? RecvelL10n.text("Recuperación activa"), custom.isEmpty ? DailyChallengeEngine().mobilityRoutine().exercisesText : custom)
         case .plyometrics:
             return (.performance, details.focusOverride ?? "Potencia", custom.isEmpty ? "Saltos tecnicos | 1x\(details.jumpContacts ?? 40)" : custom)
         case .speed:
@@ -1798,13 +1798,13 @@ struct TrainingDayEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") {
+                    Button(RecvelL10n.text("Cerrar")) {
                         Haptics.soft()
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Guardar") {
+                    Button(RecvelL10n.text("Guardar")) {
                         Haptics.success()
                         if assignment == .rest {
                             routine.days[weekday] = .rest
@@ -1860,9 +1860,9 @@ struct WeeklyPlanLibraryView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         if plans.isEmpty {
                             VStack(spacing: 10) {
-                                Text("Sin planes guardados")
+                                Text(RecvelL10n.text("Sin planes guardados"))
                                     .font(.headline)
-                                Text("Configura tu plan semanal y guárdalo aquí para reutilizarlo: bloque de fuerza, semana de descarga, pretemporada…")
+                                Text(RecvelL10n.text("Configura tu plan semanal y guárdalo aquí para reutilizarlo: bloque de fuerza, semana de descarga, pretemporada…"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.center)
@@ -1877,7 +1877,7 @@ struct WeeklyPlanLibraryView: View {
                                 Haptics.warning()
                                 showDeleteAllConfirm = true
                             } label: {
-                                Label("Eliminar todos los planes", systemImage: "trash")
+                                Label(RecvelL10n.text("Eliminar todos los planes"), systemImage: "trash")
                                     .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity, minHeight: 44)
                                     .contentShape(Rectangle())
@@ -1895,7 +1895,7 @@ struct WeeklyPlanLibraryView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") {
+                    Button(RecvelL10n.text("Cerrar")) {
                         Haptics.soft()
                         dismiss()
                     }
@@ -1909,7 +1909,7 @@ struct WeeklyPlanLibraryView: View {
                             .frame(minWidth: 44, minHeight: 44)
                             .contentShape(Rectangle())
                     }
-                    .accessibilityLabel("Nuevo plan")
+                    .accessibilityLabel(RecvelL10n.text("Nuevo plan"))
                     .accessibilityIdentifier("fitness.plans.new")
                 }
             }
@@ -1931,11 +1931,11 @@ struct WeeklyPlanLibraryView: View {
             }
             Button("Cancelar", role: .cancel) { planToApply = nil }
         } message: {
-            Text("Reemplaza tu plan semanal actual.")
+            Text(RecvelL10n.text("Reemplaza tu plan semanal actual."))
         }
         .alert("Renombrar plan", isPresented: Binding(get: { planToRename != nil }, set: { if !$0 { planToRename = nil } })) {
             TextField("Nombre", text: $renameText)
-            Button("Guardar") {
+            Button(RecvelL10n.text("Guardar")) {
                 guard var plan = planToRename else { return }
                 let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
@@ -1950,7 +1950,7 @@ struct WeeklyPlanLibraryView: View {
             }
             Button("Cancelar", role: .cancel) { planToRename = nil }
         }
-        .confirmationDialog("¿Eliminar todos los planes?", isPresented: $showDeleteAllConfirm, titleVisibility: .visible) {
+        .confirmationDialog(RecvelL10n.text("¿Eliminar todos los planes?"), isPresented: $showDeleteAllConfirm, titleVisibility: .visible) {
             Button("Eliminar todos", role: .destructive) {
                 Haptics.warning()
                 WeeklyPlanLibraryStore.deleteAll()
@@ -1958,7 +1958,7 @@ struct WeeklyPlanLibraryView: View {
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Tu plan semanal activo no se borra; solo la biblioteca.")
+            Text(RecvelL10n.text("Tu plan semanal activo no se borra; solo la biblioteca."))
         }
         .sheet(isPresented: $showNewPlan, onDismiss: { plans = WeeklyPlanLibraryStore.load() }) {
             WeeklyPlanOnboardingView(templates: templates)
@@ -2063,7 +2063,7 @@ struct WorkoutTemplateManagerView: View {
                 WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         if templates.isEmpty {
-                            Text("No hay rutinas guardadas.")
+                            Text(RecvelL10n.text("No hay rutinas guardadas."))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity)
@@ -2101,7 +2101,7 @@ struct WorkoutTemplateManagerView: View {
                                 Haptics.warning()
                                 showDeleteAllConfirm = true
                             } label: {
-                                Label("Eliminar todas las rutinas", systemImage: "trash")
+                                Label(RecvelL10n.text("Eliminar todas las rutinas"), systemImage: "trash")
                                     .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity, minHeight: 44)
                                     .contentShape(Rectangle())
@@ -2119,7 +2119,7 @@ struct WorkoutTemplateManagerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") {
+                    Button(RecvelL10n.text("Cerrar")) {
                         Haptics.soft()
                         dismiss()
                     }
@@ -2128,7 +2128,7 @@ struct WorkoutTemplateManagerView: View {
             .liquidGlassNavigationBar()
         }
         .accessibilityIdentifier("fitness.templates.manage")
-        .confirmationDialog("¿Eliminar todas las rutinas?", isPresented: $showDeleteAllConfirm, titleVisibility: .visible) {
+        .confirmationDialog(RecvelL10n.text("¿Eliminar todas las rutinas?"), isPresented: $showDeleteAllConfirm, titleVisibility: .visible) {
             Button("Eliminar todas", role: .destructive) {
                 Haptics.warning()
                 for template in templates {

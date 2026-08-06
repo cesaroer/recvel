@@ -30,7 +30,7 @@ struct FitnessFocusBreakdown {
     var anaerobicPercent: Int { percent(anaerobic) }
 
     var primaryLabel: String {
-        guard total > 0 else { return "Sin datos" }
+        guard total > 0 else { return RecvelL10n.text("Sin datos") }
         if lowAerobic >= highAerobic && lowAerobic >= anaerobic { return RecvelL10n.text("training.cardio.zone.lowAerobic") }
         if highAerobic >= anaerobic { return RecvelL10n.text("training.cardio.zone.highAerobic") }
         return RecvelL10n.text("training.cardio.zone.anaerobic")
@@ -1281,7 +1281,7 @@ private struct FitnessDetailSheet: View {
 
     private var scienceContext: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Cómo interpretar esta métrica", systemImage: "info.circle.fill")
+            Label(RecvelL10n.text("Cómo interpretar esta métrica"), systemImage: "info.circle.fill")
                 .font(.headline).foregroundStyle(.cyan)
             Text(scienceText)
                 .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -1324,10 +1324,10 @@ private struct FitnessDetailSheet: View {
         switch route {
         case .activity: "Consistencia"
         case .strain: "Rango objetivo"
-        case .cardioLoad: "Carga reciente"
+        case .cardioLoad: RecvelL10n.text("Carga reciente")
         case .cardioFocus: "Distribucion"
         case .heartRateRecovery: "Referencia orientativa"
-        case .strength: "Trabajo de fuerza"
+        case .strength: RecvelL10n.text("Trabajo de fuerza")
         }
     }
 
@@ -2862,7 +2862,7 @@ enum MainLift: String, Codable, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .squat: "Sentadilla"
-        case .bench: "Press de banca"
+        case .bench: RecvelL10n.text("Press de banca")
         case .deadlift: "Peso muerto"
         case .overheadPress: "Press militar"
         }
@@ -3009,12 +3009,12 @@ enum DayAssignment: Codable, Equatable {
         case .rest: "Descanso"
         case .cardio(let name): name
         case .template: "Fuerza"
-        case .recovery: "Recuperación"
+        case .recovery: RecvelL10n.text("Recuperación")
         case .mobility: "Movilidad"
-        case .plyometrics: "Pliometría"
+        case .plyometrics: RecvelL10n.text("Pliometría")
         case .speed: "Velocidad"
         case .contrast: "Contraste"
-        case .technique: "Técnica"
+        case .technique: RecvelL10n.text("Técnica")
         }
     }
 
@@ -4865,7 +4865,7 @@ private struct WorkoutFeelingPrompt: View {
 /// grupo sin pedirle al usuario que etiquete cada ejercicio.
 enum MuscleGroupClassifier {
     private static let keywords: [(group: String, terms: [String])] = [
-        ("Pecho", ["press banca", "press de banca", "pecho", "chest", "pec", "fondos", "aperturas", "bench"]),
+        ("Pecho", ["press banca", RecvelL10n.text("press de banca"), "pecho", "chest", "pec", "fondos", "aperturas", "bench"]),
         ("Espalda", ["dominada", "remo", "jalon", "pull", "espalda", "back", "peso muerto", "deadlift", "row"]),
         ("Piernas", ["sentadilla", "squat", "prensa", "zancada", "lunge", "pierna", "leg", "cuadriceps", "femoral", "gemelo", "pantorrilla", "hip thrust", "gluteo"]),
         ("Hombros", ["press militar", "hombro", "shoulder", "deltoide", "elevacion lateral", "overhead", "arnold"]),

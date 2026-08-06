@@ -52,7 +52,7 @@ struct StressHomeCard: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(color)
                 Spacer()
-                Text(profile.hasEnoughData ? "PROMEDIO DEL DIA" : "PRESION FISIOLOGICA")
+                Text(profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : "PRESION FISIOLOGICA")
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.tertiary)
             }
@@ -284,7 +284,7 @@ struct StressDetailView: View {
     var body: some View {
         IntelligenceDetailScaffold(title: RecvelL10n.text("score.stress.title"), symbol: "waveform.path.ecg", color: color, identifier: "detail.stress") {
             IntelligenceHero(
-                eyebrow: profile.hasEnoughData ? "PROMEDIO DEL DIA" : "PRESION FISIOLOGICA",
+                eyebrow: profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : "PRESION FISIOLOGICA",
                 value: heroValue,
                 unit: "CALMA",
                 status: displayLevel.displayName,
@@ -1078,7 +1078,7 @@ struct VO2DetailView: View {
             .padding(.horizontal, 2)
 
             if !points.isEmpty {
-                IntelligenceSectionTitle(title: "Tendencia", detail: "Últimos 30 días")
+                IntelligenceSectionTitle(title: "Tendencia", detail: RecvelL10n.text("Últimos 30 días"))
                 Chart(points) { point in
                     LineMark(x: .value("Fecha", point.date), y: .value("VO2", point.value))
                         .interpolationMethod(.catmullRom)
@@ -1157,7 +1157,7 @@ struct LegacyBioAgeDetailView: View {
     }
 
     private var deltaText: String {
-        estimate.deltaYears.map { String(format: "%+.0f años vs. edad cronológica", $0) } ?? RecvelL10n.text("bioage.completeFields")
+        estimate.deltaYears.map { RecvelL10n.text("bioage.yearsVsChronological", values: ["delta": String(format: "%+.0f", $0)]) } ?? RecvelL10n.text("bioage.completeFields")
     }
 
     private var ageProgress: Double {
@@ -1463,7 +1463,7 @@ struct BreathingExerciseView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "text.book.closed")
-                    Text(showEvidence ? "Ocultar evidencia" : "Ver evidencia")
+                    Text(showEvidence ? "Ocultar evidencia" : RecvelL10n.text("Ver evidencia"))
                     Image(systemName: showEvidence ? "chevron.up" : "chevron.down")
                         .font(.system(size: 9, weight: .bold))
                 }
@@ -1539,7 +1539,7 @@ struct BreathingExerciseView: View {
                         .buttonStyle(.bordered)
                         .tint(.cyan)
                 }
-                Button(finished ? "Cerrar" : "Terminar antes") { dismiss() }
+                Button(finished ? RecvelL10n.text("Cerrar") : "Terminar antes") { dismiss() }
                     .buttonStyle(.bordered)
                     .tint(finished ? .secondary : .cyan)
             }

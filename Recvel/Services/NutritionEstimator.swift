@@ -22,7 +22,7 @@ struct NutritionEstimator: NutritionEstimating {
                 carbohydrates: 32,
                 fat: 9,
                 confidence: .low,
-                uncertainties: ["Alimentos no identificados", "Porcion sin confirmar"],
+                uncertainties: [RecvelL10n.text("Alimentos no identificados"), RecvelL10n.text("Porcion sin confirmar")],
                 source: "text-local"
             )
         }
@@ -38,7 +38,7 @@ struct NutritionEstimator: NutritionEstimating {
             carbohydrates: total { $0.carbs },
             fat: total { $0.fat },
             confidence: matches.count >= 2 ? .medium : .low,
-            uncertainties: ["Porcion aproximada", "Aceites y salsas no incluidos"],
+            uncertainties: ["Porcion aproximada", RecvelL10n.text("Aceites y salsas no incluidos")],
             source: "text-local"
         )
     }

@@ -55,7 +55,7 @@ enum PresetRoutineCatalog {
             id: "fullBody.hypertrophy",
             name: "Full body crecimiento",
             splitType: .fullBody,
-            badge: "Ideal para hipertrofia",
+            badge: RecvelL10n.text("Ideal para hipertrofia"),
             objective: .hypertrophy,
             recommendedDays: 2...3,
             dayTemplates: [
@@ -84,13 +84,13 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "8-12 reps y cada grupo 2-3 veces por semana: el volumen semanal es el driver principal del crecimiento."
+            rationale: RecvelL10n.text("8-12 reps y cada grupo 2-3 veces por semana: el volumen semanal es el driver principal del crecimiento.")
         ),
         PresetRoutine(
             id: "fullBody.strength",
             name: "Full body fuerza",
             splitType: .fullBody,
-            badge: "Ideal para ganar fuerza",
+            badge: RecvelL10n.text("Ideal para ganar fuerza"),
             objective: .maximalStrength,
             recommendedDays: 2...3,
             dayTemplates: [
@@ -115,7 +115,7 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "3-6 reps con cargas altas en basicos multiarticulares: el rango clasico para fuerza maxima."
+            rationale: RecvelL10n.text("3-6 reps con cargas altas en basicos multiarticulares: el rango clasico para fuerza maxima.")
         ),
 
         // MARK: Torso / pierna
@@ -123,7 +123,7 @@ enum PresetRoutineCatalog {
             id: "upperLower.hypertrophy",
             name: "Torso-pierna crecimiento",
             splitType: .upperLower,
-            badge: "Ideal para hipertrofia",
+            badge: RecvelL10n.text("Ideal para hipertrofia"),
             objective: .hypertrophy,
             recommendedDays: 4...4,
             dayTemplates: [
@@ -153,13 +153,13 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "Con 4 dias, cada mitad del cuerpo se entrena 2 veces por semana con volumen alto por sesion."
+            rationale: RecvelL10n.text("Con 4 dias, cada mitad del cuerpo se entrena 2 veces por semana con volumen alto por sesion.")
         ),
         PresetRoutine(
             id: "upperLower.legFocus",
             name: "Torso-pierna enfoque pierna",
             splitType: .upperLower,
-            badge: "Ideal para fortalecer pierna",
+            badge: RecvelL10n.text("Ideal para fortalecer pierna"),
             objective: .maximalStrength,
             recommendedDays: 4...4,
             dayTemplates: [
@@ -186,7 +186,7 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "Prioriza pierna con mas series y cargas altas; el torso queda en volumen de mantenimiento."
+            rationale: RecvelL10n.text("Prioriza pierna con mas series y cargas altas; el torso queda en volumen de mantenimiento.")
         ),
 
         // MARK: Empuje / jalon / pierna
@@ -194,7 +194,7 @@ enum PresetRoutineCatalog {
             id: "pushPullLegs.hypertrophy",
             name: "PPL crecimiento",
             splitType: .pushPullLegs,
-            badge: "Ideal para hipertrofia",
+            badge: RecvelL10n.text("Ideal para hipertrofia"),
             objective: .hypertrophy,
             recommendedDays: 3...6,
             dayTemplates: [
@@ -232,13 +232,13 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "Con 6 dias cada patron se repite 2 veces por semana; con 3, una vuelta completa de volumen alto."
+            rationale: RecvelL10n.text("Con 6 dias cada patron se repite 2 veces por semana; con 3, una vuelta completa de volumen alto.")
         ),
         PresetRoutine(
             id: "pushPullLegs.strength",
             name: "PPL fuerza",
             splitType: .pushPullLegs,
-            badge: "Ideal para ganar fuerza",
+            badge: RecvelL10n.text("Ideal para ganar fuerza"),
             objective: .maximalStrength,
             recommendedDays: 3...6,
             dayTemplates: [
@@ -273,15 +273,15 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "Basicos pesados a 3-6 reps con accesorios reducidos: fuerza primero, volumen justo."
+            rationale: RecvelL10n.text("Basicos pesados a 3-6 reps con accesorios reducidos: fuerza primero, volumen justo.")
         ),
 
         // MARK: Un grupo por dia
         PresetRoutine(
             id: "broSplit.classicVolume",
-            name: "Grupo por dia clasico",
+            name: RecvelL10n.text("Grupo por dia clasico"),
             splitType: .broSplit,
-            badge: "Ideal para hipertrofia con 5+ dias",
+            badge: RecvelL10n.text("Ideal para hipertrofia con 5+ dias"),
             objective: .hypertrophy,
             recommendedDays: 5...6,
             dayTemplates: [
@@ -335,13 +335,13 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "Volumen alto por grupo en su dia. Ojo: con menos de 5 dias la frecuencia por grupo cae bajo 2x/semana."
+            rationale: RecvelL10n.text("Volumen alto por grupo en su dia. Ojo: con menos de 5 dias la frecuencia por grupo cae bajo 2x/semana.")
         ),
         PresetRoutine(
             id: "broSplit.pump",
-            name: "Grupo por dia metabolico",
+            name: RecvelL10n.text("Grupo por dia metabolico"),
             splitType: .broSplit,
-            badge: "Ideal para resistencia muscular",
+            badge: RecvelL10n.text("Ideal para resistencia muscular"),
             objective: .endurance,
             recommendedDays: 5...6,
             dayTemplates: [
@@ -391,7 +391,7 @@ enum PresetRoutineCatalog {
                     """
                 )
             ],
-            rationale: "12-15 reps con descansos cortos: resistencia muscular y trabajo metabolico, no cargas maximas."
+            rationale: RecvelL10n.text("12-15 reps con descansos cortos: resistencia muscular y trabajo metabolico, no cargas maximas.")
         )
     ]
 }
@@ -538,7 +538,7 @@ struct PresetPickerSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Tu rutina sugerida")
+            Text(RecvelL10n.text("Tu rutina sugerida"))
                 .font(.title3.weight(.bold))
             Text(previewSubtitle)
                 .font(.caption)
@@ -588,11 +588,11 @@ struct PresetPickerSection: View {
 
     private var previewSubtitle: String {
         if !showStrength {
-            return "Tu semana incluye cardio y recuperacion: asi se veran esas sesiones."
+            return RecvelL10n.text("Tu semana incluye cardio y recuperacion: asi se veran esas sesiones.")
         }
         return splitType == .custom
-            ? "Elegiste personalizado: armaras tus plantillas a mano y el plan las rotara."
-            : "Rutinas armadas segun la evidencia para tu split. Elige una y ajustala a tu gusto."
+            ? RecvelL10n.text("Elegiste personalizado: armaras tus plantillas a mano y el plan las rotara.")
+            : RecvelL10n.text("Rutinas armadas segun la evidencia para tu split. Elige una y ajustala a tu gusto.")
     }
 
     /// Plantilla de movilidad del plan, si ya existe.
@@ -637,7 +637,7 @@ struct PresetPickerSection: View {
         var mutable = templates.map { $0 }
         let template = ScheduledTemplateMaterializer.upsert(
             sourceID: PlanGeneratedTemplates.mobilitySourceID,
-            name: "Movilidad y recuperación",
+            name: RecvelL10n.text("Movilidad y recuperación"),
             focus: mobilityTemplate?.focus ?? routine.focus,
             exercisesText: mobilityText,
             kind: .mobility,
@@ -661,7 +661,7 @@ struct PresetPickerSection: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Cardio · \(config.sport.label)")
                         .font(.subheadline.weight(.bold))
-                    Text("Un solo ejercicio, medido por tiempo.")
+                    Text(RecvelL10n.text("Un solo ejercicio, medido por tiempo."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -693,9 +693,9 @@ struct PresetPickerSection: View {
                         .frame(width: 34, height: 34)
                         .background(ScoreKind.recovery.color.opacity(0.14), in: Circle())
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Movilidad y recuperación")
+                        Text(RecvelL10n.text("Movilidad y recuperación"))
                             .font(.subheadline.weight(.bold))
-                        Text("Cuenta como recuperación activa, no como día de esfuerzo.")
+                        Text(RecvelL10n.text("Cuenta como recuperación activa, no como día de esfuerzo."))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -744,9 +744,9 @@ struct PresetPickerSection: View {
                     .frame(width: 34, height: 34)
                     .background(Color.yellow.opacity(0.14), in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Desafío diario")
+                    Text(RecvelL10n.text("Desafío diario"))
                         .font(.subheadline.weight(.bold))
-                    Text("Mini-rutina ligera, siempre distinta a lo que entrenas ese día.")
+                    Text(RecvelL10n.text("Mini-rutina ligera, siempre distinta a lo que entrenas ese día."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -935,7 +935,7 @@ struct RoutineCoachCard: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "text.book.closed")
-                    Text(showEvidence ? "Ocultar evidencia" : "Ver evidencia")
+                    Text(showEvidence ? "Ocultar evidencia" : RecvelL10n.text("Ver evidencia"))
                     Image(systemName: showEvidence ? "chevron.up" : "chevron.down")
                         .font(.system(size: 9, weight: .bold))
                 }

@@ -229,7 +229,7 @@ struct BioAgeDetailView: View {
 
     private var traceabilityStrip: some View {
         HStack(spacing: 0) {
-            bioStat("Cronológica", report.chronologicalAge.map(String.init) ?? "--")
+            bioStat(RecvelL10n.text("Cronológica"), report.chronologicalAge.map(String.init) ?? "--")
             divider
             bioStat(RecvelL10n.text("common.confidence"), report.confidence.displayName)
             divider
@@ -250,7 +250,7 @@ struct BioAgeDetailView: View {
 
     private var factorsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Factores de edad", detail: "ultimas cuatro semanas")
+            sectionHeader(RecvelL10n.text("Factores de edad"), detail: "ultimas cuatro semanas")
             VStack(spacing: 10) {
                 ForEach(report.drivers) { driver in BioAgeDriverCard(driver: driver) }
             }
@@ -261,7 +261,7 @@ struct BioAgeDetailView: View {
     private var biomarkersSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                sectionHeader("Otros biomarcadores", detail: "Apple Health y local")
+                sectionHeader("Otros biomarcadores", detail: RecvelL10n.text("Apple Health y local"))
                 Spacer()
                 Button(RecvelL10n.text("common.seeAll")) { sheet = .catalog }
                     .font(.caption.weight(.bold)).foregroundStyle(.white)
@@ -285,8 +285,8 @@ struct BioAgeDetailView: View {
 
     private var methodSection: some View {
         VStack(spacing: 10) {
-            BioAgeNote(icon: "function", title: "Metodo transparente", detail: "Cardio compara VO2 max con referencias FRIEND. Sangre usa la formula publicada PhenoAge solo con los nueve analitos recientes. Las dos lentes nunca se mezclan.", color: .secondary)
-            BioAgeNote(icon: "exclamationmark.shield.fill", title: "No es una edad biológica clínica", detail: "Es información de bienestar basada en tendencias. Los factores de actividad aportan contexto, pero no suman ni restan años al resultado.", color: BioAgeInk.warn)
+            BioAgeNote(icon: "function", title: "Metodo transparente", detail: RecvelL10n.text("Cardio compara VO2 max con referencias FRIEND. Sangre usa la formula publicada PhenoAge solo con los nueve analitos recientes. Las dos lentes nunca se mezclan."), color: .secondary)
+            BioAgeNote(icon: "exclamationmark.shield.fill", title: RecvelL10n.text("No es una edad biológica clínica"), detail: RecvelL10n.text("Es información de bienestar basada en tendencias. Los factores de actividad aportan contexto, pero no suman ni restan años al resultado."), color: BioAgeInk.warn)
         }
     }
 
@@ -458,7 +458,7 @@ private struct BioAgeHero: View {
     }
     private var deltaText: String {
         guard let delta = report.deltaYears else { return "CALIBRANDO" }
-        if abs(delta) < 0.5 { return "CERCA DE TU EDAD" }
+        if abs(delta) < 0.5 { return RecvelL10n.text("CERCA DE TU EDAD") }
         return String(format: "%+.1f VS CRONOLOGICA", delta)
     }
     private var freshnessText: String {
@@ -466,7 +466,7 @@ private struct BioAgeHero: View {
         if seconds < 60 { return "Actualizado ahora" }
         if seconds < 3_600 { return "Actualizado hace \(seconds / 60) min" }
         if seconds < 86_400 { return "Actualizado hace \(seconds / 3_600) h" }
-        return "Actualizado hace \(seconds / 86_400) días"
+        return RecvelL10n.text("bioage.updatedDaysAgo", values: ["days": "\(seconds / 86_400)"])
     }
     private var accessibilitySummary: String {
         guard let age = report.displayedAge else { return RecvelL10n.text("bioage.accessibility.missing") }
@@ -781,7 +781,7 @@ private struct BiomarkerMiniCard: View {
             HStack { Image(systemName: reading.descriptor.symbol).foregroundStyle(.secondary); Spacer(); Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary) }
             Text(reading.value.map { String(format: "%.1f", $0) } ?? "--").font(.title3.weight(.bold)).monospacedDigit()
             Text(reading.descriptor.shortTitle).font(.caption.weight(.semibold))
-            Text(reading.date?.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)) ?? "Sin fecha").font(.caption2).foregroundStyle(.secondary)
+            Text(reading.date?.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)) ?? RecvelL10n.text("Sin fecha")).font(.caption2).foregroundStyle(.secondary)
         }
         .frame(width: 126, height: 112, alignment: .leading).padding(13).liquidGlass(cornerRadius: 16)
     }
@@ -849,9 +849,9 @@ private struct BiomarkerDetailView: View {
                             AreaMark(x: .value("Fecha", point.date), y: .value("Valor", point.value)).foregroundStyle(LinearGradient(colors: [Color.white.opacity(0.16), .clear], startPoint: .top, endPoint: .bottom))
                         }.chartYAxis { AxisMarks(position: .leading) }.frame(height: 190).padding(14).liquidGlass(cornerRadius: 16)
                     }
-                    BioAgeNote(icon: "book.closed.fill", title: "Qué representa", detail: reading.descriptor.explanation, color: .secondary)
+                    BioAgeNote(icon: "book.closed.fill", title: RecvelL10n.text("Qué representa"), detail: reading.descriptor.explanation, color: .secondary)
                     BioAgeNote(icon: "scope", title: "Referencia", detail: reading.descriptor.benchmark, color: .secondary)
-                    BioAgeNote(icon: "person.crop.circle.badge.exclamationmark", title: "Lectura prudente", detail: "Usa tendencias y la fuente original. Ante valores inesperados o sintomas, consulta a un profesional de salud.", color: BioAgeInk.warn)
+                    BioAgeNote(icon: "person.crop.circle.badge.exclamationmark", title: "Lectura prudente", detail: RecvelL10n.text("Usa tendencias y la fuente original. Ante valores inesperados o sintomas, consulta a un profesional de salud."), color: BioAgeInk.warn)
                 }.padding(16).padding(.bottom, 28)
             }.scrollIndicators(.hidden)
         }.navigationTitle(reading.descriptor.shortTitle).navigationBarTitleDisplayMode(.inline).liquidGlassNavigationBar()
@@ -892,7 +892,7 @@ private struct BiomarkerEntryView: View {
                         Menu {
                             ForEach(unitOptions, id: \.self) { item in Button(item) { unit = item } }
                         } label: { field("Unidad", value: unit, symbol: "ruler") }
-                        DatePicker("Fecha de muestra", selection: $date, in: ...Date.now, displayedComponents: .date).padding(15).liquidGlass(cornerRadius: 16)
+                        DatePicker(RecvelL10n.text("Fecha de muestra"), selection: $date, in: ...Date.now, displayedComponents: .date).padding(15).liquidGlass(cornerRadius: 16)
                         TextField("Fuente", text: $source).padding(15).liquidGlass(cornerRadius: 16)
                     }.padding(16)
                 }
