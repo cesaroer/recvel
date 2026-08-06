@@ -68,7 +68,7 @@ struct LegacyJournalView: View {
             .frame(width: 66, height: 66)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(answeredToday == habits.count ? "Check-in completo" : "Tu registro de hoy")
+                Text(RecvelL10n.text(answeredToday == habits.count ? "Check-in completo" : "Tu registro de hoy"))
                     .font(.headline)
                 Text(nextAction)
                     .font(.subheadline)
@@ -100,9 +100,9 @@ struct LegacyJournalView: View {
                 }
             }
 
-            habitGroup("Sueno y recuperacion", habits: habits.filter { $0.group == .recovery })
+            habitGroup(RecvelL10n.text("journal.group.recovery"), habits: habits.filter { $0.group == .recovery })
             Divider().overlay(Color.white.opacity(0.08))
-            habitGroup("Ritmo del dia", habits: habits.filter { $0.group == .day })
+            habitGroup(RecvelL10n.text("journal.group.day"), habits: habits.filter { $0.group == .day })
         }
         .padding(17)
         .liquidGlass(cornerRadius: 8)
@@ -180,7 +180,7 @@ struct LegacyJournalView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Patrones emergentes").font(.headline)
-                    Text("\(ScoreKind.recovery.displayName) en días con Sí frente a días con No")
+                    Text(RecvelL10n.text("journal.impact.recoveryOnYesNo", values: ["score": ScoreKind.recovery.displayName]))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -253,24 +253,29 @@ struct LegacyJournalView: View {
         (0..<30).compactMap { calendar.date(byAdding: .day, value: $0 - 29, to: calendar.startOfDay(for: .now)) }
     }
     private var nextAction: String {
-        if answeredToday < habits.count { return "Faltan \(habits.count - answeredToday) comportamientos por registrar." }
-        if mentalEntries.first(where: { calendar.isDateInToday($0.date) }) == nil { return "Check-in listo. Añade una reflexión si te resulta útil." }
-        return "Todo listo. Vuelve mañana para fortalecer tus patrones."
+        if answeredToday < habits.count {
+            return RecvelL10n.text("journal.next.remaining", values: ["count": "\(habits.count - answeredToday)"])
+        }
+        if mentalEntries.first(where: { calendar.isDateInToday($0.date) }) == nil { return RecvelL10n.text("journal.next.checkInReady") }
+        return RecvelL10n.text("journal.next.allDone")
     }
     private var mentalTodayCaption: String {
         guard let entry = mentalEntries.first(where: { calendar.isDateInToday($0.date) }) else {
-            return "Preparacion de manana y reflexion de noche, un prompt a la vez"
+            return RecvelL10n.text("journal.mental.empty")
         }
         switch MentalJournalEngine.state(morning: entry.hasMorningReflection, evening: entry.hasEveningReflection) {
-        case .complete: return "Hoy completo · abre para revisar o editar"
-        case .partial: return "Hoy parcial · continua cuando quieras"
-        case .none: return "Empieza una reflexion guiada"
+        case .complete: return RecvelL10n.text("journal.mental.complete")
+        case .partial: return RecvelL10n.text("journal.mental.partial")
+        case .none: return RecvelL10n.text("journal.mental.start")
         }
     }
     private var selectedDayCaption: String {
         let count = answered(on: selectedDate)
         let yes = logs.filter { calendar.isDate($0.date, inSameDayAs: selectedDate) && $0.answer }.count
-        return "\(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale))): \(count)/\(habits.count) registrados · \(yes) Si."
+        return RecvelL10n.text("journal.dayCaption", values: [
+            "date": selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)),
+            "count": "\(count)", "total": "\(habits.count)", "yes": "\(yes)"
+        ])
     }
 
     private func answered(on day: Date) -> Int {
@@ -287,8 +292,8 @@ struct LegacyJournalView: View {
     private func answerControl(for habit: HabitSpec) -> some View {
         let answer = todayLog(for: habit.name)?.answer
         return HStack(spacing: 2) {
-            answerButton("No", value: false, selected: answer, habit: habit)
-            answerButton("Si", value: true, selected: answer, habit: habit)
+            answerButton(RecvelL10n.text("No"), value: false, selected: answer, habit: habit)
+            answerButton(RecvelL10n.text("Si"), value: true, selected: answer, habit: habit)
         }
         .padding(3)
         .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 7))
@@ -316,8 +321,8 @@ struct LegacyJournalView: View {
     }
     private func impactCaption(_ impact: JournalAssociation) -> String {
         impact.isReady
-            ? "\(impact.yesCount) Si · \(impact.noCount) No · asociacion, no causa"
-            : "\(min(impact.yesCount, 5))/5 Si · \(min(impact.noCount, 5))/5 No comparables"
+            ? RecvelL10n.text("journal.impact.ready", values: ["yes": "\(impact.yesCount)", "no": "\(impact.noCount)"])
+            : RecvelL10n.text("journal.impact.notReady", values: ["yes": "\(min(impact.yesCount, 5))", "no": "\(min(impact.noCount, 5))"])
     }
 }
 
@@ -394,7 +399,9 @@ struct MentalJournalView: View {
             let streak = MentalJournalEngine.completionStreak(
                 completedDays: Set(entries.filter { $0.hasMorningReflection && $0.hasEveningReflection }.map(\.date))
             )
-            Text(streak > 0 ? "\(streak) dias completos seguidos" : "Sin presion: una sesion parcial tambien cuenta como registro.")
+            Text(streak > 0
+                 ? RecvelL10n.text("journal.streak", values: ["count": "\(streak)"])
+                 : RecvelL10n.text("journal.noStreak"))
                 .font(.subheadline).foregroundStyle(.secondary)
         }
     }
@@ -421,7 +428,7 @@ struct MentalJournalView: View {
                         .foregroundStyle(complete ? ScoreKind.recovery.color : .secondary)
                 }
                 Text(mode.title).font(.headline)
-                Text(complete ? "Completada · editar" : mode.subtitle)
+                Text(complete ? RecvelL10n.text("journal.completedEdit") : mode.subtitle)
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding(15)
@@ -436,9 +443,9 @@ struct MentalJournalView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(RecvelL10n.text("journal.monthHistory")).font(.headline)
             HStack(spacing: 12) {
-                legend(.complete, "Completo")
-                legend(.partial, "Parcial")
-                legend(.none, "Sin entrada")
+                legend(.complete, RecvelL10n.text("journal.legend.complete"))
+                legend(.partial, RecvelL10n.text("journal.legend.partial"))
+                legend(.none, RecvelL10n.text("journal.legend.none"))
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 7) {
                 ForEach(monthDays, id: \.self) { day in
@@ -476,11 +483,11 @@ struct MentalJournalView: View {
                         Image(systemName: "ellipsis").headerCircleChrome(size: 34)
                     }
                 }
-                detailLine("Intencion", entry.morningIntention ?? "")
-                detailLine("Bajo mi control", entry.morningControl ?? "")
-                detailLine("Que salio bien", entry.wentWell)
-                detailLine("Gratitud", entry.gratitude)
-                detailLine("Leccion", entry.eveningLesson ?? entry.improve)
+                detailLine(RecvelL10n.text("journal.field.intention"), entry.morningIntention ?? "")
+                detailLine(RecvelL10n.text("journal.field.control"), entry.morningControl ?? "")
+                detailLine(RecvelL10n.text("journal.field.wentWell"), entry.wentWell)
+                detailLine(RecvelL10n.text("journal.field.gratitude"), entry.gratitude)
+                detailLine(RecvelL10n.text("journal.field.lesson"), entry.eveningLesson ?? entry.improve)
             }
             .padding(17)
             .liquidGlass(cornerRadius: 8)
@@ -530,15 +537,15 @@ struct MentalJournalView: View {
 private enum ReflectionMode: String, Identifiable {
     case morning, evening
     var id: String { rawValue }
-    var title: String { self == .morning ? "Preparar la mañana" : "Cerrar la noche" }
-    var subtitle: String { self == .morning ? "Intencion y control" : "Gratitud y aprendizaje" }
+    var title: String { RecvelL10n.text(self == .morning ? "journal.morning.title" : "journal.evening.title") }
+    var subtitle: String { RecvelL10n.text(self == .morning ? "journal.morning.subtitle" : "journal.evening.subtitle") }
     var prompts: [(String, String)] {
         self == .morning
-            ? [("¿Que haria que hoy valga la pena?", "Define una intencion concreta, no una lista completa."),
-               ("¿Que depende de ti?", "Elige una accion pequena dentro de tu control.")]
-            : [("¿Que salio bien hoy?", "Recuerda un hecho concreto, incluso si fue pequeño."),
-               ("¿Que agradeces de hoy?", "Una persona, momento o posibilidad es suficiente."),
-               ("¿Que quieres aprender de hoy?", "Describe una leccion sin juzgarte.")]
+            ? [(RecvelL10n.text("journal.prompt.worthwhile"), RecvelL10n.text("journal.prompt.worthwhile.hint")),
+               (RecvelL10n.text("journal.prompt.dependsOnYou"), RecvelL10n.text("journal.prompt.dependsOnYou.hint"))]
+            : [(RecvelL10n.text("journal.prompt.wentWell"), RecvelL10n.text("journal.prompt.wentWell.hint")),
+               (RecvelL10n.text("journal.prompt.grateful"), RecvelL10n.text("journal.prompt.grateful.hint")),
+               (RecvelL10n.text("journal.prompt.learn"), RecvelL10n.text("journal.prompt.learn.hint"))]
     }
 }
 

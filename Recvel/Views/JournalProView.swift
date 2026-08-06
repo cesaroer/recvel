@@ -128,7 +128,7 @@ struct JournalView: View {
                 }
                 Divider()
                 Button(role: .destructive) { clearSelectedDay() } label: {
-                    Label("Limpiar este dia", systemImage: "trash")
+                    Label(RecvelL10n.text("journalPro.clearDay"), systemImage: "trash")
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -200,7 +200,7 @@ struct JournalView: View {
             }
             .frame(width: 62, height: 62)
             VStack(alignment: .leading, spacing: 4) {
-                Text(calendar.isDateInToday(selectedDate) ? "Tu registro de hoy" : selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
+                Text(calendar.isDateInToday(selectedDate) ? RecvelL10n.text("Tu registro de hoy") : selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
                     .font(.headline)
                 Text(dayOverviewCaption)
                     .font(.subheadline)
@@ -243,9 +243,9 @@ struct JournalView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(calendar.isDateInToday(selectedDate) ? "Entradas de hoy" : "Entradas del dia")
+                    Text(RecvelL10n.text(calendar.isDateInToday(selectedDate) ? "journalPro.todayEntries" : "journalPro.dayEntries"))
                         .font(.headline)
-                    Text("Separadas como en Bevel · lo no registrado sigue desconocido")
+                    Text(RecvelL10n.text("journalPro.entriesCaption"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -291,14 +291,14 @@ struct JournalView: View {
 
             if health.permissionState == .unavailable {
                 automaticEmptyState(
-                    title: "HealthKit no disponible",
-                    detail: "Este dispositivo no puede leer señales automáticas.",
+                    title: RecvelL10n.text("journalPro.healthKitUnavailable"),
+                    detail: RecvelL10n.text("journalPro.healthKitUnavailable.detail"),
                     showAuthorize: false
                 )
             } else if needsHealthAuthorization {
                 automaticEmptyState(
-                    title: "Conecta Apple Health",
-                    detail: "Autoriza Apple Health para consultar pasos, sueño, entrenamientos y otras señales.",
+                    title: RecvelL10n.text("Conectar Apple Health"),
+                    detail: RecvelL10n.text("journalPro.connectHealth.detail"),
                     showAuthorize: true
                 )
             } else if health.isLoading && health.dataMode == .empty {
@@ -309,19 +309,19 @@ struct JournalView: View {
                     .accessibilityIdentifier("journal.entries.automatic.loading")
             } else if tags.isEmpty {
                 automaticEmptyState(
-                    title: "Sin tags automaticos",
+                    title: RecvelL10n.text("journalPro.noAutoTags"),
                     detail: RecvelL10n.text("journal.automatic.empty"),
                     showAuthorize: false
                 )
             } else if health.dataMode == .empty {
                 automaticEmptyState(
-                    title: "Sin datos automaticos",
-                    detail: "Apple Health está conectado, pero todavía no hay señales disponibles para este día.",
+                    title: RecvelL10n.text("journalPro.noAutoData"),
+                    detail: RecvelL10n.text("journalPro.noAutoData.detail"),
                     showAuthorize: false
                 )
             } else if automaticSignals.isEmpty && !JournalActivityEngine.hasAutomaticHealthData(selectedSnapshot) {
                 ForEach(tags) { tag in automaticRow(tag, signal: nil) }
-                Text("Sin datos automaticos para este dia todavia.")
+                Text(RecvelL10n.text("journalPro.noAutoDataToday"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .padding(.top, 2)
@@ -362,7 +362,7 @@ struct JournalView: View {
                 .foregroundStyle(.tertiary)
             ForEach(tags) { tag in manualRow(tag) }
             if tags.isEmpty {
-                Text("No hay tags manuales activos en esta seccion.")
+                Text(RecvelL10n.text("journalPro.noManualTags"))
                     .font(.caption).foregroundStyle(.tertiary).padding(.vertical, 6)
             }
         }
@@ -376,7 +376,7 @@ struct JournalView: View {
                 .frame(width: 25)
             VStack(alignment: .leading, spacing: 2) {
                 Text(tag.title).font(.subheadline.weight(.medium))
-                Text(signal.map { "\($0.displayValue) · \($0.source)" } ?? "Sin dato todavia")
+                Text(signal.map { "\($0.displayValue) · \($0.source)" } ?? RecvelL10n.text("journalPro.noDataYet"))
                     .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer(minLength: 4)
@@ -384,12 +384,12 @@ struct JournalView: View {
                 Image(systemName: signal.answer ? "checkmark.circle.fill" : "xmark.circle.fill")
                     .foregroundStyle(signal.answer ? ScoreKind.recovery.color : Color.orange.opacity(0.85))
                     .font(.title3)
-                    .accessibilityLabel(signal.answer ? "Si" : "No")
+                    .accessibilityLabel(RecvelL10n.text(signal.answer ? "Si" : "No"))
             } else {
                 Image(systemName: "minus.circle")
                     .foregroundStyle(.tertiary)
                     .font(.title3)
-                    .accessibilityLabel("Sin dato")
+                    .accessibilityLabel(RecvelL10n.text("journalPro.noData"))
             }
         }
         .padding(.vertical, 6)
@@ -421,8 +421,8 @@ struct JournalView: View {
 
     private func answerControl(tag: JournalResolvedTag, selected: Bool?) -> some View {
         HStack(spacing: 2) {
-            answerButton("No", value: false, selected: selected, tag: tag)
-            answerButton("Si", value: true, selected: selected, tag: tag)
+            answerButton(RecvelL10n.text("No"), value: false, selected: selected, tag: tag)
+            answerButton(RecvelL10n.text("Si"), value: true, selected: selected, tag: tag)
         }
         .padding(3)
         .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 7))
@@ -466,7 +466,7 @@ struct JournalView: View {
     }
 
     private var methodology: some View {
-        Text("Los patrones comparan días con respuestas Sí y No. Son asociaciones locales y no demuestran causalidad. Recvel necesita al menos 5 registros de cada grupo antes de mostrar una diferencia.")
+        Text(RecvelL10n.text("journalPro.methodology"))
             .font(.caption2).foregroundStyle(.tertiary).padding(.horizontal, 3)
     }
 
@@ -505,8 +505,8 @@ struct JournalView: View {
             JournalResolvedTag(
                 definition: JournalTagDefinition(
                     config.tagID,
-                    config.customTitle ?? "Tag personal",
-                    "Registro personalizado",
+                    config.customTitle ?? RecvelL10n.text("journalPro.customTag"),
+                    RecvelL10n.text("journalPro.customEntry"),
                     symbol: config.customSymbol ?? "tag.fill",
                     category: JournalTagCategory(rawValue: config.categoryRaw) ?? .personal,
                     period: JournalTagPeriod(rawValue: config.periodRaw) ?? .daytime,
@@ -571,20 +571,20 @@ struct JournalView: View {
     private var dayOverviewCaption: String {
         let state = completionState(on: selectedDate)
         switch state {
-        case .none: return "Aun no hay respuestas manuales. Los datos automaticos aparecen cuando existen."
-        case .partial: return "Hay actividad (manual o automatica). Completa solo lo que recuerdes con certeza."
-        case .complete: return "Registro completo para los tags manuales activos."
+        case .none: return RecvelL10n.text("journalPro.overview.none")
+        case .partial: return RecvelL10n.text("journalPro.overview.partial")
+        case .complete: return RecvelL10n.text("journalPro.overview.complete")
         }
     }
 
     private var mentalCaption: String {
         guard let entry = mentalEntries.first(where: { calendar.isDate($0.date, inSameDayAs: selectedDate) }) else {
-            return "Preparacion de manana y reflexion de noche"
+            return RecvelL10n.text("journalPro.mental.empty")
         }
         switch MentalJournalEngine.state(morning: entry.hasMorningReflection, evening: entry.hasEveningReflection) {
-        case .complete: return "Reflexion completa · abre para revisar"
-        case .partial: return "Reflexion parcial · continua cuando quieras"
-        case .none: return "Empieza una reflexion guiada"
+        case .complete: return RecvelL10n.text("journalPro.mental.complete")
+        case .partial: return RecvelL10n.text("journalPro.mental.partial")
+        case .none: return RecvelL10n.text("journalPro.mental.start")
         }
     }
 
@@ -769,9 +769,9 @@ private struct JournalMonthCalendarView: View {
                     }
                     .padding(12).liquidGlass(cornerRadius: 8, tint: .cyan)
                     HStack(spacing: 15) {
-                        legend(.none, "Sin registro")
-                        legend(.partial, "Parcial / auto")
-                        legend(.complete, "Completo")
+                        legend(.none, RecvelL10n.text("journalPro.legend.none"))
+                        legend(.partial, RecvelL10n.text("journalPro.legend.partial"))
+                        legend(.complete, RecvelL10n.text("journalPro.legend.complete"))
                     }
                     Spacer()
                 }
@@ -953,13 +953,13 @@ private struct JournalCustomizeView: View {
                     Toggle("", isOn: Binding(get: { config?.isPinned ?? false }, set: { setPinned($0, definition: definition) })).labelsHidden()
                 case .defaults:
                     Picker("", selection: Binding(get: { config?.defaultState ?? -1 }, set: { setDefault($0, definition: definition) })) {
-                        Text("Ninguno").tag(-1); Text("No").tag(0); Text("Si").tag(1)
+                        Text(RecvelL10n.text("journalPro.pickerNone")).tag(-1); Text(RecvelL10n.text("No")).tag(0); Text(RecvelL10n.text("Si")).tag(1)
                     }.labelsHidden().pickerStyle(.menu)
                 }
             }
             if mode == .all, definition.defaultThreshold != nil, effectiveEnabled(definition) {
                 HStack {
-                    Text("Umbral").font(.caption).foregroundStyle(.secondary)
+                    Text(RecvelL10n.text("journalPro.threshold")).font(.caption).foregroundStyle(.secondary)
                     Spacer()
                     TextField("", value: Binding(get: { config?.threshold ?? definition.defaultThreshold ?? 0 }, set: { setThreshold($0, definition: definition) }), format: .number)
                         .keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(width: 70)
@@ -975,16 +975,16 @@ private struct JournalCustomizeView: View {
             ZStack {
                 AppBackground()
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Un tag personal usa respuestas Si/No y permanece solo en este dispositivo.").font(.subheadline).foregroundStyle(.secondary)
-                    TextField("Nombre del tag", text: $customName).padding(14).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
-                    Toggle("Entrada nocturna", isOn: $customNighttime).padding(14).liquidGlass(cornerRadius: 8)
+                    Text(RecvelL10n.text("journalPro.custom.explainer")).font(.subheadline).foregroundStyle(.secondary)
+                    TextField(RecvelL10n.text("journalPro.custom.nameField"), text: $customName).padding(14).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                    Toggle(RecvelL10n.text("journalPro.custom.nightEntry"), isOn: $customNighttime).padding(14).liquidGlass(cornerRadius: 8)
                     Spacer()
-                    Button("Guardar tag") { saveCustom() }.buttonStyle(.borderedProminent).tint(.cyan).frame(maxWidth: .infinity).disabled(customName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button(RecvelL10n.text("journalPro.custom.save")) { saveCustom() }.buttonStyle(.borderedProminent).tint(.cyan).frame(maxWidth: .infinity).disabled(customName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }.padding(20)
             }
-            .navigationTitle("Nuevo tag")
+            .navigationTitle(RecvelL10n.text("journalPro.custom.title"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { showingCustom = false } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(RecvelL10n.text("common.cancel")) { showingCustom = false } } }
         }.presentationDetents([.medium])
     }
 
@@ -1018,11 +1018,11 @@ private struct JournalInsightsView: View {
                 AppBackground()
                 WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Picker("Metrica", selection: $metric) { ForEach(JournalInsightMetric.allCases) { Text($0.displayName).tag($0) } }.pickerStyle(.segmented)
-                        impactSection("Asociaciones favorables", values: ready.filter { ($0.association.delta ?? 0) >= 0 }, color: ScoreKind.recovery.color)
-                        impactSection("Asociaciones desfavorables", values: ready.filter { ($0.association.delta ?? 0) < 0 }, color: ScoreKind.strain.color)
-                        impactSection("Reuniendo datos", values: pending, color: .secondary)
-                        Text("Estos resultados comparan promedios personales. No controlan confusores y no demuestran que un habito cause el cambio.").font(.caption2).foregroundStyle(.tertiary)
+                        Picker(RecvelL10n.text("journalPro.insights.metric"), selection: $metric) { ForEach(JournalInsightMetric.allCases) { Text($0.displayName).tag($0) } }.pickerStyle(.segmented)
+                        impactSection(RecvelL10n.text("journalPro.insights.favorable"), values: ready.filter { ($0.association.delta ?? 0) >= 0 }, color: ScoreKind.recovery.color)
+                        impactSection(RecvelL10n.text("journalPro.insights.unfavorable"), values: ready.filter { ($0.association.delta ?? 0) < 0 }, color: ScoreKind.strain.color)
+                        impactSection(RecvelL10n.text("journalPro.insights.gathering"), values: pending, color: .secondary)
+                        Text(RecvelL10n.text("journalPro.insights.disclaimer")).font(.caption2).foregroundStyle(.tertiary)
                     }.padding(16).padding(.bottom, 24)
                 }.scrollIndicators(.hidden)
             }
@@ -1045,10 +1045,10 @@ private struct JournalInsightsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(impact.title).font(.subheadline.weight(.semibold))
-                            Text("\(min(impact.association.yesCount, 5))/5 Si · \(min(impact.association.noCount, 5))/5 No").font(.caption2).foregroundStyle(.secondary)
+                            Text(RecvelL10n.text("journalPro.insights.comparable", values: ["yes": "\(min(impact.association.yesCount, 5))", "no": "\(min(impact.association.noCount, 5))"])).font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(impact.association.delta.map { String(format: "%+.0f pts", $0) } ?? "Calibrando").font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(color)
+                        Text(impact.association.delta.map { String(format: "%+.0f pts", $0) } ?? RecvelL10n.text("journalPro.insights.calibrating")).font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(color)
                     }.padding(14).liquidGlass(cornerRadius: 8, tint: color)
                 }
             }
@@ -1068,9 +1068,9 @@ private struct JournalReminderView: View {
             ZStack {
                 AppBackground()
                 VStack(spacing: 12) {
-                    reminder("Recordatorio de manana", "Revisa lo ocurrido durante la noche", value: $morning)
-                    reminder("Recordatorio de noche", "Cierra las entradas del dia", value: $evening)
-                    reminder("Continuidad", "Un aviso suave si el dia sigue vacio", value: $streak)
+                    reminder(RecvelL10n.text("journalPro.reminder.morning"), RecvelL10n.text("journalPro.reminder.morning.detail"), value: $morning)
+                    reminder(RecvelL10n.text("journalPro.reminder.evening"), RecvelL10n.text("journalPro.reminder.evening.detail"), value: $evening)
+                    reminder(RecvelL10n.text("journalPro.reminder.streak"), RecvelL10n.text("journalPro.reminder.streak.detail"), value: $streak)
                     Spacer()
                 }.padding(16)
             }

@@ -113,9 +113,9 @@ private enum FitnessDetailRoute: String, Identifiable {
         switch self {
         case .activity: RecvelL10n.text("training.summary.title")
         case .strain: RecvelL10n.text("training.loadResponse.title")
-        case .cardioLoad: "Carga cardio"
+        case .cardioLoad: RecvelL10n.text("training.cardioLoad.title")
         case .cardioFocus: RecvelL10n.text("training.cardio.focus")
-        case .heartRateRecovery: "Recuperación cardíaca"
+        case .heartRateRecovery: RecvelL10n.text("training.hrr.title")
         case .strength: RecvelL10n.text("training.strength.progression")
         }
     }
@@ -380,13 +380,13 @@ struct FitnessView: View {
                 Haptics.menuSelect()
                 composer = .activity
             } label: {
-                Label("Registrar entrenamiento", systemImage: "figure.run")
+                Label(RecvelL10n.text("training.logWorkout"), systemImage: "figure.run")
             }
             Button {
                 Haptics.menuSelect()
                 composer = .template
             } label: {
-                Label("Crear rutina de fuerza", systemImage: "square.grid.2x2")
+                Label(RecvelL10n.text("training.createStrengthRoutine"), systemImage: "square.grid.2x2")
             }
             Divider()
             Button {
@@ -399,7 +399,7 @@ struct FitnessView: View {
                 Haptics.menuSelect()
                 composer = .sections
             } label: {
-                Label("Editar Entrenamiento", systemImage: "slider.horizontal.3")
+                Label(RecvelL10n.text("training.editSections"), systemImage: "slider.horizontal.3")
             }
         } label: {
             Image(systemName: "plus")
@@ -416,7 +416,7 @@ struct FitnessView: View {
         .menuOrder(.fixed)
         .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
         .accessibilityIdentifier("fitness.add")
-        .accessibilityLabel("Agregar a Entrenamiento")
+        .accessibilityLabel(RecvelL10n.text("training.addToTraining"))
     }
 
     private var activityCalendar: some View {
@@ -545,7 +545,7 @@ struct FitnessView: View {
                         .font(.caption.weight(.semibold).monospacedDigit())
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Sin kcal")
+                    Text(RecvelL10n.text("training.noKcal"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -621,7 +621,7 @@ struct FitnessView: View {
         let prior = points.dropLast(7).reduce(0) { $0 + $1.cardiovascularLoad } / 23 * 7
         let status = cardioLoadStatus(current: last7, typical: prior)
         return VStack(alignment: .leading, spacing: 11) {
-            metricHeader("Carga cardio", icon: "figure.run")
+            metricHeader(RecvelL10n.text("training.cardioLoad.title"), icon: "figure.run")
             HStack(alignment: .firstTextBaseline) {
                 Text(String(format: "%.0f", last7)).font(.system(size: 28, weight: .bold, design: .rounded)).monospacedDigit()
                 Text(status).font(.caption.weight(.bold)).foregroundStyle(.purple)
@@ -639,7 +639,9 @@ struct FitnessView: View {
             Label(RecvelL10n.text("training.cardio.focus"), systemImage: "square.3.layers.3d")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text(focus.primaryLabel).font(.title3.weight(.bold)).lineLimit(1).minimumScaleFactor(0.75)
-            Text(focus.total > 0 ? "\(focus.lowPercent)% del tiempo" : "Necesita zonas FC")
+            Text(focus.total > 0
+                 ? RecvelL10n.text("training.percentOfTime", values: ["percent": "\(focus.lowPercent)"])
+                 : RecvelL10n.text("training.needsHRZones"))
                 .font(.caption).foregroundStyle(focus.total > 0 ? .cyan : .secondary)
             focusBar(value: focus.lowPercent, color: .cyan)
             focusBar(value: focus.highPercent, color: .blue)
@@ -680,10 +682,12 @@ struct FitnessView: View {
             HStack {
                 Label(RecvelL10n.text("training.strength.volume"), systemImage: "scalemass.fill").font(.headline)
                 Spacer()
-                Text(values.reduce(0, +) > 0 ? "\(Int(values.reduce(0, +))) kg" : "Sin dato")
+                Text(values.reduce(0, +) > 0 ? "\(Int(values.reduce(0, +))) kg" : RecvelL10n.text("journalPro.noData"))
                     .font(.caption.weight(.bold)).foregroundStyle(.secondary)
             }
-            MuscleRadar(labels: groups, values: values)
+            // `groups` es la identidad guardada en `muscleGroup`; el radar solo
+            // pinta, asi que recibe la version traducida.
+            MuscleRadar(labels: groups.map { RecvelL10n.text($0) }, values: values)
                 .frame(height: 238)
             if values.allSatisfy({ $0 == 0 }) {
                 Text(RecvelL10n.text("training.strength.volumeEmpty"))
@@ -723,7 +727,7 @@ struct FitnessView: View {
                         .frame(height: 150)
                 } else {
                     Chart(strengthPoints) { point in
-                        BarMark(x: .value("Dia", point.date), y: .value(strengthMetric.label, point.value))
+                        BarMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(strengthMetric.label, point.value))
                             .foregroundStyle(LinearGradient(colors: [.cyan, .blue], startPoint: .bottom, endPoint: .top))
                             .cornerRadius(4)
                     }
@@ -804,7 +808,7 @@ struct FitnessView: View {
                             Haptics.menuSelect()
                             showTemplateManager = true
                         } label: {
-                            Label("Editar rutinas", systemImage: "square.and.pencil")
+                            Label(RecvelL10n.text("training.editRoutines"), systemImage: "square.and.pencil")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -917,13 +921,13 @@ struct FitnessView: View {
                                 Haptics.menuSelect()
                                 editingTemplate = template
                             } label: {
-                                Label("Editar", systemImage: "pencil")
+                                Label(RecvelL10n.text("common.edit"), systemImage: "pencil")
                             }
                             Divider()
                             Button(role: .destructive) {
                                 deleteTemplate(template)
                             } label: {
-                                Label("Eliminar rutina", systemImage: "trash")
+                                Label(RecvelL10n.text("training.deleteRoutine"), systemImage: "trash")
                             }
                         }
                         .accessibilityIdentifier("fitness.template.card.\(template.name.replacingOccurrences(of: " ", with: "_"))")
@@ -1001,9 +1005,9 @@ struct FitnessView: View {
     }
 
     private func strainStatus(_ deviation: Double) -> String {
-        if deviation < -12 { return "Debajo del objetivo" }
-        if deviation > 12 { return "Sobre el objetivo" }
-        return "Dentro del objetivo"
+        if deviation < -12 { return RecvelL10n.text("training.strain.below") }
+        if deviation > 12 { return RecvelL10n.text("training.strain.above") }
+        return RecvelL10n.text("training.strain.within")
     }
 
     private func strainStatusColor(_ deviation: Double) -> Color {
@@ -1013,18 +1017,20 @@ struct FitnessView: View {
     }
 
     private func cardioLoadStatus(current: Double, typical: Double) -> String {
-        guard typical > 0 else { return current > 0 ? "Calibrando" : "Sin datos" }
+        guard typical > 0 else {
+            return RecvelL10n.text(current > 0 ? "training.cardioLoad.calibrating" : "home.noData")
+        }
         let ratio = current / typical
-        if ratio < 0.75 { return "Por debajo" }
-        if ratio > 1.35 { return "Carga alta" }
-        return "Manteniendo"
+        if ratio < 0.75 { return RecvelL10n.text("training.cardioLoad.low") }
+        if ratio > 1.35 { return RecvelL10n.text("training.cardioLoad.high") }
+        return RecvelL10n.text("training.cardioLoad.steady")
     }
 
     private func hrrStatus(_ value: Double?) -> String {
-        guard let value else { return "Sin muestra posterior al entrenamiento" }
-        if value >= 35 { return "Recuperación rápida" }
-        if value >= 20 { return "Rango intermedio" }
-        return "Observa la tendencia"
+        guard let value else { return RecvelL10n.text("training.hrr.noSample") }
+        if value >= 35 { return RecvelL10n.text("training.hrr.fast") }
+        if value >= 20 { return RecvelL10n.text("training.hrr.mid") }
+        return RecvelL10n.text("training.hrr.watch")
     }
 }
 
@@ -1158,7 +1164,7 @@ private struct FitnessDetailSheet: View {
                                 .headerCircleChrome(size: 42)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Cerrar")
+                        .accessibilityLabel(RecvelL10n.text("common.close"))
                         Spacer()
                         Text(route.title).font(.headline)
                         Spacer()
@@ -1181,9 +1187,9 @@ private struct FitnessDetailSheet: View {
         switch route {
         case .activity:
             let total = points.reduce(0) { $0 + $1.minutes }
-            heroValue(durationText(total), status: "30 días", color: ScoreKind.strain.color)
+            heroValue(durationText(total), status: RecvelL10n.text("training.30days"), color: ScoreKind.strain.color)
             Chart(points) { point in
-                BarMark(x: .value("Dia", point.date), y: .value("Minutos", point.minutes))
+                BarMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(RecvelL10n.text("chart.axis.minutes"), point.minutes))
                     .foregroundStyle(ScoreKind.strain.color.gradient).cornerRadius(4)
             }
             .chartXAxis { AxisMarks(values: .stride(by: .weekOfYear)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.06)); AxisValueLabel(format: .dateTime.day().month(.abbreviated)) } }
@@ -1194,45 +1200,45 @@ private struct FitnessDetailSheet: View {
             let value = active.isEmpty ? 0 : active.reduce(0) { $0 + $1.strainDeviation } / Double(active.count)
             heroValue(String(format: "%+.0f%%", value), status: strainStatus(value), color: statusColor(value))
             Chart(points) { point in
-                AreaMark(x: .value("Dia", point.date), yStart: .value("Min", -12), yEnd: .value("Max", 12))
+                AreaMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), yStart: .value(RecvelL10n.text("chart.axis.min"), -12), yEnd: .value(RecvelL10n.text("chart.axis.max"), 12))
                     .foregroundStyle(ScoreKind.recovery.color.opacity(0.10))
-                LineMark(x: .value("Dia", point.date), y: .value("Desviacion", point.strainDeviation))
+                LineMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(RecvelL10n.text("chart.axis.deviation"), point.strainDeviation))
                     .foregroundStyle(.blue).interpolationMethod(.catmullRom)
-                PointMark(x: .value("Dia", point.date), y: .value("Desviacion", point.strainDeviation))
+                PointMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(RecvelL10n.text("chart.axis.deviation"), point.strainDeviation))
                     .foregroundStyle(statusColor(point.strainDeviation)).symbolSize(point.strain > 0 ? 34 : 0)
             }
             .chartYScale(domain: -80...80).frame(height: 300)
 
         case .cardioLoad:
             let total = points.suffix(7).reduce(0) { $0 + $1.cardiovascularLoad }
-            heroValue(String(format: "%.0f", total), status: "Carga relativa de 7 días", color: .purple)
+            heroValue(String(format: "%.0f", total), status: RecvelL10n.text("training.cardioLoad.relative7"), color: .purple)
             Chart(points) { point in
-                LineMark(x: .value("Dia", point.date), y: .value("Carga", point.cardiovascularLoad))
+                LineMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(RecvelL10n.text("chart.axis.load"), point.cardiovascularLoad))
                     .foregroundStyle(.purple).interpolationMethod(.catmullRom)
-                AreaMark(x: .value("Dia", point.date), y: .value("Carga", point.cardiovascularLoad))
+                AreaMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(RecvelL10n.text("chart.axis.load"), point.cardiovascularLoad))
                     .foregroundStyle(.purple.opacity(0.14)).interpolationMethod(.catmullRom)
             }.frame(height: 300)
 
         case .cardioFocus:
-            heroValue(focus.primaryLabel, status: focus.total > 0 ? "Distribucion por zonas FC" : "Sin zonas suficientes", color: .cyan)
+            heroValue(focus.primaryLabel, status: RecvelL10n.text(focus.total > 0 ? "training.cardioFocus.distribution" : "training.cardioFocus.notEnoughZones"), color: .cyan)
             Chart([
                 FocusDatum(name: RecvelL10n.text("training.cardio.zone.lowAerobic"), value: focus.lowAerobic, color: .cyan),
                 FocusDatum(name: RecvelL10n.text("training.cardio.zone.highAerobic"), value: focus.highAerobic, color: .blue),
                 FocusDatum(name: RecvelL10n.text("training.cardio.zone.anaerobic"), value: focus.anaerobic, color: .purple)
             ]) { item in
-                BarMark(x: .value("Zona", item.name), y: .value("Minutos", item.value))
+                BarMark(x: .value(RecvelL10n.text("chart.axis.zone"), item.name), y: .value(RecvelL10n.text("chart.axis.minutes"), item.value))
                     .foregroundStyle(item.color.gradient).cornerRadius(5)
             }.chartYAxis(.hidden).frame(height: 300)
 
         case .heartRateRecovery:
-            heroValue(heartRateRecovery.map { "\(Int($0.rounded())) bpm" } ?? "Sin dato", status: "Descenso al minuto 1", color: .pink)
+            heroValue(heartRateRecovery.map { "\(Int($0.rounded())) bpm" } ?? RecvelL10n.text("journalPro.noData"), status: RecvelL10n.text("training.hrr.drop1min"), color: .pink)
             HRRScale(value: heartRateRecovery).frame(height: 120)
 
         case .strength:
             let sessions = strengthSessionCount
-            heroValue("\(sessions)", status: "Sesiones de fuerza en 30 días", color: .blue)
+            heroValue("\(sessions)", status: RecvelL10n.text("training.strength.sessions30"), color: .blue)
             Chart(points) { point in
-                BarMark(x: .value("Dia", point.date), y: .value("Minutos", strengthMinutes(on: point.date)))
+                BarMark(x: .value(RecvelL10n.text("chart.axis.day"), point.date), y: .value(RecvelL10n.text("chart.axis.minutes"), strengthMinutes(on: point.date)))
                     .foregroundStyle(LinearGradient(colors: [.cyan, .blue], startPoint: .bottom, endPoint: .top)).cornerRadius(4)
             }.chartYAxis(.hidden).frame(height: 280)
         }
@@ -1244,19 +1250,19 @@ private struct FitnessDetailSheet: View {
             Text(breakdownTitle).font(.title2.weight(.bold))
             switch route {
             case .activity:
-                breakdownRow("Dias activos", value: "\(points.filter { $0.activityCount > 0 }.count)", progress: Double(points.filter { $0.activityCount > 0 }.count) / 30, color: .green)
+                breakdownRow(RecvelL10n.text("training.activeDays"), value: "\(points.filter { $0.activityCount > 0 }.count)", progress: Double(points.filter { $0.activityCount > 0 }.count) / 30, color: .green)
                 breakdownRow("Workouts", value: "\(points.reduce(0) { $0 + $1.activityCount })", progress: min(Double(points.reduce(0) { $0 + $1.activityCount }) / 20, 1), color: .cyan)
             case .strain:
                 let below = points.filter { $0.strain > 0 && $0.strainDeviation < -12 }.count
                 let within = points.filter { $0.strain > 0 && abs($0.strainDeviation) <= 12 }.count
                 let above = points.filter { $0.strain > 0 && $0.strainDeviation > 12 }.count
                 let total = max(below + within + above, 1)
-                breakdownRow("Por debajo", value: "\(below) días", progress: Double(below) / Double(total), color: .blue)
-                breakdownRow("Dentro del rango", value: "\(within) días", progress: Double(within) / Double(total), color: .green)
-                breakdownRow("Por encima", value: "\(above) días", progress: Double(above) / Double(total), color: .orange)
+                breakdownRow(RecvelL10n.text("training.cardioLoad.low"), value: RecvelL10n.text("unit.days", values: ["count": "\(below)"]), progress: Double(below) / Double(total), color: .blue)
+                breakdownRow(RecvelL10n.text("training.withinRange"), value: RecvelL10n.text("unit.days", values: ["count": "\(within)"]), progress: Double(within) / Double(total), color: .green)
+                breakdownRow(RecvelL10n.text("training.above"), value: RecvelL10n.text("unit.days", values: ["count": "\(above)"]), progress: Double(above) / Double(total), color: .orange)
             case .cardioLoad:
-                breakdownRow("Últimos 7 días", value: String(format: "%.0f", points.suffix(7).reduce(0) { $0 + $1.cardiovascularLoad }), progress: 0.72, color: .purple)
-                breakdownRow("21 días anteriores", value: String(format: "%.0f", points.dropLast(7).reduce(0) { $0 + $1.cardiovascularLoad }), progress: 0.58, color: .cyan)
+                breakdownRow(RecvelL10n.text("training.last7Days"), value: String(format: "%.0f", points.suffix(7).reduce(0) { $0 + $1.cardiovascularLoad }), progress: 0.72, color: .purple)
+                breakdownRow(RecvelL10n.text("training.prior21Days"), value: String(format: "%.0f", points.dropLast(7).reduce(0) { $0 + $1.cardiovascularLoad }), progress: 0.58, color: .cyan)
             case .cardioFocus:
                 breakdownRow(RecvelL10n.text("training.cardio.zone.lowAerobic"), value: "\(focus.lowPercent)%", progress: Double(focus.lowPercent) / 100, color: .cyan)
                 breakdownRow(RecvelL10n.text("training.cardio.zone.highAerobic"), value: "\(focus.highPercent)%", progress: Double(focus.highPercent) / 100, color: .blue)
@@ -1279,7 +1285,7 @@ private struct FitnessDetailSheet: View {
                 .font(.headline).foregroundStyle(.cyan)
             Text(scienceText)
                 .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Text("Usa la tendencia junto con sensaciones, descanso y contexto. Recvel no diagnostica ni predice lesiones.")
+            Text(RecvelL10n.text("training.disclaimer.trend"))
                 .font(.caption).foregroundStyle(.tertiary)
         }
         .padding(17)
@@ -1328,17 +1334,17 @@ private struct FitnessDetailSheet: View {
     private var scienceText: String {
         switch route {
         case .activity:
-            "La consistencia y el volumen semanal aportan más contexto que un solo entrenamiento. Los minutos incluyen Apple Health y registros manuales confirmados."
+            RecvelL10n.text("training.explain.activity")
         case .strain:
-            "Compara tu Carga diaria con un rango ajustado según tu Recuperación. Sirve para modular el esfuerzo; no es una cuota ni una predicción de riesgo."
+            RecvelL10n.text("training.explain.strain")
         case .cardioLoad:
-            "La carga combina tiempo en zonas de frecuencia cardiaca. Cuando faltan zonas, usa duracion como fallback de baja confianza. Observa varias semanas."
+            RecvelL10n.text("training.explain.cardioLoad")
         case .cardioFocus:
-            "Las zonas bajas favorecen volumen aerobico sostenible; las altas y anaerobicas aumentan intensidad. La mezcla adecuada depende del deporte y objetivo."
+            RecvelL10n.text("training.explain.cardioFocus")
         case .heartRateRecovery:
-            "La recuperación de la frecuencia cardíaca es la disminución durante el primer minuto después de terminar. La hidratación, el calor, la postura y la forma de detener el entrenamiento pueden modificarla."
+            RecvelL10n.text("training.explain.hrr")
         case .strength:
-            "La frecuencia y el volumen confirmados permiten observar la progresión. Recvel no infiere series, repeticiones ni peso desde un entrenamiento genérico de HealthKit."
+            RecvelL10n.text("training.explain.strength")
         }
     }
 
@@ -1348,9 +1354,9 @@ private struct FitnessDetailSheet: View {
     }
 
     private func strainStatus(_ deviation: Double) -> String {
-        if deviation < -12 { return "Debajo del objetivo" }
-        if deviation > 12 { return "Sobre el objetivo" }
-        return "Dentro del objetivo"
+        if deviation < -12 { return RecvelL10n.text("training.strain.below") }
+        if deviation > 12 { return RecvelL10n.text("training.strain.above") }
+        return RecvelL10n.text("training.strain.within")
     }
 
     private func statusColor(_ deviation: Double) -> Color {
@@ -1508,30 +1514,30 @@ private struct FitnessActivityEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Entrenamiento") {
-                    TextField("Ej. Carrera suave", text: $name)
+                Section(RecvelL10n.text("training.workout")) {
+                    TextField(RecvelL10n.text("training.namePlaceholder"), text: $name)
                         .snappyTextInput()
-                    Picker("Categoria", selection: $category) { ForEach(categories, id: \.self) { Text($0) } }
-                    DatePicker("Fecha", selection: $date)
-                    Stepper("Duración: \(duration) min", value: $duration.hapticStep(), in: 5...300, step: 5)
-                    Stepper("Esfuerzo percibido: \(effort)/10", value: $effort.hapticStep(), in: 1...10)
+                    Picker(RecvelL10n.text("training.picker.category"), selection: $category) { ForEach(categories, id: \.self) { Text(RecvelL10n.text($0)) } }
+                    DatePicker(RecvelL10n.text("training.picker.date"), selection: $date)
+                    Stepper(RecvelL10n.text("training.durationMin", values: ["minutes": "\(duration)"]), value: $duration.hapticStep(), in: 5...300, step: 5)
+                    Stepper(RecvelL10n.text("training.perceivedEffort", values: ["value": "\(effort)"]), value: $effort.hapticStep(), in: 1...10)
                 }
                 if category == "Fuerza" {
-                    Section("Fuerza confirmada") {
-                        Picker("Grupo principal", selection: $muscleGroup) { ForEach(groups, id: \.self) { Text($0) } }
-                        TextField("Volumen total kg (opcional)", text: $volume).keyboardType(.decimalPad)
-                        Text("Suma series x repeticiones x peso. Dejalo vacio si no lo conoces.").font(.caption).foregroundStyle(.secondary)
+                    Section(RecvelL10n.text("training.confirmedStrength")) {
+                        Picker(RecvelL10n.text("training.mainGroup"), selection: $muscleGroup) { ForEach(groups, id: \.self) { Text(RecvelL10n.text($0)) } }
+                        TextField(RecvelL10n.text("training.totalVolumeKg"), text: $volume).keyboardType(.decimalPad)
+                        Text(RecvelL10n.text("training.volumeHint")).font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Section("Notas") { TextField("Contexto opcional", text: $notes, axis: .vertical).lineLimit(3...6) }
+                Section(RecvelL10n.text("training.notes")) { TextField(RecvelL10n.text("training.optionalContext"), text: $notes, axis: .vertical).lineLimit(3...6) }
             }
             .scrollContentBackground(.hidden)
             .background(AppBackground())
-            .navigationTitle("Nuevo entrenamiento")
+            .navigationTitle(RecvelL10n.text("training.newWorkout"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { hapticFeedback(.soft); dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Guardar") { hapticFeedback(.medium); save() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }
+                ToolbarItem(placement: .cancellationAction) { Button(RecvelL10n.text("common.cancel")) { hapticFeedback(.soft); dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button(RecvelL10n.text("common.save")) { hapticFeedback(.medium); save() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }
             }
         }
         .preferredColorScheme(.dark)
@@ -1701,9 +1707,9 @@ struct WorkoutTemplateEditor: View {
 
     private var emptyState: some View {
         VStack(spacing: 10) {
-            Text("Sin ejercicios")
+            Text(RecvelL10n.text("training.noExercises"))
                 .font(.headline)
-            Text("Toca el \"+\" para empezar a agregar ejercicios a tu rutina.")
+            Text(RecvelL10n.text("training.noExercises.detail"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -1749,7 +1755,7 @@ struct WorkoutTemplateEditor: View {
     private func save() {
         Keyboard.dismiss()
         var trimmedName = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedName.isEmpty { trimmedName = "Nueva rutina" }
+        if trimmedName.isEmpty { trimmedName = RecvelL10n.text("training.newRoutine") }
         Haptics.success()
         let models = draft.exercises
             .map { $0.asStruct() }
@@ -1801,7 +1807,7 @@ private struct WorkoutEditorBottomBar: View {
                 .simultaneousGesture(TapGesture().onEnded { Haptics.add() })
 
                 Button(action: onSave) {
-                    Text("Guardar")
+                    Text(RecvelL10n.text("common.save"))
                         .font(.body.weight(.semibold))
                         .foregroundStyle(canSave ? .black : .white.opacity(0.4))
                         .frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
@@ -1840,12 +1846,12 @@ private struct WorkoutEditorHeader: View {
                         .tappableCircle()
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Cerrar")
+                .accessibilityLabel(RecvelL10n.text("common.close"))
 
                 Spacer()
 
                 Menu {
-                    Menu("Tipo de rutina") {
+                    Menu(RecvelL10n.text("training.routineType")) {
                         ForEach(WorkoutTemplateKind.allCases) { kind in
                             Button {
                                 Haptics.menuSelect()
@@ -1878,7 +1884,7 @@ private struct WorkoutEditorHeader: View {
                     if canDelete {
                         Divider()
                         Button(role: .destructive, action: onDelete) {
-                            Label("Eliminar rutina", systemImage: "trash")
+                            Label(RecvelL10n.text("training.deleteRoutine"), systemImage: "trash")
                         }
                     }
                 } label: {
@@ -1893,7 +1899,7 @@ private struct WorkoutEditorHeader: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                TextField("Nueva rutina", text: $draft.name)
+                TextField(RecvelL10n.text("training.newRoutine"), text: $draft.name)
                     .font(.title.weight(.bold))
                     .submitLabel(.done)
                     .snappyTextInput()
@@ -1918,7 +1924,7 @@ private struct TemplateExerciseEditorCard: View {
             HStack(alignment: .top, spacing: 12) {
                 ExerciseThumbnail(item: visual, size: 46)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(exercise.name)
+                    Text(RecvelL10n.text(exercise.name))
                         .font(.body.weight(.semibold))
                     Text(visual.equipment)
                         .font(.caption)
@@ -1940,12 +1946,12 @@ private struct TemplateExerciseEditorCard: View {
                         }
                     } label: {
                         Label(
-                            exercise.durationSeconds == nil ? "Medir por tiempo" : "Medir por repeticiones",
+                            RecvelL10n.text(exercise.durationSeconds == nil ? "training.measureByTime" : "training.measureByReps"),
                             systemImage: exercise.durationSeconds == nil ? "timer" : "repeat"
                         )
                     }
                     Button(role: .destructive, action: onDelete) {
-                        Label("Eliminar ejercicio", systemImage: "trash")
+                        Label(RecvelL10n.text("training.deleteExercise"), systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -1955,12 +1961,12 @@ private struct TemplateExerciseEditorCard: View {
                         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .hapticMenuLabel()
-                .accessibilityLabel("Opciones de \(exercise.name)")
+                .accessibilityLabel(RecvelL10n.text("training.optionsFor", values: ["name": exercise.name]))
             }
 
             if exercise.durationSeconds != nil {
                 HStack {
-                    Label("Duración", systemImage: "timer")
+                    Label(RecvelL10n.text("training.duration"), systemImage: "timer")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -2015,7 +2021,7 @@ private struct TemplateExerciseEditorCard: View {
             Divider().overlay(Color.white.opacity(0.08))
 
             HStack {
-                Label(exercise.durationSeconds == nil ? "Progresión" : "Por tiempo", systemImage: exercise.durationSeconds == nil ? "chart.line.uptrend.xyaxis" : "timer")
+                Label(RecvelL10n.text(exercise.durationSeconds == nil ? "training.progression" : "training.byTime"), systemImage: exercise.durationSeconds == nil ? "chart.line.uptrend.xyaxis" : "timer")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity).contentShape(Rectangle())
@@ -2066,11 +2072,19 @@ private struct TemplateExerciseEditorCard: View {
 /// Metadata visual local (sin assets de terceros): miniatura + equipo.
 struct ExerciseCatalogItem: Identifiable, Hashable {
     var id: String { name }
+    /// Identidad estable. Es la clave que se persiste en `ExerciseEntry`, la que
+    /// busca `ExerciseMechanicsCatalog` y la que compara la biblioteca, asi que
+    /// **nunca se traduce**: solo `displayName` cambia de idioma.
     let name: String
     let group: String
     let equipment: String
     let symbol: String
     let accent: Color
+
+    /// Nombre visible. `name` sigue siendo la identidad; esto solo se pinta.
+    var displayName: String { RecvelL10n.text(name) }
+    var displayGroup: String { RecvelL10n.text(group) }
+    var displayEquipment: String { RecvelL10n.text(equipment) }
 }
 
 enum ExerciseLibrary {
@@ -2363,12 +2377,12 @@ struct ExerciseLibrarySheet: View {
     private var filterChips: some View {
         HStack(spacing: 8) {
             filterMenu(
-                title: groupFilter == "Todos" ? "Todos los grupos" : groupFilter,
+                title: groupFilter == "Todos" ? RecvelL10n.text("training.allGroups") : RecvelL10n.text(groupFilter),
                 options: groups,
                 selection: $groupFilter
             )
             filterMenu(
-                title: equipmentFilter == "Todos" ? "Todo el equipo" : equipmentFilter,
+                title: equipmentFilter == "Todos" ? RecvelL10n.text("training.allEquipment") : RecvelL10n.text(equipmentFilter),
                 options: equipments,
                 selection: $equipmentFilter
             )
@@ -2486,11 +2500,11 @@ struct ExerciseLibrarySheet: View {
                 HStack(spacing: 12) {
                     ExerciseThumbnail(item: item, size: 48)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(item.name)
+                        Text(item.displayName)
                             .font(.body.weight(.semibold))
                             .foregroundStyle(.white)
                             .multilineTextAlignment(.leading)
-                        Text(item.equipment)
+                        Text(item.displayEquipment)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -2502,7 +2516,7 @@ struct ExerciseLibrarySheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("fitness.library.item.\(slug)")
-            .accessibilityLabel("\(item.name), \(item.equipment)")
+            .accessibilityLabel("\(item.displayName), \(item.displayEquipment)")
             .accessibilityAddTraits(isOn ? [.isSelected] : [])
 
             // La "i" ahora si abre la mecanica del ejercicio (antes era decorativa).
@@ -2517,7 +2531,7 @@ struct ExerciseLibrarySheet: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Ver mecanica de \(item.name)")
+            .accessibilityLabel(RecvelL10n.text("training.seeMechanicsFor", values: ["name": item.name]))
             .accessibilityIdentifier("fitness.library.mechanics.\(slug)")
 
             Button {
@@ -2556,15 +2570,15 @@ private struct FitnessSectionEditor: View {
                     Toggle(isOn: $showStrength) { Label("Fuerza", systemImage: "figure.strengthtraining.traditional") }
                 }
                 Section {
-                    Text("El resumen de actividad y la respuesta a la Carga permanecen visibles porque dan contexto a tu entrenamiento.")
+                    Text(RecvelL10n.text("training.sectionsNote"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .scrollContentBackground(.hidden)
             .background(AppBackground())
-            .navigationTitle("Editar Entrenamiento")
+            .navigationTitle(RecvelL10n.text("training.editSections"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Listo") { hapticFeedback(.soft); dismiss() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(RecvelL10n.text("common.done")) { hapticFeedback(.soft); dismiss() } } }
         }
         .preferredColorScheme(.dark)
     }
@@ -2664,10 +2678,10 @@ enum AthleteExperience: String, Codable, CaseIterable, Identifiable {
     }
     var detail: String {
         switch self {
-        case .starting: "Estoy construyendo constancia y técnica."
-        case .intermediate: "Entreno de forma regular y registro mi progreso."
-        case .advanced: "Planifico volumen, intensidad y recuperación."
-        case .competitive: "Organizo bloques alrededor de competencias."
+        case .starting: RecvelL10n.text("training.level.beginner")
+        case .intermediate: RecvelL10n.text("training.level.regular")
+        case .advanced: RecvelL10n.text("training.level.advanced")
+        case .competitive: RecvelL10n.text("training.level.competitive")
         }
     }
 }
@@ -2677,9 +2691,9 @@ enum TrainingObjective: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .general: "Condición general"
+        case .general: RecvelL10n.text("training.goal.general")
         case .hypertrophy: "Hipertrofia"
-        case .maximalStrength: "Fuerza máxima"
+        case .maximalStrength: RecvelL10n.text("training.goal.maxStrength")
         case .endurance: "Resistencia"
         case .sportPerformance: "Rendimiento deportivo"
         }
@@ -2709,11 +2723,11 @@ enum TrainingProgramPhase: String, Codable, CaseIterable, Identifiable {
     }
     var detail: String {
         switch self {
-        case .base: "Consolidar técnica y capacidad de trabajo."
-        case .build: "Aumentar gradualmente el estímulo."
-        case .peak: "Priorizar sesiones específicas de alta calidad."
-        case .deload: "Reducir carga para facilitar la recuperación."
-        case .maintenance: "Conservar capacidad con una carga sostenible."
+        case .base: RecvelL10n.text("training.phase.base")
+        case .build: RecvelL10n.text("training.phase.build")
+        case .peak: RecvelL10n.text("training.phase.peak")
+        case .deload: RecvelL10n.text("training.phase.deload")
+        case .maintenance: RecvelL10n.text("training.phase.maintain")
         }
     }
 }
@@ -2735,13 +2749,13 @@ enum CardioIntent: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .recovery: "Recuperación activa"
-        case .easy: "Base suave"
+        case .recovery: RecvelL10n.text("training.session.activeRecovery")
+        case .easy: RecvelL10n.text("training.session.easy")
         case .tempo: "Tempo"
         case .intervals: "Intervalos"
-        case .skills: "Técnica"
-        case .match: "Partido o competencia"
-        case .long: "Sesión larga"
+        case .skills: RecvelL10n.text("training.session.technique")
+        case .match: RecvelL10n.text("training.session.match")
+        case .long: RecvelL10n.text("training.session.long")
         }
     }
 }
@@ -2869,9 +2883,9 @@ enum WeeklyGoal: String, CaseIterable, Codable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .strength: "Priorizar musculo y volumen"
-        case .cardio: "Priorizar capacidad aerobica"
-        case .mixed: "Equilibrar fuerza y cardio"
+        case .strength: RecvelL10n.text("training.split.prioritizeMuscle")
+        case .cardio: RecvelL10n.text("training.split.prioritizeAerobic")
+        case .mixed: RecvelL10n.text("training.split.balance")
         }
     }
 
@@ -2897,18 +2911,18 @@ enum SplitType: String, Codable, CaseIterable, Identifiable {
         case .fullBody: "Full body"
         case .upperLower: "Torso / pierna"
         case .pushPullLegs: "Empuje / jalon / pierna"
-        case .broSplit: "Un grupo por dia"
+        case .broSplit: RecvelL10n.text("training.split.oneGroupPerDay")
         case .custom: "Personalizado"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .fullBody: "Todo el cuerpo cada sesion. Ideal 2-3 dias/semana."
-        case .upperLower: "Alterna tren superior e inferior. Bueno para 4 dias."
-        case .pushPullLegs: "Empuje, jalon y pierna. Bueno para 3 o 6 dias."
-        case .broSplit: "Un grupo muscular por dia. Necesita mas dias para frecuencia 2x."
-        case .custom: "Tu decides cada dia."
+        case .fullBody: RecvelL10n.text("training.split.fullBody.detail")
+        case .upperLower: RecvelL10n.text("training.split.upperLower.detail")
+        case .pushPullLegs: RecvelL10n.text("training.split.ppl.detail")
+        case .broSplit: RecvelL10n.text("training.split.broSplit.detail")
+        case .custom: RecvelL10n.text("training.split.custom.detail")
         }
     }
 
@@ -3010,12 +3024,12 @@ enum DayAssignment: Codable, Equatable {
         case .rest: "Descanso"
         case .cardio(let name): DayAssignment.sport(fromCardioName: name)?.label ?? name
         case .template: "Fuerza"
-        case .recovery: "Recuperación / fisioterapia"
-        case .mobility: "Flexibilidad y movilidad"
-        case .plyometrics: "Pliometría"
-        case .speed: "Aceleración y velocidad"
-        case .contrast: "Método de contraste"
-        case .technique: "Técnica deportiva"
+        case .recovery: RecvelL10n.text("training.type.recoveryPhysio")
+        case .mobility: RecvelL10n.text("training.type.flexibility")
+        case .plyometrics: RecvelL10n.text("training.type.plyometrics")
+        case .speed: RecvelL10n.text("training.type.speed")
+        case .contrast: RecvelL10n.text("training.type.contrast")
+        case .technique: RecvelL10n.text("training.type.sportTechnique")
         }
     }
 
@@ -3419,12 +3433,12 @@ struct WeeklyRoutinePlanner {
             return RecvelL10n.text(key, values: ["recovery": "\(recovery)"])
         case .recovery, .mobility:
             return recovery < 50
-                ? "Tu Recuperación está en \(recovery)%. Día ideal para la sesión ligera de \(assignment.shortLabel.lowercased()) que planeaste."
-                : "Sesión ligera de \(assignment.shortLabel.lowercased()): suma recuperación sin apenas carga (Recuperación \(recovery)%)."
+                ? RecvelL10n.text("training.advice.lightGoodDay", values: ["recovery": "\(recovery)", "session": assignment.shortLabel.lowercased()])
+                : RecvelL10n.text("training.advice.lightAdds", values: ["recovery": "\(recovery)", "session": assignment.shortLabel.lowercased()])
         case .plyometrics, .speed, .contrast, .technique:
             return recovery >= 60
-                ? "Sesión de \(assignment.shortLabel.lowercased()) con Recuperación en \(recovery)%: buen día para trabajo de calidad, fresco y al inicio de la sesión."
-                : "Tu Recuperación está en \(recovery)% y la \(assignment.shortLabel.lowercased()) pide estar fresco. Considera moverla o bajar el volumen."
+                ? RecvelL10n.text("training.advice.qualityDay", values: ["recovery": "\(recovery)", "session": assignment.shortLabel.lowercased()])
+                : RecvelL10n.text("training.advice.considerMoving", values: ["recovery": "\(recovery)", "session": assignment.shortLabel.lowercased()])
         }
     }
 }
@@ -3469,7 +3483,7 @@ private struct TrainingCoachingRow: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "text.book.closed")
-                    Text(showEvidence ? "Ocultar evidencia" : "Ver evidencia")
+                    Text(RecvelL10n.text(showEvidence ? "training.hideEvidence" : "training.seeEvidence"))
                     Image(systemName: showEvidence ? "chevron.up" : "chevron.down")
                         .font(.system(size: 9, weight: .bold))
                 }
@@ -3634,13 +3648,13 @@ struct WeeklyRoutineSection: View {
                             Haptics.menuSelect()
                             onConfigure()
                         } label: {
-                            Label("Editar plan", systemImage: "pencil")
+                            Label(RecvelL10n.text("training.editPlan"), systemImage: "pencil")
                         }
                         Button {
                             Haptics.menuSelect()
                             showPlanLibrary = true
                         } label: {
-                            Label("Biblioteca de planes", systemImage: "square.stack")
+                            Label(RecvelL10n.text("training.planLibrary"), systemImage: "square.stack")
                         }
                         Button {
                             Haptics.add()
@@ -3649,7 +3663,7 @@ struct WeeklyRoutineSection: View {
                                 routine: routine
                             ))
                         } label: {
-                            Label("Guardar copia en biblioteca", systemImage: "square.and.arrow.down")
+                            Label(RecvelL10n.text("training.saveCopyToLibrary"), systemImage: "square.and.arrow.down")
                         }
                         Divider()
                         Button(role: .destructive) {
@@ -3657,7 +3671,7 @@ struct WeeklyRoutineSection: View {
                             WeeklyRoutineStore.clear()
                             routine = WeeklyRoutineStore.load()
                         } label: {
-                            Label("Eliminar plan", systemImage: "trash")
+                            Label(RecvelL10n.text("training.deletePlan"), systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -3745,7 +3759,7 @@ struct WeeklyRoutineSection: View {
     private func dailyChallengeCard(_ challenge: DailyChallengeDay) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("DESAFÍO DE HOY", systemImage: "flame.fill")
+                Label(RecvelL10n.text("DESAFÍO DE HOY"), systemImage: "flame.fill")
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(ScoreKind.strain.color)
                 Spacer()
@@ -3771,7 +3785,7 @@ struct WeeklyRoutineSection: View {
                     Haptics.soft()
                     if let template = dailyChallengeTemplate { onEdit(template) }
                 } label: {
-                    Label("Editar", systemImage: "pencil")
+                    Label(RecvelL10n.text("common.edit"), systemImage: "pencil")
                         .font(.caption.weight(.semibold))
                         .frame(maxWidth: .infinity, minHeight: 36)
                 }
@@ -3806,7 +3820,7 @@ struct WeeklyRoutineSection: View {
         let exercises = TemplateCodec.parse(template.exercisesText)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("DESAFÍO DE HOY", systemImage: "flame.fill")
+                Label(RecvelL10n.text("DESAFÍO DE HOY"), systemImage: "flame.fill")
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(ScoreKind.strain.color)
                 Spacer()
@@ -3821,7 +3835,7 @@ struct WeeklyRoutineSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("\(template.durationMinutes ?? 12) min · rutina ligera")
+            Text(RecvelL10n.text("training.lightRoutineMinutes", values: ["minutes": "\(template.durationMinutes ?? 12)"]))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             HStack(spacing: 10) {
@@ -3829,7 +3843,7 @@ struct WeeklyRoutineSection: View {
                     Haptics.soft()
                     onEdit(template)
                 } label: {
-                    Label("Editar plantilla", systemImage: "pencil")
+                    Label(RecvelL10n.text("training.editTemplate"), systemImage: "pencil")
                         .font(.caption.weight(.semibold))
                         .frame(maxWidth: .infinity, minHeight: 36)
                 }
@@ -3894,15 +3908,15 @@ struct WeeklyRoutineSection: View {
                 generated = (.mobility, details.focusOverride ?? fallback.focus, details.exercisesText ?? fallback.exercisesText)
             case .recovery:
                 let fallback = DailyChallengeEngine().mobilityRoutine(focusHint: details.focusOverride)
-                generated = (.recovery, details.focusOverride ?? "Recuperación activa", details.exercisesText ?? fallback.exercisesText)
+                generated = (.recovery, details.focusOverride ?? RecvelL10n.text("training.session.activeRecovery"), details.exercisesText ?? fallback.exercisesText)
             case .plyometrics:
-                generated = (.performance, "Potencia", details.exercisesText ?? "Saltos tecnicos | 1x\(details.jumpContacts ?? 40)")
+                generated = (.performance, RecvelL10n.text("training.day.power"), details.exercisesText ?? RecvelL10n.text("training.technicalJumps", values: ["contacts": "\(details.jumpContacts ?? 40)"]))
             case .speed:
-                generated = (.performance, "Velocidad", details.exercisesText ?? "Sprint \(details.speedDistanceMeters ?? 30) m | 1x\(details.speedReps ?? 6)")
+                generated = (.performance, RecvelL10n.text("training.day.speed"), details.exercisesText ?? RecvelL10n.text("training.sprintDrill", values: ["meters": "\(details.speedDistanceMeters ?? 30)", "reps": "\(details.speedReps ?? 6)"]))
             case .contrast:
-                generated = (.performance, "Contraste", details.exercisesText ?? "Bloque de contraste | \(details.contrastSets ?? 3)x4")
+                generated = (.performance, RecvelL10n.text("training.day.contrast"), details.exercisesText ?? RecvelL10n.text("training.contrastBlock", values: ["sets": "\(details.contrastSets ?? 3)"]))
             case .technique:
-                generated = (.performance, "Técnica", details.exercisesText ?? "Práctica técnica | \(details.durationMinutes) min")
+                generated = (.performance, RecvelL10n.text("training.session.technique"), details.exercisesText ?? RecvelL10n.text("training.techniquePractice", values: ["minutes": "\(details.durationMinutes)"]))
             case .template, .rest:
                 continue
             }
@@ -3953,7 +3967,7 @@ struct WeeklyRoutineSection: View {
                 Spacer()
                 Text("\(completedLoad) / \(routine.plannedLoad)")
                     .font(.subheadline.weight(.bold).monospacedDigit())
-                Text("carga")
+                Text(RecvelL10n.text("training.loadLower"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -3984,9 +3998,9 @@ struct WeeklyRoutineSection: View {
 
     private var emptySetup: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Define tu semana de entrenamiento")
+            Text(RecvelL10n.text("Define tu semana de entrenamiento"))
                 .font(.subheadline.weight(.semibold))
-            Text("Elige objetivo, días y modalidades. Recvel crea un plan local y ajusta la sugerencia del día según tu Recuperación.")
+            Text(RecvelL10n.text("Elige objetivo, días y modalidades. Recvel crea un plan local y ajusta la sugerencia del día según tu Recuperación."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Button {
@@ -4050,7 +4064,7 @@ struct WeeklyRoutineSection: View {
     private var todayCard: some View {
         let advice = planner.todayAdvice(recovery: latestRecovery, assignment: todayAssignment)
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Hoy")
+            Text(RecvelL10n.text("common.today"))
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.secondary)
             Text(advice)
@@ -4074,7 +4088,9 @@ struct WeeklyRoutineSection: View {
                 } label: {
                     HStack {
                         Image(systemName: todayReadiness == nil ? "waveform.path.ecg" : "checkmark.circle.fill")
-                        Text(todayReadiness == nil ? "Registrar cómo llegas" : "Preparación \(todayReadiness?.coachingContext.score ?? 0)/100")
+                        Text(todayReadiness == nil
+                             ? RecvelL10n.text("training.logHowYouArrive")
+                             : RecvelL10n.text("training.readinessScore", values: ["score": "\(todayReadiness?.coachingContext.score ?? 0)"]))
                         Spacer()
                         Image(systemName: "chevron.right").font(.caption2.weight(.bold))
                     }
@@ -4204,22 +4220,22 @@ private struct TrainingReadinessCheckInView: View {
                 WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("¿Cómo llegas a la sesión?")
+                            Text(RecvelL10n.text("¿Cómo llegas a la sesión?"))
                                 .font(.title2.weight(.bold))
-                            Text("Tu reporte complementa las señales del Apple Watch y mejora el ajuste de hoy.")
+                            Text(RecvelL10n.text("Tu reporte complementa las señales del Apple Watch y mejora el ajuste de hoy."))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
 
-                        TrainingReadinessRatingRow(title: "Energía", low: "Muy baja", high: "Muy alta", value: $energy)
-                        TrainingReadinessRatingRow(title: "Molestias musculares", low: "Ninguna", high: "Muy altas", value: $soreness)
-                        TrainingReadinessRatingRow(title: "Motivación", low: "Muy baja", high: "Muy alta", value: $motivation)
+                        TrainingReadinessRatingRow(title: RecvelL10n.text("training.energy"), low: RecvelL10n.text("training.rating.veryLow"), high: RecvelL10n.text("training.rating.veryHigh"), value: $energy)
+                        TrainingReadinessRatingRow(title: RecvelL10n.text("training.soreness"), low: RecvelL10n.text("training.rating.none"), high: RecvelL10n.text("training.rating.veryHighPlural"), value: $soreness)
+                        TrainingReadinessRatingRow(title: RecvelL10n.text("training.motivation"), low: RecvelL10n.text("training.rating.veryLow"), high: RecvelL10n.text("training.rating.veryHigh"), value: $motivation)
 
                         Toggle(isOn: $hasPainOrLimitation) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Dolor o limitación de movimiento")
+                                Text(RecvelL10n.text("Dolor o limitación de movimiento"))
                                     .font(.subheadline.weight(.semibold))
-                                Text("No se interpreta como una puntuación de esfuerzo.")
+                                Text(RecvelL10n.text("No se interpreta como una puntuación de esfuerzo."))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
@@ -4228,13 +4244,13 @@ private struct TrainingReadinessCheckInView: View {
                         .padding(14)
                         .liquidGlass(cornerRadius: 14, tint: hasPainOrLimitation ? .orange : nil)
 
-                        TextField("Nota opcional", text: $note, axis: .vertical)
+                        TextField(RecvelL10n.text("training.optionalNote"), text: $note, axis: .vertical)
                             .lineLimit(2...4)
                             .padding(14)
                             .liquidGlass(cornerRadius: 14)
 
                         Button(action: save) {
-                            Text(existing == nil ? "Guardar registro" : "Actualizar registro")
+                            Text(RecvelL10n.text(existing == nil ? "training.saveEntry" : "training.updateEntry"))
                                 .font(.headline)
                                 .primaryCapsuleChrome(tint: .cyan, minHeight: 52)
                         }
@@ -4245,11 +4261,11 @@ private struct TrainingReadinessCheckInView: View {
                 }
                 .scrollIndicators(.hidden)
             }
-            .navigationTitle("Preparación de hoy")
+            .navigationTitle(RecvelL10n.text("training.todayReadiness"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") { dismiss() }
+                    Button(RecvelL10n.text("common.close")) { dismiss() }
                 }
             }
             .liquidGlassNavigationBar()
@@ -4359,7 +4375,7 @@ struct TemplatePreviewSheet: View {
                             .tappableCircle()
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Cerrar")
+                    .accessibilityLabel(RecvelL10n.text("common.close"))
 
                     Spacer()
 
@@ -4369,14 +4385,14 @@ struct TemplatePreviewSheet: View {
                             dismiss()
                             onEdit()
                         } label: {
-                            Label("Editar rutina", systemImage: "pencil")
+                            Label(RecvelL10n.text("training.editRoutine"), systemImage: "pencil")
                         }
                         Divider()
                         Button(role: .destructive) {
                             dismiss()
                             onDelete?()
                         } label: {
-                            Label("Eliminar rutina", systemImage: "trash")
+                            Label(RecvelL10n.text("training.deleteRoutine"), systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -4410,7 +4426,7 @@ struct TemplatePreviewSheet: View {
                             HStack(spacing: 12) {
                                 ExerciseThumbnail(item: visual, size: 46)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(exercise.name)
+                                    Text(RecvelL10n.text(exercise.name))
                                         .font(.body.weight(.semibold))
                                     Text(exercise.durationSeconds.map { "\(visual.equipment) · \($0 >= 60 && $0.isMultiple(of: 60) ? "\($0 / 60) min" : "\($0) s")" }
                                         ?? "\(visual.equipment) · \(exercise.sets) \(exercise.sets == 1 ? "serie" : "series")")
@@ -4437,7 +4453,7 @@ struct TemplatePreviewSheet: View {
                         dismiss()
                         onEdit()
                     } label: {
-                        Label("Editar", systemImage: "pencil")
+                        Label(RecvelL10n.text("common.edit"), systemImage: "pencil")
                             .font(.body.weight(.semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
@@ -4530,7 +4546,7 @@ private struct ActiveTimedRoutineView: View {
                                 Image(systemName: "checkmark.circle")
                                     .foregroundStyle(.cyan)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(exercise.name).font(.subheadline.weight(.semibold))
+                                    Text(RecvelL10n.text(exercise.name)).font(.subheadline.weight(.semibold))
                                     Text(exercise.prescriptionLabel).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
@@ -4544,9 +4560,9 @@ private struct ActiveTimedRoutineView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .confirmationDialog("¿Terminar rutina?", isPresented: $showFinish, titleVisibility: .visible) {
-            Button("Guardar") { showFeelingPrompt = true }
-            Button("Continuar", role: .cancel) {}
+        .confirmationDialog(RecvelL10n.text("training.finishRoutine"), isPresented: $showFinish, titleVisibility: .visible) {
+            Button(RecvelL10n.text("common.save")) { showFeelingPrompt = true }
+            Button(RecvelL10n.text("common.continue"), role: .cancel) {}
         }
         .sheet(isPresented: $showFeelingPrompt) {
             WorkoutFeelingPrompt { feeling in finish(feeling: feeling) }
@@ -4671,9 +4687,9 @@ struct ActiveWorkoutSessionView: View {
             .presentationDetents([.large])
             .presentationCornerRadius(30)
         }
-        .confirmationDialog("Terminar entrenamiento?", isPresented: $showFinishConfirm, titleVisibility: .visible) {
-            Button("Guardar sesion", action: { showFeelingPrompt = true })
-            Button("Cancelar", role: .cancel) {}
+        .confirmationDialog(RecvelL10n.text("training.finishWorkout"), isPresented: $showFinishConfirm, titleVisibility: .visible) {
+            Button(RecvelL10n.text("training.saveSession"), action: { showFeelingPrompt = true })
+            Button(RecvelL10n.text("common.cancel"), role: .cancel) {}
         }
         .sheet(isPresented: $showFeelingPrompt) {
             WorkoutFeelingPrompt { feeling in
@@ -4782,9 +4798,9 @@ private struct WorkoutFeelingPrompt: View {
             AppBackground()
             VStack(spacing: 20) {
                 VStack(spacing: 5) {
-                    Text("¿Como se sintio?")
+                    Text(RecvelL10n.text("training.howDidItFeel"))
                         .font(.title3.weight(.bold))
-                    Text("Ajusta tu carga de manana segun tu esfuerzo de hoy.")
+                    Text(RecvelL10n.text("training.adjustTomorrow"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -4825,7 +4841,7 @@ private struct WorkoutFeelingPrompt: View {
                     onSelect(selected)
                     dismiss()
                 } label: {
-                    Text("Guardar sesion")
+                    Text(RecvelL10n.text("training.saveSession"))
                         .font(.headline)
                         .primaryCapsuleChrome(tint: .cyan, minHeight: 52)
                 }
@@ -4933,7 +4949,7 @@ private struct ActiveSessionExerciseCard: View {
             HStack(alignment: .top, spacing: 12) {
                 ExerciseThumbnail(item: visual, size: 46)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(exercise.name)
+                    Text(RecvelL10n.text(exercise.name))
                         .font(.body.weight(.semibold))
                     Text("\(visual.equipment) · \(exercise.sets.count) \(exercise.sets.count == 1 ? "serie" : "series")")
                         .font(.caption)
@@ -4947,7 +4963,7 @@ private struct ActiveSessionExerciseCard: View {
                     .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 Menu {
                     Button(role: .destructive, action: onDelete) {
-                        Label("Eliminar ejercicio", systemImage: "trash")
+                        Label(RecvelL10n.text("training.deleteExercise"), systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -4957,7 +4973,7 @@ private struct ActiveSessionExerciseCard: View {
                         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .hapticMenuLabel()
-                .accessibilityLabel("Opciones de \(exercise.name)")
+                .accessibilityLabel(RecvelL10n.text("training.optionsFor", values: ["name": exercise.name]))
             }
 
             // Mecanica del ejercicio: demostracion animada + pasos, sin salir de la sesion.
@@ -5132,24 +5148,24 @@ enum ExerciseProgression {
         [
             MetricDescriptor(
                 key: "weight.\(exerciseName)",
-                title: "Peso (top set)",
+                title: RecvelL10n.text("training.topSetWeight"),
                 symbol: "scalemass.fill",
                 unit: "kg",
                 decimals: 0,
                 higherIsBetter: true,
                 color: .blue,
-                explanation: "El peso más alto que levantaste por sesión en \(exerciseName). Es la señal más directa de progresión de fuerza junto con las repeticiones.",
+                explanation: RecvelL10n.text("training.pr.explain", values: ["exercise": exerciseName]),
                 resources: []
             ),
             MetricDescriptor(
                 key: "e1rm.\(exerciseName)",
-                title: "1RM estimado",
+                title: RecvelL10n.text("training.e1rm"),
                 symbol: "chart.line.uptrend.xyaxis",
                 unit: "kg",
                 decimals: 0,
                 higherIsBetter: true,
                 color: .cyan,
-                explanation: "Estimación de tu repetición máxima a partir de peso y repeticiones (promedio de Epley y Brzycki). Solo se calcula con series de 10 reps o menos, donde las fórmulas son fiables (±5%). Es una estimación de tendencia, no un 1RM real medido.",
+                explanation: RecvelL10n.text("training.e1rm.explain"),
                 resources: []
             )
         ]

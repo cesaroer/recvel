@@ -32,35 +32,35 @@ enum FastingProtocol: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .circadian: "Circadiano"
+        case .circadian: RecvelL10n.text("fasting.protocol.circadian")
         case .sixteen8: "16:8"
         case .eighteen6: "18:6"
         case .twenty4: "20:4"
         case .omad: "OMAD"
-        case .custom: "Personalizado"
+        case .custom: RecvelL10n.text("fasting.protocol.custom")
         }
     }
 
     var subtitle: String {
         switch self {
-        case .circadian: "12 h de ayuno"
-        case .sixteen8: "16 h de ayuno"
-        case .eighteen6: "18 h de ayuno"
-        case .twenty4: "20 h de ayuno"
-        case .omad: "Una comida al dia (~22 h)"
-        case .custom: "Elige tus horas"
+        case .circadian: RecvelL10n.text("fasting.window.12")
+        case .sixteen8: RecvelL10n.text("fasting.window.16")
+        case .eighteen6: RecvelL10n.text("fasting.window.18")
+        case .twenty4: RecvelL10n.text("fasting.window.20")
+        case .omad: RecvelL10n.text("fasting.window.omad")
+        case .custom: RecvelL10n.text("fasting.window.custom")
         }
     }
 
     /// Descripcion breve del protocolo para la tarjeta visual del selector.
     var description: String {
         switch self {
-        case .circadian: "Alineado con tu ritmo circadiano natural. Ideal para empezar."
-        case .sixteen8: "El protocolo mas popular. Ventana de 8 h para comer."
-        case .eighteen6: "Mas exigente, ventana de 6 h. Para personas con experiencia."
-        case .twenty4: "Ventana de 4 h. Requiere disciplina y adaptacion previa."
-        case .omad: "Solo una comida diaria. El protocolo mas avanzado."
-        case .custom: "Tu defines las horas de ayuno y alimentacion."
+        case .circadian: RecvelL10n.text("fasting.detail.circadian")
+        case .sixteen8: RecvelL10n.text("fasting.detail.16")
+        case .eighteen6: RecvelL10n.text("fasting.detail.18")
+        case .twenty4: RecvelL10n.text("fasting.detail.20")
+        case .omad: RecvelL10n.text("fasting.detail.omad")
+        case .custom: RecvelL10n.text("fasting.detail.custom")
         }
     }
 
@@ -155,12 +155,12 @@ enum FastingMood: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .great: "Bien"
-        case .tired: "Cansado"
-        case .headache: "Dolor de cabeza"
-        case .irritable: "Irritable"
-        case .energized: "Energizado"
-        case .dizzy: "Mareo"
+        case .great: RecvelL10n.text("fasting.mood.great")
+        case .tired: RecvelL10n.text("fasting.mood.tired")
+        case .headache: RecvelL10n.text("fasting.symptom.headache")
+        case .irritable: RecvelL10n.text("fasting.mood.irritable")
+        case .energized: RecvelL10n.text("fasting.mood.energized")
+        case .dizzy: RecvelL10n.text("fasting.mood.dizzy")
         }
     }
 
@@ -229,36 +229,36 @@ struct FastingEngine {
         FastingPhase(
             id: 0,
             startHour: 0,
-            name: "Digestion",
-            detail: "Tu cuerpo esta procesando tu ultima comida.",
+            name: RecvelL10n.text("fasting.phase.digestion"),
+            detail: RecvelL10n.text("fasting.phase.digesting"),
             colorKind: .energy
         ),
         FastingPhase(
             id: 1,
             startHour: 4,
-            name: "Uso de glucogeno",
-            detail: "Tras varias horas sin comer, el cuerpo suele recurrir mas a sus reservas de glucogeno. El momento exacto varia entre personas.",
+            name: RecvelL10n.text("fasting.phase.glycogen"),
+            detail: RecvelL10n.text("fasting.phase.glycogen.detail"),
             colorKind: .sleep
         ),
         FastingPhase(
             id: 2,
             startHour: 12,
-            name: "Transicion a grasa",
-            detail: "Alrededor de estas horas la investigacion sugiere que el cuerpo puede movilizar mas grasa, pero depende de tu dieta previa, ejercicio y metabolismo.",
+            name: RecvelL10n.text("fasting.phase.fatTransition"),
+            detail: RecvelL10n.text("fasting.phase.fat.detail"),
             colorKind: .strain
         ),
         FastingPhase(
             id: 3,
             startHour: 18,
-            name: "Glucogeno hepatico bajo",
-            detail: "El glucogeno del higado tiende a agotarse alrededor de las 18-24 h; es una de las estimaciones con mejor respaldo fisiologico, aunque sigue siendo individual.",
+            name: RecvelL10n.text("fasting.phase.lowLiverGlycogen"),
+            detail: RecvelL10n.text("fasting.phase.liver.detail"),
             colorKind: .recovery
         ),
         FastingPhase(
             id: 4,
             startHour: 24,
-            name: "Autofagia (evidencia limitada)",
-            detail: "Estudios preliminares en humanos sugieren posibles cambios en marcadores de autofagia, pero la evidencia no es concluyente y proviene mayormente de estudios en animales.",
+            name: RecvelL10n.text("fasting.phase.autophagy"),
+            detail: RecvelL10n.text("fasting.phase.autophagy.detail"),
             colorKind: .recovery
         )
     ]
@@ -281,23 +281,23 @@ struct FastingEngine {
     /// Tips genéricos de bienestar, NO afirmaciones médicas.
     /// Tono consistente con AI_CONTEXT.md sección "Lenguaje y seguridad".
     static let preFastingTips: [FastingTip] = [
-        FastingTip(id: 100, text: "Hidratate bien antes de empezar. El agua, te o cafe sin azucar son tus aliados.", icon: "drop.fill"),
-        FastingTip(id: 101, text: "Una cena con fibra y proteina puede facilitar las primeras horas de ayuno.", icon: "leaf.fill"),
-        FastingTip(id: 102, text: "Evita empezar un ayuno largo si dormiste mal o tuviste un dia fisicamente muy exigente.", icon: "moon.zzz.fill"),
+        FastingTip(id: 100, text: RecvelL10n.text("fasting.tip.hydrateBefore"), icon: "drop.fill"),
+        FastingTip(id: 101, text: RecvelL10n.text("fasting.tip.dinner"), icon: "leaf.fill"),
+        FastingTip(id: 102, text: RecvelL10n.text("fasting.tip.avoidStart"), icon: "moon.zzz.fill"),
     ]
 
     static let duringFastingTips: [FastingTip] = [
-        FastingTip(id: 200, text: "Mantente hidratado. El agua con gas, te verde o cafe negro no rompen el ayuno.", icon: "cup.and.saucer.fill"),
-        FastingTip(id: 201, text: "Actividad ligera como caminar puede hacer mas llevadera la espera.", icon: "figure.walk"),
-        FastingTip(id: 202, text: "Si sientes mareo, debilidad intensa o confusión, rompe el ayuno. Tu bienestar es primero.", icon: "heart.fill"),
-        FastingTip(id: 203, text: "Distraer la mente con una tarea o actividad puede reducir la sensacion de hambre.", icon: "brain.fill"),
-        FastingTip(id: 204, text: "El hambre viene en oleadas — suele pasar si le das unos minutos.", icon: "water.waves"),
+        FastingTip(id: 200, text: RecvelL10n.text("fasting.tip.stayHydrated"), icon: "cup.and.saucer.fill"),
+        FastingTip(id: 201, text: RecvelL10n.text("fasting.tip.lightActivity"), icon: "figure.walk"),
+        FastingTip(id: 202, text: RecvelL10n.text("fasting.tip.breakIfDizzy"), icon: "heart.fill"),
+        FastingTip(id: 203, text: RecvelL10n.text("fasting.tip.distract"), icon: "brain.fill"),
+        FastingTip(id: 204, text: RecvelL10n.text("fasting.tip.waves"), icon: "water.waves"),
     ]
 
     static let postFastingTips: [FastingTip] = [
-        FastingTip(id: 300, text: "Rompe el ayuno con algo ligero: fruta, yogurt, un puñado de nueces.", icon: "carrot.fill"),
-        FastingTip(id: 301, text: "Evita comidas muy pesadas o procesadas justo al terminar.", icon: "fork.knife"),
-        FastingTip(id: 302, text: "Dale a tu cuerpo 15-20 minutos antes de una comida grande.", icon: "timer"),
+        FastingTip(id: 300, text: RecvelL10n.text("fasting.tip.breakLight"), icon: "carrot.fill"),
+        FastingTip(id: 301, text: RecvelL10n.text("fasting.tip.avoidHeavy"), icon: "fork.knife"),
+        FastingTip(id: 302, text: RecvelL10n.text("fasting.tip.wait"), icon: "timer"),
     ]
 
     func contextualTip(isActive: Bool, hasCompletedSessions: Bool, elapsedHours: Double, now: Date = .now) -> FastingTip {
@@ -428,16 +428,16 @@ extension FastingEngine {
     /// Evalua el screening. Exclusiones duras vs. avisos de "consulta a tu medico".
     func safetyResult(_ answers: FastingSafetyAnswers) -> FastingSafetyResult {
         var blocking: [String] = []
-        if answers.under18 { blocking.append("Eres menor de 18 anos") }
-        if answers.pregnantOrNursing { blocking.append("Embarazo o lactancia") }
-        if answers.eatingDisorderHistory { blocking.append("Historial de trastorno alimentario") }
-        if answers.insulinOrType1Diabetes { blocking.append("Diabetes tipo 1 o uso de insulina/sulfonilureas") }
-        if answers.underweight { blocking.append("Bajo peso") }
+        if answers.under18 { blocking.append(RecvelL10n.text("fasting.risk.under18")) }
+        if answers.pregnantOrNursing { blocking.append(RecvelL10n.text("fasting.risk.pregnancy")) }
+        if answers.eatingDisorderHistory { blocking.append(RecvelL10n.text("fasting.risk.eatingDisorder")) }
+        if answers.insulinOrType1Diabetes { blocking.append(RecvelL10n.text("fasting.risk.diabetes")) }
+        if answers.underweight { blocking.append(RecvelL10n.text("fasting.risk.underweight")) }
 
         if !blocking.isEmpty { return .blocked(blocking) }
 
         if answers.olderAdultOrHeartConditionOrMedication {
-            return .caution(["Habla con tu medico antes de ayunar si eres adulto mayor, tienes una condicion cardiaca o tomas medicamentos que requieren horario con alimentos."])
+            return .caution([RecvelL10n.text("fasting.risk.talkToDoctor")])
         }
         return .clear
     }
@@ -612,7 +612,9 @@ struct FastingView: View {
                             value: progress,
                             color: phase.color,
                             centerText: elapsedText(elapsed),
-                            centerCaption: targetReached ? "¡Objetivo cumplido!" : "de \(targetText(session.targetHours))",
+                            centerCaption: targetReached
+                                ? RecvelL10n.text("fasting.goalMet")
+                                : RecvelL10n.text("fasting.ofTarget", values: ["target": targetText(session.targetHours)]),
                             minLabel: "0 h",
                             maxLabel: targetText(session.targetHours)
                         )
@@ -880,7 +882,7 @@ struct FastingView: View {
                         }
                     }
                 } else {
-                    Text("Llegaste al tope de \(CheckInLimits.maxPerDay) registros en este ayuno.")
+                    Text(RecvelL10n.text("fasting.checkInCap", values: ["max": "\(CheckInLimits.maxPerDay)"]))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("fasting.feeling.cap")
@@ -913,7 +915,7 @@ struct FastingView: View {
                     .accessibilityIdentifier("fasting.feeling.advice")
                 }
 
-                Text("Autoconocimiento sobre como te sientes; no es diagnostico. Si tienes sintomas graves, busca ayuda medica.")
+                Text(RecvelL10n.text("fasting.checkIn.disclaimer"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -930,7 +932,7 @@ struct FastingView: View {
             return (log.date, mood.valence)
         }
         return VStack(alignment: .leading, spacing: 6) {
-            Text("Feeling en este ayuno")
+            Text(RecvelL10n.text("Feeling en este ayuno"))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -1002,7 +1004,7 @@ struct FastingView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(RecvelL10n.text("fasting.eatingWindow"))
                             .font(.subheadline.weight(.semibold))
-                        Text("Llevas \(elapsedText(hoursSince)) desde tu ultimo ayuno.")
+                        Text(RecvelL10n.text("fasting.sinceLast", values: ["elapsed": elapsedText(hoursSince)]))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1086,9 +1088,9 @@ struct FastingView: View {
 
                 Toggle(isOn: $notifyOnTarget) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Avisarme al completar")
+                        Text(RecvelL10n.text("Avisarme al completar"))
                             .font(.subheadline)
-                        Text("Notificacion local en este dispositivo.")
+                        Text(RecvelL10n.text("Notificacion local en este dispositivo."))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -1104,7 +1106,7 @@ struct FastingView: View {
                         showScreening = true
                     }
                 } label: {
-                    Label("Empezar ayuno de \(targetText(selectedTargetHours))", systemImage: "play.circle.fill")
+                    Label(RecvelL10n.text("fasting.start", values: ["target": targetText(selectedTargetHours)]), systemImage: "play.circle.fill")
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity).contentShape(Rectangle())
                 }
@@ -1205,7 +1207,7 @@ struct FastingView: View {
                 Text(RecvelL10n.text("fasting.hours"))
             }
             .tint(ScoreKind.strain.color)
-            Text("\(Int(customHours)) horas de ayuno")
+            Text(RecvelL10n.text("fasting.customHours", values: ["hours": "\(Int(customHours))"]))
                 .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
         }
@@ -1219,7 +1221,7 @@ struct FastingView: View {
             Image(systemName: "clock")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
-            Text("Si empiezas ahora, terminarias ~\(estimatedEnd.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale)))")
+            Text(RecvelL10n.text("fasting.estimatedEnd", values: ["time": estimatedEnd.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))]))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1271,11 +1273,11 @@ struct FastingView: View {
                         Text(RecvelL10n.text("fasting.consistency"))
                             .font(.headline)
                         HStack(spacing: 0) {
-                            statColumn(value: "\(stats.thisWeekCount)", caption: "Esta semana")
+                            statColumn(value: "\(stats.thisWeekCount)", caption: RecvelL10n.text("fasting.thisWeek"))
                             statDivider
-                            statColumn(value: stats.averageHours > 0 ? elapsedText(stats.averageHours) : "—", caption: "Promedio")
+                            statColumn(value: stats.averageHours > 0 ? elapsedText(stats.averageHours) : "—", caption: RecvelL10n.text("fasting.stats.average"))
                             statDivider
-                            statColumn(value: stats.longestHours > 0 ? elapsedText(stats.longestHours) : "—", caption: "Mas largo")
+                            statColumn(value: stats.longestHours > 0 ? elapsedText(stats.longestHours) : "—", caption: RecvelL10n.text("fasting.stats.longest"))
                             statDivider
                             statColumn(value: "\(stats.totalCompleted)", caption: "Totales")
                         }
@@ -1344,8 +1346,8 @@ struct FastingView: View {
                         .font(.headline)
                     Chart(data, id: \.date) { day in
                         BarMark(
-                            x: .value("Dia", day.date, unit: .day),
-                            y: .value("Horas", day.hours),
+                            x: .value(RecvelL10n.text("chart.axis.day"), day.date, unit: .day),
+                            y: .value(RecvelL10n.text("chart.axis.hours"), day.hours),
                             width: .fixed(14)
                         )
                         .foregroundStyle(ScoreKind.strain.color.gradient)
@@ -1390,11 +1392,11 @@ struct FastingView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    Text("Compara \(impact.fastingDays) días con ayuno y \(impact.otherDays) sin ayuno. Es una asociación personal y no demuestra causalidad.")
+                    Text(RecvelL10n.text("fasting.impact.compare", values: ["fasting": "\(impact.fastingDays)", "other": "\(impact.otherDays)"]))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 } else {
-                    Text("EN PROCESO")
+                    Text(RecvelL10n.text("EN PROCESO"))
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(.tertiary)
                     Text(RecvelL10n.text("fasting.recoveryNeedsData"))
@@ -1427,9 +1429,9 @@ struct FastingView: View {
                             .font(.headline)
                         Spacer()
                         HStack(spacing: 12) {
-                            legendDot(color: Color.white.opacity(0.08), label: "Sin")
-                            legendDot(color: ScoreKind.strain.color.opacity(0.45), label: "< Obj.")
-                            legendDot(color: ScoreKind.recovery.color, label: "≥ Obj.")
+                            legendDot(color: Color.white.opacity(0.08), label: RecvelL10n.text("fasting.without"))
+                            legendDot(color: ScoreKind.strain.color.opacity(0.45), label: RecvelL10n.text("fasting.legend.belowTarget"))
+                            legendDot(color: ScoreKind.recovery.color, label: RecvelL10n.text("fasting.legend.atTarget"))
                         }
                     }
 
@@ -1524,14 +1526,14 @@ struct FastingView: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 16) {
-                        detailChip(icon: "timer", label: "Duración", value: elapsedText(elapsed))
-                        detailChip(icon: "scope", label: "Fase", value: phase.name)
+                        detailChip(icon: "timer", label: RecvelL10n.text("fasting.detail.duration"), value: elapsedText(elapsed))
+                        detailChip(icon: "scope", label: RecvelL10n.text("fasting.detail.phase"), value: phase.name)
                     }
                     HStack(spacing: 16) {
                         if let mood = session.mood {
-                            detailChip(icon: "face.smiling", label: "Mood", value: "\(mood.emoji) \(mood.label)")
+                            detailChip(icon: "face.smiling", label: RecvelL10n.text("fasting.detail.mood"), value: "\(mood.emoji) \(mood.label)")
                         }
-                        detailChip(icon: "target", label: "Objetivo", value: reachedTarget ? "Cumplido ✓" : "No alcanzado")
+                        detailChip(icon: "target", label: RecvelL10n.text("fasting.detail.target"), value: RecvelL10n.text(reachedTarget ? "fasting.reached" : "fasting.notReached"))
                     }
 
                     // Recuperación del día siguiente, si hay dato
@@ -1649,8 +1651,8 @@ struct FastingView: View {
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted, hours > 0 else { return }
             let content = UNMutableNotificationContent()
-            content.title = "Objetivo de ayuno alcanzado"
-            content.body = "Completaste tu ventana de \(Int(hours)) h. Rompe el ayuno con calma cuando estes listo."
+            content.title = RecvelL10n.text("fasting.notification.title")
+            content.body = RecvelL10n.text("fasting.notification.body", values: ["hours": "\(Int(hours))"])
             content.sound = .default
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: hours * 3600, repeats: false)
             let request = UNNotificationRequest(identifier: "recvel.fasting.target", content: content, trigger: trigger)
@@ -1735,7 +1737,7 @@ struct FastingStartAdjustmentView: View {
                     Text(RecvelL10n.text("fasting.whenDidYouStop"))
                         .font(.headline)
                     DatePicker(
-                        "Inicio del ayuno",
+                        RecvelL10n.text("Inicio del ayuno"),
                         selection: Binding(
                             get: { session.startDate },
                             set: { session.startDate = min($0, .now) }
@@ -1801,17 +1803,17 @@ struct FastingScreeningView: View {
 
                         LiquidGlassCard {
                             VStack(spacing: 4) {
-                                toggle("Soy menor de 18 anos", id: "under18", $answers.under18)
+                                toggle(RecvelL10n.text("fasting.gate.under18"), id: "under18", $answers.under18)
                                 divider
-                                toggle("Estoy en embarazo o lactancia", id: "pregnancy", $answers.pregnantOrNursing)
+                                toggle(RecvelL10n.text("fasting.gate.pregnant"), id: "pregnancy", $answers.pregnantOrNursing)
                                 divider
-                                toggle("Tengo historial de trastorno alimentario", id: "eatingDisorder", $answers.eatingDisorderHistory)
+                                toggle(RecvelL10n.text("fasting.gate.eatingDisorder"), id: "eatingDisorder", $answers.eatingDisorderHistory)
                                 divider
-                                toggle("Tengo diabetes tipo 1 o uso insulina/sulfonilureas", id: "insulin", $answers.insulinOrType1Diabetes)
+                                toggle(RecvelL10n.text("fasting.gate.diabetes"), id: "insulin", $answers.insulinOrType1Diabetes)
                                 divider
-                                toggle("Tengo bajo peso", id: "underweight", $answers.underweight)
+                                toggle(RecvelL10n.text("fasting.gate.underweight"), id: "underweight", $answers.underweight)
                                 divider
-                                toggle("Soy adulto mayor, tengo una condicion cardiaca o tomo medicamentos con horario", id: "medicalCaution", $answers.olderAdultOrHeartConditionOrMedication)
+                                toggle(RecvelL10n.text("fasting.gate.olderAdult"), id: "medicalCaution", $answers.olderAdultOrHeartConditionOrMedication)
                             }
                         }
 

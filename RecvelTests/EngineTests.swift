@@ -691,13 +691,18 @@ final class EngineTests: XCTestCase {
     // MARK: - Ayuno intermitente
 
     func testFastingPhaseBoundariesMatchDocumentedRanges() {
+        // Lo que se verifica es la FRONTERA, no como se escribe la fase. Los
+        // nombres salen del catalogo de strings, asi que se comparan contra la
+        // clave resuelta: de lo contrario cambiar un acento o traducir al ingles
+        // rompe un test que no habla de idioma.
         let engine = FastingEngine()
-        XCTAssertEqual(engine.currentPhase(elapsedHours: 0).name, "Digestion")
-        XCTAssertEqual(engine.currentPhase(elapsedHours: 3.9).name, "Digestion")
-        XCTAssertEqual(engine.currentPhase(elapsedHours: 4).name, "Uso de glucogeno")
-        XCTAssertEqual(engine.currentPhase(elapsedHours: 12).name, "Transicion a grasa")
-        XCTAssertEqual(engine.currentPhase(elapsedHours: 18).name, "Glucogeno hepatico bajo")
-        XCTAssertEqual(engine.currentPhase(elapsedHours: 30).name, "Autofagia (evidencia limitada)")
+        let digestion = RecvelL10n.text("fasting.phase.digestion")
+        XCTAssertEqual(engine.currentPhase(elapsedHours: 0).name, digestion)
+        XCTAssertEqual(engine.currentPhase(elapsedHours: 3.9).name, digestion)
+        XCTAssertEqual(engine.currentPhase(elapsedHours: 4).name, RecvelL10n.text("fasting.phase.glycogen"))
+        XCTAssertEqual(engine.currentPhase(elapsedHours: 12).name, RecvelL10n.text("fasting.phase.fatTransition"))
+        XCTAssertEqual(engine.currentPhase(elapsedHours: 18).name, RecvelL10n.text("fasting.phase.lowLiverGlycogen"))
+        XCTAssertEqual(engine.currentPhase(elapsedHours: 30).name, RecvelL10n.text("fasting.phase.autophagy"))
     }
 
     func testFastingAutophagyPhaseKeepsHedgedLanguage() {
