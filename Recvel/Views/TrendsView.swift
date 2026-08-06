@@ -25,9 +25,9 @@ struct TrendsView: View {
                             Text("TENDENCIAS PERSONALES")
                                 .font(.caption2.weight(.heavy))
                                 .foregroundStyle(ScoreKind.recovery.color)
-                            Text("7 días")
+                            Text(RecvelL10n.text("trends.sevenDays"))
                                 .font(.system(size: 30, weight: .bold))
-                            Text("Tu semana contra el rango que Recvel esta aprendiendo de ti.")
+                            Text(RecvelL10n.text("trends.caption"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -97,7 +97,7 @@ struct TrendsView: View {
     private var sleepCard: some View {
         LiquidGlassCard(tint: ScoreKind.sleep.color) {
             VStack(alignment: .leading, spacing: 14) {
-                Label("Sueño", systemImage: "moon.stars.fill")
+                Label(RecvelL10n.text("score.sleep.title"), systemImage: "moon.stars.fill")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.sleep.color)
                 Chart(week) { day in

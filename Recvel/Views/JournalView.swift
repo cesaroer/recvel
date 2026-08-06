@@ -46,7 +46,7 @@ struct LegacyJournalView: View {
                 .foregroundStyle(.cyan)
             Text("tab.journal")
                 .font(.system(size: 31, weight: .bold))
-            Text("Lo que registraste hoy, las asociaciones que empiezan a aparecer y tu siguiente paso.")
+            Text(RecvelL10n.text("journal.header.detail"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -87,7 +87,7 @@ struct LegacyJournalView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Check-in rapido").font(.headline)
-                    Text("Toca Si o No · menos de un minuto")
+                    Text(RecvelL10n.text("journal.tapYesNo"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -135,7 +135,7 @@ struct LegacyJournalView: View {
     private var activityCalendar: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Actividad de 30 dias").font(.headline)
+                Text(RecvelL10n.text("journal.activity30")).font(.headline)
                 Spacer()
                 Text("\(completeDays)/30 completos")
                     .font(.caption.weight(.semibold))
@@ -241,7 +241,7 @@ struct LegacyJournalView: View {
     }
 
     private var methodology: some View {
-        Text("Las diferencias son asociaciones locales y no prueban causalidad. Solo aparecen con al menos 5 registros Sí y 5 No vinculados a la Recuperación del mismo día. Un dato sin registrar permanece como desconocido.")
+        Text(RecvelL10n.text("journal.patterns.caveat"))
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 3)
@@ -360,7 +360,7 @@ struct MentalJournalView: View {
                     sessionChooser
                     mentalCalendar
                     selectedEntryDetail
-                    Text("Esta herramienta apoya el autoconocimiento y no ofrece terapia ni diagnostico. Si escribir intensifica malestar o hay riesgo inmediato, detente y busca apoyo profesional o servicios de emergencia locales.")
+                    Text(RecvelL10n.text("journal.safety"))
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
                 .padding(16)
@@ -390,7 +390,7 @@ struct MentalJournalView: View {
     private var mentalHeader: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("REFLEXION GUIADA").font(.caption2.weight(.heavy)).foregroundStyle(ScoreKind.sleep.color)
-            Text("Un momento, una pregunta").font(.system(size: 28, weight: .bold))
+            Text(RecvelL10n.text("journal.oneQuestion")).font(.system(size: 28, weight: .bold))
             let streak = MentalJournalEngine.completionStreak(
                 completedDays: Set(entries.filter { $0.hasMorningReflection && $0.hasEveningReflection }.map(\.date))
             )
@@ -434,7 +434,7 @@ struct MentalJournalView: View {
 
     private var mentalCalendar: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Historial del mes").font(.headline)
+            Text(RecvelL10n.text("journal.monthHistory")).font(.headline)
             HStack(spacing: 12) {
                 legend(.complete, "Completo")
                 legend(.partial, "Parcial")
@@ -470,8 +470,8 @@ struct MentalJournalView: View {
                     Text(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide))).font(.headline)
                     Spacer()
                     Menu {
-                        Button("Editar mañana") { activeMode = .morning }
-                        Button("Editar noche") { activeMode = .evening }
+                        Button(RecvelL10n.text("journal.editMorning")) { activeMode = .morning }
+                        Button(RecvelL10n.text("journal.editNight")) { activeMode = .evening }
                     } label: {
                         Image(systemName: "ellipsis").headerCircleChrome(size: 34)
                     }
@@ -485,7 +485,7 @@ struct MentalJournalView: View {
             .padding(17)
             .liquidGlass(cornerRadius: 8)
         } else {
-            Text("No hay reflexion en esta fecha. Los dias vacios se muestran como ausencia de registro, no como fallo.")
+            Text(RecvelL10n.text("journal.emptyDay"))
                 .font(.subheadline).foregroundStyle(.secondary)
                 .padding(17).frame(maxWidth: .infinity, alignment: .leading)
                 .liquidGlass(cornerRadius: 8)
@@ -575,7 +575,7 @@ private struct MentalReflectionFlow: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Cerrar") { dismiss() }
+                    Button(RecvelL10n.text("common.close")) { dismiss() }
                 }
             }
         }
@@ -588,7 +588,7 @@ private struct MentalReflectionFlow: View {
                 .font(.caption2.weight(.heavy)).foregroundStyle(ScoreKind.sleep.color)
             Text(mode.prompts[step].0).font(.system(size: 30, weight: .bold))
             Text(mode.prompts[step].1).font(.subheadline).foregroundStyle(.secondary)
-            TextField("Escribe lo que necesites…", text: $answers[step], axis: .vertical)
+            TextField(RecvelL10n.text("journal.writePlaceholder"), text: $answers[step], axis: .vertical)
                 .lineLimit(5...10)
                 .padding(15)
                 .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
@@ -599,8 +599,8 @@ private struct MentalReflectionFlow: View {
     private var reviewStep: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("REVISA").font(.caption2.weight(.heavy)).foregroundStyle(ScoreKind.recovery.color)
-            Text("Tu reflexion").font(.system(size: 30, weight: .bold))
-            Text("Puedes volver y editar. Las respuestas omitidas se guardan vacias.")
+            Text(RecvelL10n.text("journal.yourReflection")).font(.system(size: 30, weight: .bold))
+            Text(RecvelL10n.text("journal.canEditLater"))
                 .font(.subheadline).foregroundStyle(.secondary)
             ForEach(mode.prompts.indices, id: \.self) { index in
                 VStack(alignment: .leading, spacing: 3) {
@@ -622,7 +622,7 @@ private struct MentalReflectionFlow: View {
                 Button(answers[step].isEmpty ? "Omitir" : "Continuar") { step += 1 }
                     .buttonStyle(.borderedProminent).tint(ScoreKind.sleep.color)
             } else {
-                Button("Guardar reflexion") { save() }
+                Button(RecvelL10n.text("journal.saveReflection")) { save() }
                     .buttonStyle(.borderedProminent).tint(ScoreKind.recovery.color)
                     .accessibilityIdentifier("mental.save")
             }

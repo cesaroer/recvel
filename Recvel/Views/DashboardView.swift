@@ -358,7 +358,7 @@ struct DashboardView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "sun.horizon.fill")
                                 .font(.caption2.weight(.bold))
-                            Text("Ver reporte de hoy")
+                            Text(RecvelL10n.text("home.openMorningReport"))
                                 .font(.caption.weight(.semibold))
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 9, weight: .bold))
@@ -391,7 +391,7 @@ struct DashboardView: View {
                     Haptics.menuSelect()
                     Task { await health.requestAuthorization() }
                 } label: {
-                    Label("Permisos de Apple Health", systemImage: "heart.text.square")
+                    Label(RecvelL10n.text("home.healthPermissions"), systemImage: "heart.text.square")
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -411,7 +411,7 @@ struct DashboardView: View {
     private var dayStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Últimos días")
+                Text(RecvelL10n.text("home.recentDays"))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("dashboard.dayStrip")
@@ -456,7 +456,7 @@ struct DashboardView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Abrir calendario del mes")
+                .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
             }
             .padding(.leading, 4)
             .padding(.trailing, 2)
@@ -556,7 +556,7 @@ struct DashboardView: View {
                     .foregroundStyle(ScoreKind.recovery.color)
                 Text("home.summary.needsData")
                     .font(.system(size: 27, weight: .bold))
-                Text("Conecta Apple Health. Recvel mostrará solo las señales autorizadas y construirá tu referencia personal sin completar datos faltantes.")
+                Text(RecvelL10n.text("home.empty.detail"))
                     .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
 
@@ -649,7 +649,7 @@ struct DashboardView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Tendencias").font(.title2.weight(.bold))
-                    Text("Tu última semana frente a tu referencia personal")
+                    Text(RecvelL10n.text("home.trends.caption"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -685,7 +685,7 @@ struct DashboardView: View {
                     }
 
                     HStack {
-                        Text("Ver análisis de 7 días")
+                        Text(RecvelL10n.text("home.trends.open"))
                             .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Spacer()
                         Image(systemName: "arrow.right")
@@ -729,7 +729,7 @@ struct DashboardView: View {
     private var historicalContext: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Contexto del dia").font(.headline)
+                Text(RecvelL10n.text("home.dayContext")).font(.headline)
                 Spacer()
                 Text("REGISTROS CERRADOS").font(.system(size: 9, weight: .bold)).foregroundStyle(.tertiary)
             }
@@ -760,7 +760,7 @@ struct DashboardView: View {
                 Text("home.todayPlan")
                     .font(.headline)
                 Spacer()
-                Text("SE ACTUALIZA CON TU DIA")
+                Text(RecvelL10n.text("home.updatesWithYourDay"))
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.tertiary)
             }
@@ -807,7 +807,7 @@ struct DashboardView: View {
     private var loadTarget: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label("Carga", systemImage: "scope")
+                Label(RecvelL10n.text("score.load.short"), systemImage: "scope")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(ScoreKind.strain.color)
                 Spacer()
@@ -841,9 +841,9 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Activación fisiológica")
+                    Text(RecvelL10n.text("home.physiologicalActivation"))
                         .font(.headline)
-                    Text("Ultimas 24 h · FC relativa a tu reposo")
+                    Text(RecvelL10n.text("home.activation.caption"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -954,7 +954,7 @@ struct DashboardView: View {
                 Text(RecvelL10n.text("recovery.factors.title"))
                     .font(.headline)
                 Spacer()
-                Text("vs. tu referencia personal")
+                Text(RecvelL10n.text("common.vsPersonalBaselineLower"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

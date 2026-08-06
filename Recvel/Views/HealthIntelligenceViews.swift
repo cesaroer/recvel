@@ -180,7 +180,7 @@ private struct MetricIntelligenceCard: View {
                 .lineLimit(2)
             Spacer(minLength: 0)
             HStack {
-                Text("Ver analisis")
+                Text(RecvelL10n.text("common.seeAnalysis"))
                 Spacer()
                 Image(systemName: "chevron.right")
             }
@@ -389,13 +389,13 @@ struct StressDetailView: View {
                     Image(systemName: "wind").font(.headline).foregroundStyle(.cyan)
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Respiración guiada")
+                    Text(RecvelL10n.text("breathing.title"))
                         .font(.subheadline.weight(.bold))
                     Text("Suspiro ciclico, resonancia, cuadrada o 4-7-8")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    Text("Con evidencia citada · 1 a 5 min")
+                    Text(RecvelL10n.text("breathing.subtitle"))
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(ScoreKind.recovery.color)
                 }
@@ -454,7 +454,7 @@ struct StressDetailView: View {
     private var activationChart: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Por hora")
+                Text(RecvelL10n.text("common.hourly"))
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 if let average = profile.average {
@@ -520,7 +520,7 @@ struct StressDetailView: View {
                 Spacer()
             }
 
-            Text("Activación estimada con la frecuencia cardíaca. No forma parte de la puntuación de Estrés fisiológico.")
+            Text(RecvelL10n.text("stress.activation.caveat"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -569,7 +569,7 @@ struct StressDetailView: View {
                             Button {
                                 breathingRequest = BreathingRequest(autoStart: true)
                             } label: {
-                                Label("1 minuto de respiracion", systemImage: "wind")
+                                Label(RecvelL10n.text("breathing.oneMinute"), systemImage: "wind")
                                     .font(.caption.weight(.semibold))
                             }
                             .buttonStyle(.bordered)
@@ -584,7 +584,7 @@ struct StressDetailView: View {
                 .liquidGlass(cornerRadius: 8)
             }
 
-            Text("Asociaciones con lo que registraste, no un diagnostico de la causa.")
+            Text(RecvelL10n.text("stress.hints.caveat"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -636,7 +636,7 @@ struct StressDetailView: View {
 
             emotionRecentDays
 
-            Text("Tu registro permanece en el dispositivo y aporta contexto. Recvel no infiere emociones a partir de tus señales. Es una herramienta de autoconocimiento, no de diagnóstico.")
+            Text(RecvelL10n.text("stress.emotion.privacy"))
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
         }
@@ -793,7 +793,7 @@ struct StressDetailView: View {
             }
 
             if let selected = selectedEmotion {
-                TextField("Nota (opcional): ¿qué está pasando?", text: $emotionNote, axis: .vertical)
+                TextField(RecvelL10n.text("stress.emotion.notePlaceholder"), text: $emotionNote, axis: .vertical)
                     .lineLimit(1...3)
                     .font(.system(size: 15))
                     .padding(12)
@@ -824,7 +824,7 @@ struct StressDetailView: View {
                         Haptics.success()
                         saveEmotion()
                     } label: {
-                        Label("Guardar", systemImage: "checkmark.circle.fill")
+                        Label(RecvelL10n.text("common.save"), systemImage: "checkmark.circle.fill")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity, minHeight: 46)
@@ -899,7 +899,7 @@ struct StressDetailView: View {
         let recent = emotionLogs.filter { !Calendar.current.isDateInToday($0.date) }.prefix(5)
         if !recent.isEmpty {
             VStack(alignment: .leading, spacing: 9) {
-                Text("DÍAS ANTERIORES")
+                Text(RecvelL10n.text("common.previousDays"))
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.tertiary)
 
@@ -988,7 +988,7 @@ struct StressDetailView: View {
 
                 // El tono del dia ya lo dice la cabecera; aqui conviene explicar
                 // como se lee la grafica, que es lo que no es evidente.
-                Text("Cada punto es un registro · arriba, más positivo")
+                Text(RecvelL10n.text("stress.emotion.chartLegend"))
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
                     .accessibilityIdentifier("detail.stress.emotion.average")
@@ -1214,7 +1214,7 @@ private struct IntelligenceDetailScaffold<Content: View>: View {
                         .headerCircleChrome(size: 36)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Atrás")
+                .accessibilityLabel(RecvelL10n.text("common.back"))
             }
             ToolbarItem(placement: .principal) {
                 Label(title, systemImage: symbol)
@@ -1354,9 +1354,9 @@ struct BreathingExerciseView: View {
     private var setup: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Respiración guiada")
+                Text(RecvelL10n.text("breathing.title"))
                     .font(.title2.weight(.bold))
-                Text("Un minuto puede bajar tu activacion. Elige como.")
+                Text(RecvelL10n.text("breathing.pickTechnique"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -1415,7 +1415,7 @@ struct BreathingExerciseView: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("breathing.start")
 
-            Button("Cerrar") { dismiss() }
+            Button(RecvelL10n.text("common.close")) { dismiss() }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
@@ -1518,7 +1518,7 @@ struct BreathingExerciseView: View {
                 VStack(spacing: 6) {
                     Text("\(cycles) \(RecvelL10n.text("breathing.cycles")) · \(technique.displayName)")
                         .font(.subheadline.weight(.semibold))
-                    Text("Un minuto para ti. Vuelve cuando lo necesites.")
+                    Text(RecvelL10n.text("breathing.done"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

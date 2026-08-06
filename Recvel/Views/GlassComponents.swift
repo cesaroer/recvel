@@ -830,7 +830,7 @@ struct LiquidGlassTabBar: View {
                     .ignoresSafeArea()
                     .onTapGesture { closeMenu() }
                     .transition(.opacity)
-                    .accessibilityLabel("Cerrar menu")
+                    .accessibilityLabel(RecvelL10n.text("common.closeMenu"))
                     .accessibilityIdentifier("tabbar.menu.scrim")
             }
 

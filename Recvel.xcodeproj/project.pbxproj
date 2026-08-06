@@ -237,6 +237,7 @@
 		FADDA297A69AEB35DF3E4791 /* HealthIntelligenceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F9276A6FAF95FEA6C0FF31 /* HealthIntelligenceViews.swift */; };
 		FBEF1F5B9A3532FEE88B2735 /* Bicycling_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 6C913B040B1FBE6564416671 /* Bicycling_0.jpg */; };
 		FE8D4614052F83823ED6632E /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5398CCC0C0DD81B51A0C0CD4 /* JournalView.swift */; };
+		FF5B101BF80457B9F79E3D72 /* HardcodedStringsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF6962DC201A0F6496FA1A4 /* HardcodedStringsTests.swift */; };
 		FF9C59EDEACDA88B0241F481 /* Cat_Stretch_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 950955924B7CB4B12AE05A52 /* Cat_Stretch_1.jpg */; };
 /* End PBXBuildFile section */
 
@@ -487,6 +488,7 @@
 		CF481284A19AB648797BD27B /* Ankle_Circles_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Ankle_Circles_0.jpg; sourceTree = "<group>"; };
 		CF5F92C2D22230ED98EA9F50 /* FastingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastingView.swift; sourceTree = "<group>"; };
 		CF64F6E50EFD78C3B8ACC2BF /* MorningReportEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningReportEngine.swift; sourceTree = "<group>"; };
+		CFF6962DC201A0F6496FA1A4 /* HardcodedStringsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardcodedStringsTests.swift; sourceTree = "<group>"; };
 		D0D79008C008B3AD4FD51B29 /* Pushups_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Pushups_0.jpg; sourceTree = "<group>"; };
 		D0FCB5A5B4F4B73A10B99CDC /* Hanging_Leg_Raise_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Hanging_Leg_Raise_0.jpg; sourceTree = "<group>"; };
 		D13449F7B13A0A523CEE408E /* Barbell_Deadlift_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Barbell_Deadlift_1.jpg; sourceTree = "<group>"; };
@@ -717,6 +719,7 @@
 			isa = PBXGroup;
 			children = (
 				3D4DA686B78A3224403CC5E2 /* EngineTests.swift */,
+				CFF6962DC201A0F6496FA1A4 /* HardcodedStringsTests.swift */,
 				088C30ECF3384EE04A95F6A8 /* LocalizationTests.swift */,
 				2262DC2A6D69744F5218F6AE /* SharedSurfaceTests.swift */,
 			);
@@ -1365,6 +1368,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A23A737BE0E32062BF4BFB2B /* EngineTests.swift in Sources */,
+				FF5B101BF80457B9F79E3D72 /* HardcodedStringsTests.swift in Sources */,
 				3087FC4FFE4B6762A03AFB26 /* LocalizationTests.swift in Sources */,
 				0E0DA5AA89323CC1313DA92D /* SharedSurfaceTests.swift in Sources */,
 			);

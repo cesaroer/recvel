@@ -515,12 +515,12 @@ private struct MealEditorView: View {
         }
         .scrollContentBackground(.hidden)
         .background(AppBackground())
-        .navigationTitle("Editar comida")
+        .navigationTitle(RecvelL10n.text("nutrition.meal.editTitle"))
         .navigationBarTitleDisplayMode(.inline)
         .liquidGlassNavigationBar()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Guardar") {
+                Button(RecvelL10n.text("common.save")) {
                     Haptics.success()
                     try? modelContext.save()
                     dismiss()
@@ -835,7 +835,7 @@ struct RecordFoodView: View {
             Button("Cancelar", role: .cancel) {}
             Button("Enviar") { Task { await estimateWithExternalAI() } }
         } message: {
-            Text("La descripcion y, si existe, la foto saldran de este dispositivo hacia Gemini. El resultado seguira siendo editable antes de guardarse.")
+            Text(RecvelL10n.text("nutrition.ai.consentBody"))
         }
         .accessibilityIdentifier("nutrition.record")
     }
@@ -1086,7 +1086,7 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
             }
 
             VStack(alignment: .leading, spacing: 9) {
-                Text("Corrige lo que la IA no puede ver").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text(RecvelL10n.text("nutrition.estimate.correct")).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 correctionChips
             }
 
@@ -1137,13 +1137,13 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
                 // ve el efecto de lo que acaba de registrar (macros y anillos).
                 dismiss()
             } label: {
-                Label("Confirmar y guardar", systemImage: "checkmark.circle.fill")
+                Label(RecvelL10n.text("nutrition.estimate.confirm"), systemImage: "checkmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(.white.opacity(0.16))
 
-            Text("Las calorias son un rango asistido. Revisa porciones, aceites y bebidas antes de guardar.")
+            Text(RecvelL10n.text("nutrition.estimate.caveat"))
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(17)
@@ -1198,7 +1198,7 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Cerrar")
+            .accessibilityLabel(RecvelL10n.text("common.close"))
         }
         .padding(13)
         .revelSurface(accent: .cyan)

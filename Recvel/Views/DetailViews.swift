@@ -490,7 +490,7 @@ private struct DetailTrendCard: View {
                 VStack(spacing: 6) {
                     Image(systemName: "chart.line.downtrend.xyaxis")
                         .font(.title2)
-                    Text("Se necesitan más días")
+                    Text(RecvelL10n.text("detail.needMoreDays"))
                         .font(.caption2.weight(.semibold))
                 }
                 .foregroundStyle(.tertiary)
@@ -581,7 +581,7 @@ private struct DetailAdviceCard: View {
                 }
             }
 
-            Label("Orientacion de wellness basada en tendencias, no una indicacion medica", systemImage: "checkmark.shield")
+            Label(RecvelL10n.text("detail.wellnessOrientation"), systemImage: "checkmark.shield")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -791,7 +791,7 @@ struct SleepDetailView: View {
         return VStack(alignment: .leading, spacing: 17) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("PLAN PARA ESTA NOCHE")
+                    Text(RecvelL10n.text("detail.tonightPlan"))
                         .font(.caption2.weight(.heavy))
                         .foregroundStyle(ScoreKind.sleep.color)
                     Text("Empieza a bajar revoluciones a las \(timeText(plan.windDownStart))")
@@ -969,7 +969,7 @@ struct SleepDetailView: View {
                     }
                 }
             } else {
-                Label("Esta fuente registra duracion, pero no etapas. Recvel no las inventa.", systemImage: "moon.dust.fill")
+                Label(RecvelL10n.text("detail.sleep.noStages"), systemImage: "moon.dust.fill")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -1045,7 +1045,7 @@ struct SleepDetailView: View {
                         Image(systemName: "info.circle")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
-                        Text("Recuperar es gradual: sumar 30-60 min por noche rinde mas que una sola noche larga. El sueno de fin de semana compensa solo en parte.")
+                        Text(RecvelL10n.text("detail.sleep.recoverGradual"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1137,10 +1137,10 @@ struct SleepDetailView: View {
 
     private var missingSleepCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Sin sueno disponible", systemImage: "moon.zzz")
+            Label(RecvelL10n.text("detail.sleep.unavailable"), systemImage: "moon.zzz")
                 .font(.headline)
                 .foregroundStyle(ScoreKind.sleep.color)
-            Text("Usa Apple Watch durante la noche y revisa el permiso de Sueño en Apple Health.")
+            Text(RecvelL10n.text("detail.sleep.howTo"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -1519,8 +1519,8 @@ struct StrainDetailView: View {
                         .font(.title2)
                         .foregroundStyle(ScoreKind.strain.color)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Sin entrenamientos registrados").font(.headline)
-                        Text("Los pasos y la energia activa siguen aportando a tu carga diaria.")
+                        Text(RecvelL10n.text("detail.noWorkoutsLogged")).font(.headline)
+                        Text(RecvelL10n.text("detail.stepsStillCount"))
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
@@ -1609,7 +1609,7 @@ struct StrainDetailView: View {
                     }
                 }
             } else {
-                Label("No hay muestras de FC suficientes para calcular zonas hoy.", systemImage: "heart.slash")
+                Label(RecvelL10n.text("detail.notEnoughHR"), systemImage: "heart.slash")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
         }
@@ -1621,7 +1621,7 @@ struct StrainDetailView: View {
         let days = min(orderedWeek.count, 14)
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("Calibracion del objetivo", systemImage: "scope")
+                Label(RecvelL10n.text("detail.targetCalibration"), systemImage: "scope")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.strain.color)
                 Spacer()
@@ -1629,7 +1629,7 @@ struct StrainDetailView: View {
             }
             ProgressView(value: Double(days), total: 14)
                 .tint(ScoreKind.strain.color)
-            Text("El rango combina tu Recuperación actual con la carga reciente. Mejora al reunir días comparables; no es una cuota que debas alcanzar si no te sientes bien.")
+            Text(RecvelL10n.text("detail.targetCalibration.detail"))
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(17)
@@ -2092,7 +2092,7 @@ struct MetricDetailView: View {
                             .headerCircleChrome(size: 34)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Cerrar")
+                    .accessibilityLabel(RecvelL10n.text("common.close"))
                 }
             }
             .liquidGlassNavigationBar()
@@ -3053,7 +3053,7 @@ struct FitnessClassCard: View {
                         .foregroundStyle(accent)
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("TIPO DE ENTRENAMIENTO")
+                    Text(RecvelL10n.text("detail.workoutType"))
                         .font(.system(size: 9, weight: .heavy))
                         .foregroundStyle(.secondary)
                     Text(classification.fitnessClass.displayName)
@@ -3118,7 +3118,7 @@ struct FitnessClassDetailView: View {
                 .scrollIndicators(.hidden)
                 .accessibilityIdentifier("detail.fitnessClass")
             }
-            .navigationTitle("Tipo de entrenamiento")
+            .navigationTitle(RecvelL10n.text("detail.workoutType"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -3126,7 +3126,7 @@ struct FitnessClassDetailView: View {
                         Image(systemName: "xmark").font(.subheadline.weight(.bold)).headerCircleChrome(size: 34)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Cerrar")
+                    .accessibilityLabel(RecvelL10n.text("common.close"))
                 }
             }
             .liquidGlassNavigationBar()
@@ -3188,7 +3188,7 @@ struct FitnessClassDetailView: View {
     /// Escala completa con tu posicion marcada.
     private var scaleCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Donde caes en la escala")
+            Text(RecvelL10n.text("detail.whereYouFall"))
                 .font(.subheadline.weight(.bold))
             ForEach(FitnessClass.allCases) { item in
                 HStack(spacing: 10) {
@@ -3240,7 +3240,7 @@ struct FitnessClassDetailView: View {
             Text(String(format: "Necesitas un VO2 max de %.1f ml/kg/min (te faltan %.1f).", target, max(gap, 0)))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("Lo que mas mueve el VO2 max en la literatura es el entrenamiento interválico de alta intensidad combinado con volumen aeróbico constante. Los cambios se miden en meses, no en semanas.")
+            Text(RecvelL10n.text("detail.vo2.howToImprove"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -3254,7 +3254,7 @@ struct FitnessClassDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "function").foregroundStyle(.cyan)
-                Text("Cómo se calcula").font(.subheadline.weight(.bold))
+                Text(RecvelL10n.text("detail.howItIsCalculated")).font(.subheadline.weight(.bold))
             }
             Text("""
             Tu VO2 max se compara contra las tablas de percentiles del registro FRIEND (Fitness Registry and the Importance of Exercise National Database), especificamente las de prueba en treadmill de Kaminsky et al., Mayo Clinic Proceedings 2015: 4,611 hombres y 3,172 mujeres con ergoespirometria maxima.
@@ -3309,10 +3309,10 @@ private struct FitnessClassPlaceholder: View {
                     .foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text("TIPO DE ENTRENAMIENTO")
+                Text(RecvelL10n.text("detail.workoutType"))
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.secondary)
-                Text("Sin clasificar todavia")
+                Text(RecvelL10n.text("detail.notClassifiedYet"))
                     .font(.subheadline.weight(.bold))
                 Text(reason)
                     .font(.caption2)

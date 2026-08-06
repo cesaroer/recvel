@@ -208,7 +208,7 @@ struct HomeMonthCalendarSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") { dismiss() }
+                    Button(RecvelL10n.text("common.close")) { dismiss() }
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -427,7 +427,7 @@ struct HomeMonthCalendarSheet: View {
                 Haptics.selection()
                 jumpToToday()
             } label: {
-                Text("Hoy")
+                Text(RecvelL10n.text("common.today"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(todayBlue)
                     .padding(.horizontal, 18)
@@ -565,7 +565,7 @@ struct HomeWeekWorkoutsCard: View {
                         }
                     }
                 } else {
-                    Text("Sin entrenamientos esta semana en Apple Health.")
+                    Text(RecvelL10n.text("home.noWorkoutsThisWeek"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

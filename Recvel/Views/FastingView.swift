@@ -585,7 +585,7 @@ struct FastingView: View {
                 .foregroundStyle(ScoreKind.strain.color)
             Text("Ayuno")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
-            Text("Un metodo alternativo de alimentacion, no necesariamente mas efectivo que otras formas de cuidar tu dieta.")
+            Text(RecvelL10n.text("fasting.intro"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -755,7 +755,7 @@ struct FastingView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Linea de tiempo de fases del ayuno")
+        .accessibilityLabel(RecvelL10n.text("fasting.phaseTimeline"))
         .accessibilityIdentifier("fasting.timeline")
     }
 
@@ -777,7 +777,7 @@ struct FastingView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Las fases son estimaciones poblacionales aproximadas, no una medicion de tu cuerpo.")
+                Text(RecvelL10n.text("fasting.phases.caveat"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -822,7 +822,7 @@ struct FastingView: View {
                     Image(systemName: "face.smiling")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(ScoreKind.energy.color)
-                    Text("Cómo te sientes durante este ayuno")
+                    Text(RecvelL10n.text("fasting.howYouFeel"))
                         .font(.headline)
                     Spacer()
                     Text("\(logs.count)/\(CheckInLimits.maxPerDay)")
@@ -1000,7 +1000,7 @@ struct FastingView: View {
                         .font(.title3)
                         .foregroundStyle(ScoreKind.energy.color)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Ventana de alimentacion")
+                        Text(RecvelL10n.text("fasting.eatingWindow"))
                             .font(.subheadline.weight(.semibold))
                         Text("Llevas \(elapsedText(hoursSince)) desde tu ultimo ayuno.")
                             .font(.caption)
@@ -1072,7 +1072,7 @@ struct FastingView: View {
     private var idleCard: some View {
         LiquidGlassCard {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Elige tu protocolo")
+                Text(RecvelL10n.text("fasting.pickProtocol"))
                     .font(.headline)
 
                 ForEach(FastingProtocol.allCases) { proto in
@@ -1202,7 +1202,7 @@ struct FastingView: View {
     private var customHoursSlider: some View {
         VStack(spacing: 8) {
             Slider(value: $customHours, in: 12...36, step: 1) {
-                Text("Horas de ayuno")
+                Text(RecvelL10n.text("fasting.hours"))
             }
             .tint(ScoreKind.strain.color)
             Text("\(Int(customHours)) horas de ayuno")
@@ -1268,7 +1268,7 @@ struct FastingView: View {
             if stats.totalCompleted > 0 {
                 LiquidGlassCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Tu constancia")
+                        Text(RecvelL10n.text("fasting.consistency"))
                             .font(.headline)
                         HStack(spacing: 0) {
                             statColumn(value: "\(stats.thisWeekCount)", caption: "Esta semana")
@@ -1279,7 +1279,7 @@ struct FastingView: View {
                             statDivider
                             statColumn(value: "\(stats.totalCompleted)", caption: "Totales")
                         }
-                        Text("Sin rachas ni castigos: saltarte un dia no borra tu progreso.")
+                        Text(RecvelL10n.text("fasting.noStreaks"))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -1294,9 +1294,9 @@ struct FastingView: View {
                         Image(systemName: "timer.circle")
                             .font(.system(size: 44))
                             .foregroundStyle(ScoreKind.strain.color.opacity(0.5))
-                        Text("Tu primer ayuno")
+                        Text(RecvelL10n.text("fasting.firstFast"))
                             .font(.headline)
-                        Text("Empieza cuando quieras. Aqui veras tus estadisticas: promedio, constancia y tu registro mas largo.")
+                        Text(RecvelL10n.text("fasting.firstFast.detail"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -1340,7 +1340,7 @@ struct FastingView: View {
         if data.contains(where: { $0.hours > 0 }) {
             LiquidGlassCard(tint: ScoreKind.strain.color) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Últimos 7 días")
+                    Text(RecvelL10n.text("common.last7Days"))
                         .font(.headline)
                     Chart(data, id: \.date) { day in
                         BarMark(
@@ -1376,7 +1376,7 @@ struct FastingView: View {
         )
         return LiquidGlassCard(tint: ScoreKind.recovery.color) {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Ayuno y Recuperación", systemImage: "heart.text.square")
+                Label(RecvelL10n.text("fasting.andRecovery"), systemImage: "heart.text.square")
                     .font(.headline)
                     .foregroundStyle(ScoreKind.recovery.color)
 
@@ -1386,7 +1386,7 @@ struct FastingView: View {
                             .font(.system(size: 30, weight: .heavy, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(delta >= 0 ? ScoreKind.recovery.color : ScoreKind.strain.color)
-                        Text("pts de Recuperación en promedio después de ayunos de 14 h o más")
+                        Text(RecvelL10n.text("fasting.recoveryDelta"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1397,7 +1397,7 @@ struct FastingView: View {
                     Text("EN PROCESO")
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(.tertiary)
-                    Text("Necesitas al menos 3 días con ayuno de 14 h o más y 3 sin ayuno, todos con Recuperación disponible. Después podrás comparar la asociación en tus propios datos.")
+                    Text(RecvelL10n.text("fasting.recoveryNeedsData"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1423,7 +1423,7 @@ struct FastingView: View {
             LiquidGlassCard {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Últimos 30 días")
+                        Text(RecvelL10n.text("common.last30Days"))
                             .font(.headline)
                         Spacer()
                         HStack(spacing: 12) {
@@ -1571,7 +1571,7 @@ struct FastingView: View {
     private var educationCard: some View {
         LiquidGlassCard {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Qué ocurre durante el ayuno")
+                Text(RecvelL10n.text("fasting.whatHappens"))
                     .font(.headline)
                 ForEach(FastingEngine.phases) { phase in
                     HStack(alignment: .top, spacing: 10) {
@@ -1593,7 +1593,7 @@ struct FastingView: View {
                         Divider().overlay(Color.white.opacity(0.07))
                     }
                 }
-                Text("Rangos aproximados de estudios poblacionales; tu cuerpo puede variar.")
+                Text(RecvelL10n.text("fasting.ranges.caveat"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -1604,7 +1604,7 @@ struct FastingView: View {
     }
 
     private var disclaimer: some View {
-        Text("Recvel es una herramienta de bienestar, no un dispositivo medico. El ayuno no es adecuado para todas las personas; consulta a un profesional de salud si tienes dudas o alguna condicion medica.")
+        Text(RecvelL10n.text("fasting.disclaimer"))
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 4)
@@ -1732,7 +1732,7 @@ struct FastingStartAdjustmentView: View {
             ZStack {
                 AppBackground()
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("¿A que hora dejaste de comer realmente?")
+                    Text(RecvelL10n.text("fasting.whenDidYouStop"))
                         .font(.headline)
                     DatePicker(
                         "Inicio del ayuno",
@@ -1746,7 +1746,7 @@ struct FastingStartAdjustmentView: View {
                     .datePickerStyle(.compact)
                     .accessibilityIdentifier("fasting.startPicker")
 
-                    Text("Puedes retroceder hasta 48 horas. El progreso y las fases se recalculan al instante.")
+                    Text(RecvelL10n.text("fasting.adjustStart.detail"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -1793,9 +1793,9 @@ struct FastingScreeningView: View {
                 AppBackground()
                 WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Antes de empezar")
+                        Text(RecvelL10n.text("fasting.beforeYouStart"))
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("El ayuno no es seguro para todas las personas. Responde con honestidad; tus respuestas se quedan en tu dispositivo.")
+                        Text(RecvelL10n.text("fasting.screening.intro"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -1866,11 +1866,11 @@ struct FastingScreeningView: View {
         case .blocked(let reasons):
             LiquidGlassCard(tint: ScoreKind.strain.color) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("El ayuno no se recomienda para ti", systemImage: "exclamationmark.triangle.fill")
+                    Label(RecvelL10n.text("fasting.notRecommended"), systemImage: "exclamationmark.triangle.fill")
                         .font(.headline)
                         .foregroundStyle(ScoreKind.strain.color)
                     ForEach(reasons, id: \.self) { Text("· \($0)").font(.caption) }
-                    Text("Por tu seguridad, Recvel no activara el temporizador de ayuno. Consulta a un profesional de salud.")
+                    Text(RecvelL10n.text("fasting.notRecommended.detail"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1880,7 +1880,7 @@ struct FastingScreeningView: View {
         case .caution(let notes):
             LiquidGlassCard(tint: ScoreKind.energy.color) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Consulta a tu medico primero", systemImage: "info.circle.fill")
+                    Label(RecvelL10n.text("fasting.askYourDoctor"), systemImage: "info.circle.fill")
                         .font(.headline)
                         .foregroundStyle(ScoreKind.energy.color)
                     ForEach(notes, id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary) }

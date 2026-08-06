@@ -171,12 +171,12 @@ struct BioAgeDetailView: View {
                     Image(systemName: "chevron.left").font(.subheadline.weight(.bold)).foregroundStyle(.white).headerCircleChrome(size: 36)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Atrás")
+                .accessibilityLabel(RecvelL10n.text("common.back"))
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button { sheet = .addLaboratory(nil) } label: { Label("Agregar laboratorio", systemImage: "plus") }
-                    Button { sheet = .catalog } label: { Label("Catálogo de biomarcadores", systemImage: "list.bullet.rectangle") }
+                    Button { sheet = .catalog } label: { Label(RecvelL10n.text("bioage.biomarkerCatalog"), systemImage: "list.bullet.rectangle") }
                     Button { Task { await importClinicalRecords() } } label: { Label("Importar Clinical Records", systemImage: "cross.case.fill") }
                 } label: {
                     Image(systemName: "ellipsis").font(.headline).foregroundStyle(.white).headerCircleChrome(size: 36)
@@ -263,7 +263,7 @@ struct BioAgeDetailView: View {
             HStack(alignment: .firstTextBaseline) {
                 sectionHeader("Otros biomarcadores", detail: "Apple Health y local")
                 Spacer()
-                Button("Ver todos") { sheet = .catalog }
+                Button(RecvelL10n.text("common.seeAll")) { sheet = .catalog }
                     .font(.caption.weight(.bold)).foregroundStyle(.white)
             }
             ScrollView(.horizontal) {
@@ -881,7 +881,7 @@ private struct BiomarkerEntryView: View {
                 AppBackground()
                 WidthLockedScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("Los nueve analitos deben pertenecer a un panel reciente. Recvel nunca completa valores faltantes.")
+                        Text(RecvelL10n.text("bioage.panelRequirement"))
                             .font(.caption).foregroundStyle(.secondary).padding(14).liquidGlass(cornerRadius: 16)
                         Menu {
                             ForEach(BiomarkerCatalog.phenoAgeKinds, id: \.self) { item in
@@ -901,7 +901,7 @@ private struct BiomarkerEntryView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Guardar") { save() }.disabled(parsedValue == nil) }
+                ToolbarItem(placement: .confirmationAction) { Button(RecvelL10n.text("common.save")) { save() }.disabled(parsedValue == nil) }
             }.liquidGlassNavigationBar()
         }
     }
