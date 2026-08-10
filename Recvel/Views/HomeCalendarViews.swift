@@ -20,7 +20,7 @@ struct HomeSegmentedDayRings: View {
                 let diameter = max(size - inset * 2, 10)
                 HomeSegmentedRingTrack(
                     progress: value.progress,
-                    color: value.metric.color,
+                    color: value.bandColor,
                     size: diameter,
                     lineWidth: lineWidth,
                     segmentCount: segmentCount
@@ -96,35 +96,33 @@ struct HomeDayStripCell: View {
     var body: some View {
         let isToday = Calendar.current.isDateInToday(date)
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: 7) {
                 Text(date.formatted(.dateTime.weekday(.narrow).locale(RecvelL10n.locale)))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(selected ? .white : .secondary)
-                ZStack {
-                    HomeMiniDayRings(values: rings, size: 34, lineWidth: 2.2)
+
+                // Pastilla Bevel: anillo arriba, numero debajo, dentro de una
+                // capsula alta. El numero de hoy va en azul, como la referencia.
+                VStack(spacing: 5) {
+                    HomeMiniDayRings(values: rings, size: 27, lineWidth: 2.4)
                     Text(date.formatted(.dateTime.day().locale(RecvelL10n.locale)))
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(selected ? .white : (isToday ? todayBlue : .primary))
-                        .frame(width: 22, height: 22)
-                        .background {
-                            if selected {
-                                Circle()
-                                    .fill(Color.white.opacity(0.14))
-                                    .matchedGeometryEffect(id: "selectedDay", in: namespace)
-                            }
-                        }
+                        .foregroundStyle(selected ? .white : (isToday ? todayBlue : Color.white.opacity(0.88)))
                 }
-                .frame(width: 36, height: 36)
+                .frame(maxWidth: .infinity)
+                .frame(height: 62)
+                .background {
+                    Capsule(style: .continuous)
+                        .fill(selected ? Color.white.opacity(0.14) : Color.white.opacity(0.055))
+                        .matchedGeometryEffect(
+                            id: selected ? "selectedDayPill" : "day.\(date.timeIntervalSince1970)",
+                            in: namespace,
+                            isSource: selected
+                        )
+                }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background {
-                if selected {
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.08))
-                }
-            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
@@ -240,7 +238,7 @@ struct HomeMonthCalendarSheet: View {
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text(visibleMonth.formatted(.dateTime.month(.wide).year().locale(RecvelL10n.locale)).capitalized)
+                    Text(monthTitle)
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(.white)
                     Image(systemName: "chevron.down")
@@ -282,6 +280,14 @@ struct HomeMonthCalendarSheet: View {
         .padding(.top, 4)
     }
 
+    /// "agosto de 2026" -> "Agosto de 2026". `.capitalized` capitalizaba
+    /// tambien la preposicion ("Agosto De 2026").
+    private var monthTitle: String {
+        let raw = visibleMonth.formatted(.dateTime.month(.wide).year().locale(RecvelL10n.locale))
+        guard let first = raw.first else { return raw }
+        return first.uppercased() + raw.dropFirst()
+    }
+
     private var monthMenuOptions: [Date] {
         (-11...0).compactMap { offset in
             calendar.date(byAdding: .month, value: offset, to: calendar.startOfDay(for: .now))
@@ -297,10 +303,11 @@ struct HomeMonthCalendarSheet: View {
                 ForEach(HomeDayRingMetric.chipOrder) { metric in
                     let on = selectedMetrics.contains(metric)
                     Button {
+                        guard !on else { return }
                         Haptics.selection()
-                        let next = HomeDayRingEngine.toggling(metric, in: selectedMetrics)
-                        guard !next.isEmpty else { return }
-                        ringMetricsRaw = HomeDayRingEngine.encode(next)
+                        ringMetricsRaw = HomeDayRingEngine.encode(
+                            HomeDayRingEngine.toggling(metric, in: selectedMetrics)
+                        )
                     } label: {
                         Text(metric.title)
                             .font(.subheadline.weight(.semibold))
@@ -309,7 +316,7 @@ struct HomeMonthCalendarSheet: View {
                             .padding(.vertical, 8)
                             .background(
                                 Capsule(style: .continuous)
-                                    .fill(on ? Color.white.opacity(0.22) : Color.white.opacity(0.08))
+                                    .fill(on ? Color.white.opacity(0.24) : Color.white.opacity(0.07))
                             )
                     }
                     .buttonStyle(.plain)

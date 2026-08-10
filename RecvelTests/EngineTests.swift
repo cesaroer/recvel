@@ -921,39 +921,45 @@ final class EngineTests: XCTestCase {
 
     // MARK: - Home day rings
 
-    func testHomeRingSelectionDefaultsAndCapsAtTwo() {
+    func testHomeRingSelectionIsSingleLikeBevel() {
+        // Decision de producto (6 ago 2026): UNA metrica activa, como el
+        // calendario de Bevel. Este test documenta el contrato nuevo y la
+        // migracion desde los CSV multi-metrica que persistieron versiones
+        // anteriores.
         XCTAssertEqual(
             HomeDayRingEngine.selection(from: ""),
             HomeDayRingMetric.defaults
         )
-        XCTAssertEqual(HomeDayRingMetric.defaults, [.sleep, .stress])
-        XCTAssertEqual(HomeDayRingMetric.maxSelected, 2)
+        XCTAssertEqual(HomeDayRingMetric.defaults, [.recovery])
+        XCTAssertEqual(HomeDayRingMetric.maxSelected, 1)
 
-        // Legacy max-3 AppStorage values trim to the first two.
-        let legacy = HomeDayRingEngine.selection(from: "sleep,stress,strain")
-        XCTAssertEqual(legacy, [.sleep, .stress])
+        // Los valores viejos con 2-3 metricas migran a la primera.
+        XCTAssertEqual(HomeDayRingEngine.selection(from: "sleep,stress,strain"), [.sleep])
         XCTAssertEqual(
-            HomeDayRingEngine.migratedStorageValue(from: "sleep,stress,strain"),
-            "sleep,stress"
+            HomeDayRingEngine.migratedStorageValue(from: "sleep,stress"),
+            "sleep"
         )
 
-        let capped = HomeDayRingEngine.selection(from: "sleep,recovery,strain,stress,steps")
-        XCTAssertEqual(capped.count, HomeDayRingMetric.maxSelected)
-        XCTAssertEqual(capped, [.sleep, .recovery])
-
-        let encoded = HomeDayRingEngine.encode([.steps, .activity, .sleep, .recovery])
-        XCTAssertEqual(encoded, "steps,activity")
+        let encoded = HomeDayRingEngine.encode([.steps, .activity, .sleep])
+        XCTAssertEqual(encoded, "steps")
     }
 
-    func testHomeRingToggleEnforcesMaxTwo() {
-        var selected: [HomeDayRingMetric] = [.sleep, .stress]
-        XCTAssertEqual(HomeDayRingEngine.toggling(.recovery, in: selected), selected)
+    func testHomeRingToggleReplacesSelection() {
+        // Tocar otra metrica la sustituye; tocar la activa no la apaga.
+        XCTAssertEqual(HomeDayRingEngine.toggling(.recovery, in: [.sleep]), [.recovery])
+        XCTAssertEqual(HomeDayRingEngine.toggling(.sleep, in: [.sleep]), [.sleep])
+    }
 
-        selected = HomeDayRingEngine.toggling(.stress, in: selected)
-        XCTAssertEqual(selected, [.sleep])
-
-        selected = HomeDayRingEngine.toggling(.recovery, in: selected)
-        XCTAssertEqual(selected, [.sleep, .recovery])
+    func testHomeRingBandColorFollowsBevelZones() {
+        // Zonas de Bevel 0-33 / 34-66 / 67+ para las metricas tipo score;
+        // las cantidades (carga, pasos, energia) conservan el color de la
+        // metrica porque no son un juicio.
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .recovery, score: 80), ScoreKind.recovery.color)
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .recovery, score: 50), ScoreKind.energy.color)
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .recovery, score: 20), ScoreKind.strain.color)
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .sleep, score: 90), HomeDayRingMetric.sleep.color)
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .strain, score: 90), HomeDayRingMetric.strain.color)
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .steps, score: nil), HomeDayRingMetric.steps.color)
     }
 
     func testHomeRingMissingDataProducesMutedProgress() {
@@ -965,7 +971,7 @@ final class EngineTests: XCTestCase {
             isToday: true
         )
         XCTAssertTrue(values.allSatisfy { $0.progress == nil })
-        XCTAssertEqual(values.count, 2, "Selection must stay capped at 2")
+        XCTAssertEqual(values.count, 1, "La seleccion queda en una sola metrica (estilo Bevel)")
     }
 
     func testHomeRingUsesScoresWhenSignalsExist() {
@@ -975,11 +981,9 @@ final class EngineTests: XCTestCase {
             selected: [.sleep, .strain, .steps],
             isToday: true
         )
-        XCTAssertEqual(values.count, 2)
+        XCTAssertEqual(values.count, 1)
         XCTAssertNotNil(values[0].progress)
-        XCTAssertNotNil(values[1].progress)
         XCTAssertEqual(values[0].metric, .sleep)
-        XCTAssertEqual(values[1].metric, .strain)
     }
 
     func testHomeRingStressTodayUsesCurrentAssessmentVsHistorical() {
@@ -3425,5 +3429,160 @@ final class EngineTests: XCTestCase {
                        "el alcohol no debe restar aparte: ya esta en HRV y FC")
         XCTAssertNotEqual(plain?.summary, drinking?.summary,
                           "pero si debe explicar la lectura")
+    }
+
+    // MARK: - Recovery Insights (asociaciones conducta -> Recuperacion)
+
+    /// Historial sintetico: dias alternos con y sin 10k pasos, donde los dias
+    /// POSTERIORES a caminar amanecen con mejor HRV. La asociacion del engine
+    /// debe salir positiva y con los conteos correctos.
+    private func insightsHistory(now: Date, calendar: Calendar) -> [DailyHealthSnapshot] {
+        (0..<24).map { offset in
+            let walked = offset % 2 == 0
+            // La recuperacion de manana refleja lo caminado HOY: los dias que
+            // siguen a un dia caminado (offset impar mirando hacia atras)
+            // tienen mejor HRV.
+            let daysBack = 24 - offset
+            let followsWalkedDay = (offset + 1) % 2 == 0
+            return DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -daysBack, to: now)!,
+                hrv: followsWalkedDay ? 62 : 40,
+                restingHeartRate: followsWalkedDay ? 52 : 60,
+                sleepHours: 7.4,
+                activeEnergy: 520,
+                steps: walked ? 11_500 : 4_200,
+                respiratoryRate: 14,
+                workoutMinutes: 25
+            )
+        }
+    }
+
+    func testRecoveryInsightsBehaviorPairsDayWithNextMorning() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_784_000_000)
+        let history = insightsHistory(now: now, calendar: calendar)
+
+        let rows = RecoveryInsightsEngine.behaviorImpacts(history: history, now: now, calendar: calendar)
+        let steps = rows.first { $0.id == "behavior.steps" }
+
+        XCTAssertNotNil(steps)
+        // 24 dias -> 23 pares consecutivos; alternancia estricta reparte
+        // 12 "si" y 11 "no" (o viceversa segun el extremo).
+        XCTAssertGreaterThanOrEqual(steps?.association.yesCount ?? 0, JournalImpactEngine.minimumPerGroup)
+        XCTAssertGreaterThanOrEqual(steps?.association.noCount ?? 0, JournalImpactEngine.minimumPerGroup)
+        XCTAssertNotNil(steps?.association.delta)
+        XCTAssertGreaterThan(steps?.association.delta ?? 0, 3,
+                             "los dias posteriores a caminar amanecen mejor: la asociacion debe ser positiva")
+    }
+
+    func testRecoveryInsightsSkipsDaysWithoutSignalInsteadOfCountingNo() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_784_000_000)
+        // Nadie registro workouts: la conducta de fuerza no puede evaluarse y
+        // debe quedar bloqueada con 0/0, no llenarse de "no" falsos.
+        let history = insightsHistory(now: now, calendar: calendar)
+
+        let rows = RecoveryInsightsEngine.behaviorImpacts(history: history, now: now, calendar: calendar)
+        let strength = rows.first { $0.id == "behavior.strength" }
+
+        XCTAssertEqual(strength?.association.yesCount, 0)
+        XCTAssertEqual(strength?.association.noCount, 0)
+        XCTAssertFalse(strength?.association.isReady ?? true)
+    }
+
+    func testRecoveryInsightsAssembleTiersByExplicitCriteria() {
+        func row(_ id: String, yes: Int, no: Int, delta: Double?) -> RecoveryImpactRow {
+            RecoveryImpactRow(
+                id: id, symbol: "circle", title: id,
+                association: JournalAssociation(delta: delta, yesCount: yes, noCount: no)
+            )
+        }
+        let insights = RecoveryInsightsEngine.assemble([
+            row("confident", yes: 9, no: 8, delta: -4),
+            row("low", yes: 6, no: 5, delta: 2),
+            row("locked", yes: 3, no: 1, delta: nil),
+            row("almost", yes: 4, no: 4, delta: nil)
+        ])
+
+        XCTAssertEqual(insights.confident.map(\.id), ["confident"])
+        XCTAssertEqual(insights.lowConfidence.map(\.id), ["low"])
+        // Bloqueados ordenados por cercania al desbloqueo: "almost" (faltan 2)
+        // antes que "locked" (faltan 6).
+        XCTAssertEqual(insights.locked.map(\.id), ["almost", "locked"])
+    }
+
+    func testRecoveryAdjustmentsMatchWhatTheScoreApplies() {
+        // Los ajustes expuestos para la pantalla de insights deben ser LOS
+        // MISMOS que aplica el score, no una reconstruccion: si divergen, la
+        // pantalla mentiria sobre el numero final.
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_784_000_000)
+        let engine = ScoreEngine()
+
+        // Tres dias previos con carga muy por encima de lo habitual y señales
+        // de hoy sin caida visible (HRV/FC en base): el ajuste de carga previa
+        // debe activarse.
+        var history: [DailyHealthSnapshot] = (4...20).map { offset in
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -offset, to: now)!,
+                hrv: 50, restingHeartRate: 55, sleepHours: 7.5,
+                activeEnergy: 500, steps: 8_000, respiratoryRate: 14, workoutMinutes: 30
+            )
+        }
+        history += (1...3).map { offset in
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -offset, to: now)!,
+                hrv: 50, restingHeartRate: 55, sleepHours: 7.5,
+                activeEnergy: 1_400, steps: 16_000, respiratoryRate: 14, workoutMinutes: 110
+            )
+        }
+        let today = DailyHealthSnapshot(
+            date: now,
+            hrv: 50, restingHeartRate: 55, sleepHours: 7.5,
+            activeEnergy: 480, steps: 7_500, respiratoryRate: 14, workoutMinutes: 20
+        )
+
+        let adjustments = engine.recoveryAdjustments(for: today, history: history)
+        XCTAssertLessThan(adjustments.priorLoad, 0, "tres dias de carga alta deben restar")
+
+        // Y el score con ajuste debe diferir del autonomico puro exactamente
+        // en la suma de ajustes (dentro del clamp).
+        let withHistory = engine.scores(for: today, history: history).first { $0.kind == .recovery }?.value ?? 0
+        let calmHistory = history.map { snap -> DailyHealthSnapshot in
+            DailyHealthSnapshot(
+                date: snap.date, hrv: snap.hrv, restingHeartRate: snap.restingHeartRate,
+                sleepHours: snap.sleepHours, activeEnergy: 500, steps: 8_000,
+                respiratoryRate: snap.respiratoryRate, workoutMinutes: 30
+            )
+        }
+        let withoutLoad = engine.scores(for: today, history: calmHistory).first { $0.kind == .recovery }?.value ?? 0
+        XCTAssertEqual(withHistory - withoutLoad,
+                       adjustments.priorLoad - engine.recoveryAdjustments(for: today, history: calmHistory).priorLoad,
+                       "la diferencia de score debe explicarse por el ajuste expuesto")
+    }
+
+    func testTemperatureFactorAppearsInRecoveryDrivers() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_784_000_000)
+        let history = (1...14).map { offset in
+            DailyHealthSnapshot(
+                date: calendar.date(byAdding: .day, value: -offset, to: now)!,
+                hrv: 50, restingHeartRate: 55, sleepHours: 7.5,
+                activeEnergy: 500, steps: 8_000, respiratoryRate: 14,
+                workoutMinutes: 30, wristTemperature: 36.3
+            )
+        }
+        let feverish = DailyHealthSnapshot(
+            date: now, hrv: 50, restingHeartRate: 55, sleepHours: 7.5,
+            activeEnergy: 500, steps: 8_000, respiratoryRate: 14,
+            workoutMinutes: 30, wristTemperature: 37.1
+        )
+
+        let factors = ScoreEngine().factors(for: feverish, history: history)
+        let temperature = factors.first { $0.icon == "thermometer.medium" }
+
+        XCTAssertNotNil(temperature, "la temperatura debe listarse entre lo que el score toma en cuenta")
+        XCTAssertLessThan(temperature?.contribution ?? 0, -0.2,
+                          "0.8 C sobre la base debe leerse claramente en contra")
     }
 }

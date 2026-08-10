@@ -267,6 +267,32 @@ Fuente canónica: `README.md` § «Sugerencias Grok» (julio 2026).
 
 Fuente metodológica y límites: TRAINING_PLANNER_PRO.md.
 
+## E2. Bevel Mid-summer release (video `New_features_bevel.mp4`, 6 ago 2026)
+
+Análisis fotograma a fotograma (31 frames, `ffmpeg fps=1`). Features anunciados por Bevel y
+cómo igualarlos en Recvel. La regla del proyecto se mantiene: local-first, sin backend, sin
+afirmaciones clínicas.
+
+| # | Feature Bevel | Qué hace | Equivalente Recvel | Viabilidad | Estado |
+| --- | --- | --- | --- | --- | --- |
+| 1 | **Calendar Integration** | Bevel Intelligence lee el calendario (juntas, workouts, lo que viene) y lo factoriza en el día | Leer EventKit con permiso; `InsightEngine` ajusta el consejo del día según densidad de agenda (día cargado → sesión corta / wind-down antes). Vista timeline como la del video en Plan | Alta: EventKit es 100 % local | **Por hacer** |
+| 2 | **Ghost Mode** | Chats de IA temporales que no se guardan | Recvel no tiene chat. Es sub-feature del gap «Coach Q&A local» (§E-5); si ese chat nace, el modo efímero es un flag de no-persistencia | Depende de Coach Q&A | Backlog (tras Coach Q&A) |
+| 3 | **Google Health / Fitbit** | Conectar dispositivos no-Apple | En iOS no existe Health Connect; Fitbit exige OAuth + backend. Contradice local-first. HealthKit sigue siendo el hub (Fitbit ya puede volcar a Apple Health vía apps puente) | Baja y contraria al principio local | Descartado (documentado) |
+| 4 | **Track Blood Pressure** | Presión arterial en Biology: Apple Health o registro manual, con banda (p. ej. «Hypertension 137/82») | `HKQuantityType` systolic/diastolic ya existe; leerla + registro manual + bandas ACC/AHA con copy no diagnóstico («banda de referencia, consulta a un profesional»). Encaja en Biomarcadores | Alta | **Por hacer** |
+| 5 | **Strength Builder: plantillas auto-actualizables + Plate Calculator** | Plantillas que se actualizan y calculadora de discos | Plantillas ya existen (`WorkoutTemplate`). El **Plate Calculator** (peso objetivo → discos por lado según barra) es una utilidad pura, local, de bajo esfuerzo y alto uso | Alta (calculadora); media (auto-update) | **Por hacer** |
+| 6 | **Generate Cardio Workouts → Apple Fitness** | La IA arma sesiones de cardio y las manda a Apple Fitness | Generador local de sesiones cardio (ya hay tipos por deporte) + **WorkoutKit** (iOS 17) para programarlas en la app Entreno del Watch. Es la pieza nueva real | Alta: WorkoutKit es API pública local | **Por hacer** |
+| 7 | **AirPods Pro 3: FC en vivo sin Watch** | FC en vivo durante Strength Builder | La FC de AirPods llega a HealthKit como muestras normales. Durante una sesión activa en Recvel, un `HKAnchoredObjectQuery` en vivo puede pintar FC reciente venga de donde venga (Watch o AirPods) | Media (latencia de muestras sin workout session) | Backlog |
+| 8 | **«What happened last night?»** | Hoja matutina para confirmar eventos de la noche (ruido 50+ dB detectado, dispositivo en cama, cena tarde) que alimentan Recovery | Los tags ya existen en Journal Pro (cena tarde, pantallas, alcohol…). Falta la **hoja matutina de confirmación rápida** (sí/no/omitir) colgada del Morning Report, y el candidato automático de ruido vía `environmentalAudioExposure` | Alta (hoja); media (ruido) | **Por hacer** |
+| 9 | **Recovery Insights** (video `Recovery_insigths.mp4`) | Pantalla «cómo tus conductas afectan tu Recovery»: impacto ± % por conducta con barra divergente, sección de baja confianza y «Locked tags» con progreso 5 sí / 5 no | Recvel ya tiene el motor exacto (`JournalProImpactEngine` + `JournalImpactEngine`, umbral 5/5). Falta la pantalla con diseño Bevel y las conductas automáticas derivadas de HealthKit (20+ min entreno, 10 000+ pasos, carga alta) | Alta — motor ya existe | **En curso (6 ago)** |
+
+Notas del video de Recovery Insights (16 frames): cabecera con eyebrow «✦ Insights» + título +
+descripción; escala «Negative / Impact % / Positive»; filas con emoji + conducta + % a la derecha
+(naranja negativo, azul positivo) y barra divergente desde un punto central; sección «Low
+confidence» («Continue logging entries…»); sección «Locked tags» («Record at least 5 yes's and 5
+no's in the last 90 days») con contadores ✗ N | ✓ N por tag. El detalle de Recovery además muestra
+«View insights» como fila con sparkle, Timeline (Primary sleep) y Trends con banda de rango
+personal + sparkline coloreada.
+
 ## E. Gaps prioritarios
 
 Top missing/partial con más impacto diario (alineado a Grok P0 + Bevel gap + HANDOFF):

@@ -244,6 +244,34 @@ struct ScoreEngine {
         return -Int((Self.maxSustainedSuppressionPenalty * drop).rounded())
     }
 
+    /// Ajustes de contexto que el score de Recuperación aplica HOY, con las
+    /// mismas entradas que usa `scores(for:history:)`. Existen para que la
+    /// pantalla de insights pueda mostrar exactamente lo que se restó, no una
+    /// reconstrucción aproximada.
+    func recoveryAdjustments(
+        for snapshot: DailyHealthSnapshot,
+        history: [DailyHealthSnapshot]
+    ) -> (priorLoad: Int, sustainedSuppression: Int) {
+        let historyWithoutToday = history.filter { !Calendar.current.isDate($0.date, inSameDayAs: snapshot.date) }
+        let hrvDeviation = baselineEngine.deviation(
+            current: snapshot.hrv,
+            values: historyWithoutToday.compactMap(\.hrv)
+        )
+        let rhrDeviation = baselineEngine.deviation(
+            current: snapshot.restingHeartRate,
+            values: historyWithoutToday.compactMap(\.restingHeartRate),
+            lowerIsBetter: true
+        )
+        let priorLoad = priorLoadAdjustment(
+            history: historyWithoutToday,
+            before: snapshot.date,
+            hrvDeviation: hrvDeviation,
+            rhrDeviation: rhrDeviation
+        )
+        let sustained = sustainedSuppressionAdjustment(history: historyWithoutToday, before: snapshot.date)
+        return (priorLoad, sustained)
+    }
+
     func factors(for snapshot: DailyHealthSnapshot, history: [DailyHealthSnapshot]) -> [RecoveryFactor] {
         let baselineHRV = baselineEngine.median(history.compactMap(\.hrv))
         let baselineRHR = baselineEngine.median(history.compactMap(\.restingHeartRate))
@@ -281,8 +309,37 @@ struct ScoreEngine {
                 unit: "rpm",
                 icon: "lungs.fill",
                 lowerIsBetter: true
-            )
+            ),
+            temperatureFactor(for: snapshot, history: history)
         ]
+    }
+
+    /// La temperatura de muñeca necesita su propia escala: sobre ~36 °C una
+    /// desviación de 0.4 °C es apenas un 1 % relativo, así que el `factor()`
+    /// genérico (que normaliza a ±18 %) la dejaría siempre en neutro. Se usa
+    /// la misma amplificación ×20 que aplica el score.
+    private func temperatureFactor(
+        for snapshot: DailyHealthSnapshot,
+        history: [DailyHealthSnapshot]
+    ) -> RecoveryFactor {
+        let baseline = baselineEngine.median(history.compactMap(\.wristTemperature))
+        let contribution: Double
+        if let current = snapshot.wristTemperature, let baseline, baseline > 0 {
+            let delta = (current - baseline) / baseline
+            // Mas caliente que tu base = en contra (lowerIsBetter).
+            contribution = -min(max(delta * 20, -1), 1)
+        } else {
+            contribution = 0
+        }
+        return RecoveryFactor(
+            name: RecvelL10n.text("Temperatura de muneca"),
+            value: snapshot.wristTemperature.map { String(format: "%.1f °C", $0) } ?? RecvelL10n.text("common.noData"),
+            baseline: baseline.map {
+                RecvelL10n.text("metric.usualValue", values: ["value": String(format: "%.1f °C", $0)])
+            },
+            contribution: contribution,
+            icon: "thermometer.medium"
+        )
     }
 
     private func factor(

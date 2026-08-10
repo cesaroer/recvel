@@ -1,7 +1,13 @@
 import Foundation
 import SwiftUI
 
-/// Metrics available as concentric day indicators on Home (max 2 selected).
+/// Metricas disponibles como indicador del dia en Home.
+///
+/// Decision de producto (6 ago 2026): UNA sola metrica activa, como el
+/// calendario de Bevel (`CalendarAndJournal.mp4`). Antes se permitian dos
+/// anillos concentricos; el resultado era ruidoso y ningun competidor lo hace.
+/// El almacenamiento sigue siendo CSV para migrar selecciones viejas: se toma
+/// la primera.
 enum HomeDayRingMetric: String, CaseIterable, Identifiable, Codable {
     case sleep
     case recovery
@@ -50,11 +56,12 @@ enum HomeDayRingMetric: String, CaseIterable, Identifiable, Codable {
         .strain, .recovery, .sleep, .stress, .activity, .steps
     ]
 
-    /// Sleep + Stress: prior product default was Sleep/Stress/Strain; keep the two wellness signals.
-    static let defaults: [HomeDayRingMetric] = [.sleep, .stress]
-    static let maxSelected = 2
+    /// Recuperacion: el hero de la app; en Bevel el tab por defecto es Strain,
+    /// pero aqui la metrica central del producto es Recovery.
+    static let defaults: [HomeDayRingMetric] = [.recovery]
+    static let maxSelected = 1
     static let storageKey = "home.ringMetrics"
-    static let defaultStorageValue = "sleep,stress"
+    static let defaultStorageValue = "recovery"
 }
 
 struct HomeDayRingValue: Equatable, Identifiable {
@@ -63,9 +70,19 @@ struct HomeDayRingValue: Equatable, Identifiable {
     let progress: Double?
     /// Display value for legend (e.g. "72", "8.4k"); `nil` when unavailable.
     let displayValue: String?
+    /// Color del anillo para ESTE dia. En Bevel el color codifica la banda del
+    /// valor (estres tenso amarillo, calmado turquesa), no solo la metrica.
+    let bandColor: Color
 
     var id: String { metric.rawValue }
     var hasData: Bool { progress != nil }
+
+    init(metric: HomeDayRingMetric, progress: Double?, displayValue: String?, bandColor: Color? = nil) {
+        self.metric = metric
+        self.progress = progress
+        self.displayValue = displayValue
+        self.bandColor = bandColor ?? metric.color
+    }
 }
 
 enum HomeDayRingEngine {
@@ -104,13 +121,10 @@ enum HomeDayRingEngine {
         return result
     }
 
-    /// Toggles a metric in the selection while enforcing the max-2 cap.
+    /// Seleccion unica estilo Bevel: tocar otra metrica la sustituye; tocar la
+    /// activa no la apaga (siempre hay exactamente una).
     static func toggling(_ metric: HomeDayRingMetric, in current: [HomeDayRingMetric]) -> [HomeDayRingMetric] {
-        if current.contains(metric) {
-            return current.filter { $0 != metric }
-        }
-        guard current.count < HomeDayRingMetric.maxSelected else { return current }
-        return current + [metric]
+        [metric]
     }
 
     static func ringValues(
@@ -147,6 +161,22 @@ enum HomeDayRingEngine {
         return min(max(Double(value) / 100, 0), 1)
     }
 
+    /// Banda por valor, calcada de las zonas de Bevel (0-33 / 34-66 / 67+)
+    /// para las metricas tipo score. Verde = bien, ambar = medio, naranja =
+    /// atencion. Carga, pasos y energia conservan el color de la metrica: son
+    /// cantidades, no juicios.
+    static func bandColor(for metric: HomeDayRingMetric, score: Int?) -> Color {
+        guard let score else { return metric.color }
+        switch metric {
+        case .recovery, .sleep, .stress:
+            if score >= 67 { return metric == .recovery ? ScoreKind.recovery.color : metric.color }
+            if score >= 34 { return ScoreKind.energy.color }
+            return ScoreKind.strain.color
+        case .strain, .steps, .activity:
+            return metric.color
+        }
+    }
+
     private static func value(
         for metric: HomeDayRingMetric,
         snapshot: DailyHealthSnapshot,
@@ -162,7 +192,8 @@ enum HomeDayRingEngine {
             return HomeDayRingValue(
                 metric: metric,
                 progress: progress(fromScore: score),
-                displayValue: score.map(String.init)
+                displayValue: score.map(String.init),
+                bandColor: bandColor(for: metric, score: score)
             )
         case .recovery:
             let hasSignal = snapshot.hrv != nil
@@ -176,7 +207,8 @@ enum HomeDayRingEngine {
             return HomeDayRingValue(
                 metric: metric,
                 progress: progress(fromScore: score),
-                displayValue: score.map(String.init)
+                displayValue: score.map(String.init),
+                bandColor: bandColor(for: metric, score: score)
             )
         case .strain:
             let hasLoad = snapshot.activeEnergy != nil
@@ -198,7 +230,8 @@ enum HomeDayRingEngine {
             return HomeDayRingValue(
                 metric: metric,
                 progress: progress(fromScore: calmScore),
-                displayValue: String(calmScore)
+                displayValue: String(calmScore),
+                bandColor: bandColor(for: metric, score: calmScore)
             )
         case .steps:
             guard let steps = snapshot.steps else {

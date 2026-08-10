@@ -1171,6 +1171,8 @@ struct RecoveryDetailView: View {
     let week: [DailyHealthSnapshot]
     /// Metrica abierta en el detalle (patron Bevel).
     @State private var metricKey: MetricSelection?
+    /// Hoja de insights (con que se asocia el score), patron Bevel.
+    @State private var showInsights = false
     private let scoreEngine = ScoreEngine()
     private let insightEngine = InsightEngine()
     private var orderedWeek: [DailyHealthSnapshot] { week.sorted { $0.date < $1.date } }
@@ -1206,6 +1208,11 @@ struct RecoveryDetailView: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("detail.recovery.scoreCard")
 
+            RecoveryInsightsEntryRow {
+                Haptics.soft()
+                showInsights = true
+            }
+
             DetailStatStrip(stats: [
                 DetailStat(label: "HRV", value: snapshot.hrv.map { "\(Int($0)) ms" } ?? RecvelL10n.text("common.noData"), icon: "waveform.path.ecg", color: ScoreKind.recovery.color, scientificTerm: .hrv),
                 DetailStat(label: "RHR", value: snapshot.restingHeartRate.map { "\(Int($0)) \(RecvelL10n.text("unit.heartRate"))" } ?? RecvelL10n.text("common.noData"), icon: "heart.fill", color: .cyan, scientificTerm: .rhr)
@@ -1239,6 +1246,11 @@ struct RecoveryDetailView: View {
                 },
                 selectedKey: selection.key
             )
+        }
+        .sheet(isPresented: $showInsights) {
+            RecoveryInsightsView(snapshot: snapshot, history: orderedWeek)
+                .presentationDetents([.large])
+                .presentationCornerRadius(30)
         }
     }
 
