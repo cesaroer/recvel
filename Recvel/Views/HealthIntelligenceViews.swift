@@ -1759,10 +1759,11 @@ private struct StressTickGauge: View {
                     var path = Path()
                     path.move(to: CGPoint(x: center.x + dx * (radius - length), y: center.y + dy * (radius - length)))
                     path.addLine(to: CGPoint(x: center.x + dx * radius, y: center.y + dy * radius))
-                    // Escala calido → frio (0 calma = rojo, 100 = verde);
-                    // apagada por encima del valor.
+                    // Escala frio → calido para estres directo: 0 = verde
+                    // calma, 100 = rojo sobrecarga; apagada por encima del
+                    // valor. (Antes iba al reves porque el numero era "calma".)
                     let scale = Color(
-                        hue: 0.42 * fraction,
+                        hue: 0.42 * (1 - fraction),
                         saturation: 0.62,
                         brightness: 0.95
                     )
