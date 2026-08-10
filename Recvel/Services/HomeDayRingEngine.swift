@@ -144,14 +144,14 @@ enum HomeDayRingEngine {
         // Stress for today = running/current assessment of today's snapshot;
         // historical days = day-final signals for that snapshot (same `assess` API).
         let stress = stressEngine.assess(snapshot: snapshot, history: history)
-        let calmScore = stressEngine.presentation(for: stress).calmScore
+        let stressScore = stressEngine.presentation(for: stress).score
 
         return metrics.map { metric in
             value(
                 for: metric,
                 snapshot: snapshot,
                 scores: scores,
-                calmScore: calmScore
+                stressScore: stressScore
             )
         }
     }
@@ -168,9 +168,14 @@ enum HomeDayRingEngine {
     static func bandColor(for metric: HomeDayRingMetric, score: Int?) -> Color {
         guard let score else { return metric.color }
         switch metric {
-        case .recovery, .sleep, .stress:
+        case .recovery, .sleep:
             if score >= 67 { return metric == .recovery ? ScoreKind.recovery.color : metric.color }
             if score >= 34 { return ScoreKind.energy.color }
+            return ScoreKind.strain.color
+        case .stress:
+            // Estres directo: BAJO es bueno (turquesa calma), alto es carga.
+            if score <= 33 { return metric.color }
+            if score <= 66 { return ScoreKind.energy.color }
             return ScoreKind.strain.color
         case .strain, .steps, .activity:
             return metric.color
@@ -181,7 +186,7 @@ enum HomeDayRingEngine {
         for metric: HomeDayRingMetric,
         snapshot: DailyHealthSnapshot,
         scores: [WellnessScore],
-        calmScore: Int?
+        stressScore: Int?
     ) -> HomeDayRingValue {
         switch metric {
         case .sleep:
@@ -224,14 +229,14 @@ enum HomeDayRingEngine {
                 displayValue: score.map { String(format: "%.1f", Double($0) / 100 * 21) }
             )
         case .stress:
-            guard let calmScore else {
+            guard let stressScore else {
                 return HomeDayRingValue(metric: metric, progress: nil, displayValue: nil)
             }
             return HomeDayRingValue(
                 metric: metric,
-                progress: progress(fromScore: calmScore),
-                displayValue: String(calmScore),
-                bandColor: bandColor(for: metric, score: calmScore)
+                progress: progress(fromScore: stressScore),
+                displayValue: String(stressScore),
+                bandColor: bandColor(for: metric, score: stressScore)
             )
         case .steps:
             guard let steps = snapshot.steps else {

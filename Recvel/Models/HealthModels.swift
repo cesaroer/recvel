@@ -673,12 +673,16 @@ struct StressAssessment: Equatable {
     let baselineDays: Int
 }
 
-/// Capa de presentacion del stress: el motor calcula un indice donde
-/// mas bajo = mas relajado; la UI muestra un "calm score" invertido
-/// (100 = Excelente, anillo lleno = bien) para que la lectura sea
-/// consistente con Recovery/Sleep. El motor interno NO cambia.
+/// Capa de presentacion del stress.
+///
+/// Decision de producto (10 ago 2026): la UI muestra el indice DIRECTO del
+/// motor — alto = mas estres, como Stress Watch, Garmin y Whoop. Antes se
+/// invertia a un "calm score" (100 = relajado) y el resultado era doblemente
+/// confuso: la cifra iba al reves del mercado y ademas convivia con bandas
+/// que se llaman Excelente→Sobrecarga, que son nombres de escala de estres.
 struct StressPresentation: Equatable {
-    let calmScore: Int?
+    /// Indice 0-100, alto = mas presion. El mismo numero que las bandas.
+    let score: Int?
     let displayValue: String
     let ringProgress: Double
     let headline: String

@@ -102,14 +102,13 @@ struct StressEngine {
 // MARK: - Presentacion, barras del dia y hints (funciones puras)
 
 extension StressEngine {
-    /// Convierte el indice interno (alto = mas presion) al "calm score"
-    /// presentado (alto = mas relajado). Solo presentacion; el motor no cambia.
+    /// Presenta el indice interno tal cual (alto = mas presion). El anillo
+    /// se llena con el estres, como Garmin: lleno = sobrecarga.
     func presentation(for assessment: StressAssessment) -> StressPresentation {
-        let calmScore = assessment.score.map { 100 - $0 }
-        return StressPresentation(
-            calmScore: calmScore,
-            displayValue: calmScore.map(String.init) ?? "--",
-            ringProgress: Double(calmScore ?? 0) / 100,
+        StressPresentation(
+            score: assessment.score,
+            displayValue: assessment.score.map(String.init) ?? "--",
+            ringProgress: Double(assessment.score ?? 0) / 100,
             headline: assessment.level.displayName
         )
     }

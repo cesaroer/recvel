@@ -186,7 +186,7 @@ private struct WatchMetricsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 9) {
                 Text("watch.signals").font(.headline)
-                metric(RecvelL10n.text("score.stress.title", language: sync.snapshot.displayLanguage), sync.snapshot.stressCalm.map { "\($0) · \(sync.snapshot.stressLabel)" } ?? RecvelL10n.text("common.calibrating", language: sync.snapshot.displayLanguage), "waveform.path.ecg", .cyan)
+                metric(RecvelL10n.text("score.stress.title", language: sync.snapshot.displayLanguage), sync.snapshot.stressScore.map { "\($0) · \(sync.snapshot.stressLabel)" } ?? RecvelL10n.text("common.calibrating", language: sync.snapshot.displayLanguage), "waveform.path.ecg", .cyan)
                 metric("HRV", sync.snapshot.hrvMilliseconds.map { "\(Int($0.rounded())) ms" } ?? "--", "heart.text.square", WatchPalette.recovery)
                 metric(RecvelL10n.text("term.rhr.name", language: sync.snapshot.displayLanguage), sync.snapshot.restingHeartRate.map { "\(Int($0.rounded())) bpm" } ?? "--", "heart.fill", .pink)
                 metric(RecvelL10n.text("score.sleep.title", language: sync.snapshot.displayLanguage), sync.snapshot.sleepHours.map { String(format: "%.1f h", $0) } ?? "--", "moon.fill", WatchPalette.sleep)

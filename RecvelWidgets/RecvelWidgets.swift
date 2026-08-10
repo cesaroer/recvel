@@ -280,7 +280,7 @@ private struct MetricsWidgetView: View {
                     .font(.caption2.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                Text("\(text("score.calm.title")) \(entry.snapshot.stressCalm.map(String.init) ?? "--")")
+                Text("\(text("score.stress.title")) \(entry.snapshot.stressScore.map(String.init) ?? "--")")
                     .font(.headline.monospacedDigit())
                     .lineLimit(1)
             }
@@ -346,7 +346,7 @@ private struct MetricsWidgetView: View {
             }
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 0) {
-                Text(entry.snapshot.stressCalm.map(String.init) ?? "--")
+                Text(entry.snapshot.stressScore.map(String.init) ?? "--")
                     .font(.title3.weight(.bold).monospacedDigit())
                     .foregroundStyle(WidgetPalette.primaryText)
                     .lineLimit(1)

@@ -11,7 +11,10 @@ struct RecvelSharedSnapshot: Codable, Hashable {
     let strain: Int?
     let sleep: Int?
     let energy: Int?
-    let stressCalm: Int?
+    /// Indice de estres 0-100, alto = mas presion (escala directa, 10 ago 2026).
+    /// Antes este campo era "calma" invertida; el nombre nuevo rompe el decode
+    /// de snapshots viejos a proposito: mejor "--" un ciclo que un numero al reves.
+    let stressScore: Int?
     let stressLevelID: String
     let hrvMilliseconds: Double?
     let restingHeartRate: Double?
@@ -38,7 +41,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
         strain: Int?,
         sleep: Int?,
         energy: Int?,
-        stressCalm: Int?,
+        stressScore: Int?,
         stressLevelID: String,
         hrvMilliseconds: Double?,
         restingHeartRate: Double?,
@@ -58,7 +61,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
         self.strain = strain
         self.sleep = sleep
         self.energy = energy
-        self.stressCalm = stressCalm
+        self.stressScore = stressScore
         self.stressLevelID = stressLevelID
         self.hrvMilliseconds = hrvMilliseconds
         self.restingHeartRate = restingHeartRate
@@ -80,7 +83,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
             strain: strain,
             sleep: sleep,
             energy: energy,
-            stressCalm: stressCalm,
+            stressScore: stressScore,
             stressLevelID: stressLevelID,
             hrvMilliseconds: hrvMilliseconds,
             restingHeartRate: restingHeartRate,
@@ -100,7 +103,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
         strain: nil,
         sleep: nil,
         energy: nil,
-        stressCalm: nil,
+        stressScore: nil,
         stressLevelID: "common.calibrating",
         hrvMilliseconds: nil,
         restingHeartRate: nil,
@@ -119,7 +122,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
         strain: 64,
         sleep: 88,
         energy: 76,
-        stressCalm: 71,
+        stressScore: 29,
         stressLevelID: "stress.level.normal",
         hrvMilliseconds: 58,
         restingHeartRate: 53,
@@ -134,7 +137,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
 
     private enum CodingKeys: String, CodingKey {
         case version, updatedAt, languageCode, dataModeID, recovery, strain, sleep, energy
-        case stressCalm, stressLevelID, hrvMilliseconds, restingHeartRate, sleepHours
+        case stressScore, stressLevelID, hrvMilliseconds, restingHeartRate, sleepHours
         case steps, activeEnergy, workoutMinutes, vo2Max, confidenceID, nextActionID
         case dataMode, stressLabel, confidence, nextAction
     }
@@ -149,7 +152,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
         strain = try container.decodeIfPresent(Int.self, forKey: .strain)
         sleep = try container.decodeIfPresent(Int.self, forKey: .sleep)
         energy = try container.decodeIfPresent(Int.self, forKey: .energy)
-        stressCalm = try container.decodeIfPresent(Int.self, forKey: .stressCalm)
+        stressScore = try container.decodeIfPresent(Int.self, forKey: .stressScore)
         hrvMilliseconds = try container.decodeIfPresent(Double.self, forKey: .hrvMilliseconds)
         restingHeartRate = try container.decodeIfPresent(Double.self, forKey: .restingHeartRate)
         sleepHours = try container.decodeIfPresent(Double.self, forKey: .sleepHours)
@@ -181,7 +184,7 @@ struct RecvelSharedSnapshot: Codable, Hashable {
         try container.encodeIfPresent(strain, forKey: .strain)
         try container.encodeIfPresent(sleep, forKey: .sleep)
         try container.encodeIfPresent(energy, forKey: .energy)
-        try container.encodeIfPresent(stressCalm, forKey: .stressCalm)
+        try container.encodeIfPresent(stressScore, forKey: .stressScore)
         try container.encode(stressLevelID, forKey: .stressLevelID)
         try container.encodeIfPresent(hrvMilliseconds, forKey: .hrvMilliseconds)
         try container.encodeIfPresent(restingHeartRate, forKey: .restingHeartRate)

@@ -29,15 +29,15 @@ struct StressHomeCard: View {
         return StressDayProfile.band(for: average)
     }
 
-    /// Numero del anillo: promedio del dia en calma (100 = relajado).
+    /// Numero del anillo: promedio del dia en estres directo (alto = presion).
     private var displayValue: String {
         guard profile.hasEnoughData, let average = profile.average else { return presentation.displayValue }
-        return String(100 - average)
+        return String(average)
     }
 
     private var ringProgress: Double {
         guard profile.hasEnoughData, let average = profile.average else { return presentation.ringProgress }
-        return Double(100 - average) / 100
+        return Double(average) / 100
     }
 
     private var caption: String {
@@ -69,7 +69,7 @@ struct StressHomeCard: View {
                         Text(displayValue)
                             .font(.system(size: 32, weight: .bold, design: .rounded))
                             .monospacedDigit()
-                        Text(profile.hasEnoughData ? "PROMEDIO" : "CALMA")
+                        Text(RecvelL10n.text(profile.hasEnoughData ? "stress.average" : "stress.unit").uppercased())
                             .font(.system(size: 9, weight: .heavy))
                             .foregroundStyle(.secondary)
                     }
@@ -117,7 +117,7 @@ struct StressHomeCard: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(RecvelL10n.text("score.stress.title")), \(level.displayName), \(RecvelL10n.text("score.calm.title")) " + RecvelL10n.text("a11y.scoreOf100", values: ["value": displayValue]))
+        .accessibilityLabel("\(RecvelL10n.text("score.stress.title")), \(level.displayName), " + RecvelL10n.text("a11y.scoreOf100", values: ["value": displayValue]))
     }
 }
 
@@ -286,7 +286,7 @@ struct StressDetailView: View {
             IntelligenceHero(
                 eyebrow: profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : "PRESION FISIOLOGICA",
                 value: heroValue,
-                unit: "CALMA",
+                unit: RecvelL10n.text("stress.unit").uppercased(),
                 status: displayLevel.displayName,
                 summary: heroSummary,
                 color: color,
@@ -358,15 +358,15 @@ struct StressDetailView: View {
         }
     }
 
-    /// Numero del hero: promedio del dia en calma (100 = relajado).
+    /// Numero del hero: promedio del dia en estres directo (alto = presion).
     private var heroValue: String {
         guard profile.hasEnoughData, let average = profile.average else { return presentation.displayValue }
-        return String(100 - average)
+        return String(average)
     }
 
     private var heroProgress: Double {
         guard profile.hasEnoughData, let average = profile.average else { return presentation.ringProgress }
-        return Double(100 - average) / 100
+        return Double(average) / 100
     }
 
     private var heroSummary: String {
@@ -1622,7 +1622,7 @@ private extension View {
     }
 }
 
-/// Tarjeta "Calma ahora": replica la de la referencia (punto + titulo + hora,
+/// Tarjeta "Estres ahora": replica la de la referencia (punto + titulo + hora,
 /// tres cifras con divisores, dial de ticks con el valor actual dentro).
 ///
 /// Habla en **calm score** (100 = relajado), igual que el hero, el anillo de Home
@@ -1635,8 +1635,7 @@ private struct StressTodayCard: View {
     let profile: StressDayProfile
     let updatedAt: Date?
 
-    /// Indice de estres → calma. Unica conversion de la tarjeta.
-    private static func calm(_ index: Int?) -> Int? { index.map { 100 - $0 } }
+    // La tarjeta muestra el indice directo del motor: alto = mas estres.
 
     private var currentBand: PhysiologicalStressLevel {
         profile.current.map(StressDayProfile.band(for:)) ?? .unavailable
@@ -1662,7 +1661,7 @@ private struct StressTodayCard: View {
                         Circle()
                             .fill(bandColor)
                             .frame(width: 9, height: 9)
-                        Text("Calma ahora")
+                        Text(RecvelL10n.text("stress.nowTitle"))
                             .font(.system(size: 19, weight: .semibold))
                     }
                     Text(updatedAt.map { RecvelL10n.text("stress.updatedAt", values: ["time": $0.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(RecvelL10n.locale))]) }
@@ -1674,11 +1673,11 @@ private struct StressTodayCard: View {
                 // En calma se invierten: el minimo del indice es el momento MAS
                 // calmado del dia. El promedio es el mismo numero que el hero.
                 HStack(spacing: 0) {
-                    stat(Self.calm(profile.lowest), RecvelL10n.text("stress.moreCalm"), tint: Color(red: 0.42, green: 0.82, blue: 0.78))
+                    stat(profile.lowest, RecvelL10n.text("stress.dayMin"), tint: Color(red: 0.42, green: 0.82, blue: 0.78))
                     divider
-                    stat(Self.calm(profile.highest), RecvelL10n.text("stress.lessCalm"), tint: Color(red: 0.98, green: 0.55, blue: 0.42))
+                    stat(profile.highest, RecvelL10n.text("stress.dayMax"), tint: Color(red: 0.98, green: 0.55, blue: 0.42))
                     divider
-                    stat(profile.hasEnoughData ? Self.calm(profile.average) : nil, RecvelL10n.text("stress.average"), tint: .white)
+                    stat(profile.hasEnoughData ? profile.average : nil, RecvelL10n.text("stress.average"), tint: .white)
                 }
 
                 if !profile.hasEnoughData {
@@ -1694,7 +1693,7 @@ private struct StressTodayCard: View {
             }
 
             StressTickGauge(
-                value: Self.calm(profile.current),
+                value: profile.current,
                 band: currentBand.displayName,
                 color: bandColor
             )
@@ -1703,8 +1702,8 @@ private struct StressTodayCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .revelCard()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(RecvelL10n.text("a11y.calmNow", values: [
-            "value": Self.calm(profile.current).map(String.init) ?? RecvelL10n.text("common.noReading"),
+        .accessibilityLabel(RecvelL10n.text("a11y.stressNow", values: [
+            "value": profile.current.map(String.init) ?? RecvelL10n.text("common.noReading"),
             "band": currentBand.displayName
         ]))
         .accessibilityIdentifier("detail.stress.now")
@@ -1791,9 +1790,9 @@ private struct StressTickGauge: View {
                     .font(.system(size: 28, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(.white.opacity(0.92))
-                // La unidad va explicita: sin ella la cifra se podia leer como
-                // indice de estres y volvia la ambiguedad de escala.
-                Text("CALMA")
+                // La unidad va explicita para que la cifra no se lea como
+                // porcentaje de otra cosa: es el indice de estres, alto = mas.
+                Text(RecvelL10n.text("stress.unit").uppercased())
                     .font(.system(size: 8, weight: .heavy))
                     .foregroundStyle(.tertiary)
                 Text(band)

@@ -17,7 +17,7 @@ enum SharedSnapshotPublisher {
         let scores = ScoreEngine().scores(for: snapshot, history: history)
         let score: (ScoreKind) -> WellnessScore? = { kind in scores.first { $0.kind == kind } }
         let stress = StressEngine().assess(snapshot: snapshot, history: history)
-        let calmScore = stress.score.map { 100 - $0 }
+        // Estres directo (alto = presion), misma escala que la app.
         let confidence = scores.map(\.confidence).min(by: { confidenceRank($0) < confidenceRank($1) }) ?? .low
 
         let shared = RecvelSharedSnapshot(
@@ -26,7 +26,7 @@ enum SharedSnapshotPublisher {
             strain: score(.strain)?.value,
             sleep: score(.sleep)?.value,
             energy: score(.energy)?.value,
-            stressCalm: calmScore,
+            stressScore: stress.score,
             stressLevelID: stress.level.localizationID,
             hrvMilliseconds: snapshot.hrv,
             restingHeartRate: snapshot.restingHeartRate,

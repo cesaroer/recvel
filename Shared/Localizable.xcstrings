@@ -16997,6 +16997,22 @@
         }
       }
     },
+    "a11y.stressNow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress now {value} out of 100, {band}"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés ahora {value} de 100, {band}"
+          }
+        }
+      }
+    },
     "advice.daylight.low": {
       "extractionState": "stale",
       "localizations": {
@@ -34363,6 +34379,38 @@
         }
       }
     },
+    "stress.dayMax": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peak"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pico"
+          }
+        }
+      }
+    },
+    "stress.dayMin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lowest"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mínimo"
+          }
+        }
+      }
+    },
     "stress.dayScore": {
       "extractionState": "stale",
       "localizations": {
@@ -34726,13 +34774,29 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "last measured hour · 100 = calm"
+            "value": "last measured hour · 0 = calm"
           }
         },
         "es-MX": {
           "stringUnit": {
             "state": "translated",
-            "value": "última hora medida · 100 = calma"
+            "value": "última hora medida · 0 = calma"
+          }
+        }
+      }
+    },
+    "stress.nowTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress now"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés ahora"
           }
         }
       }
@@ -34937,6 +35001,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "{count}/{max} hoy"
+          }
+        }
+      }
+    },
+    "stress.unit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés"
           }
         }
       }

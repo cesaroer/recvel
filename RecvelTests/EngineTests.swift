@@ -131,14 +131,19 @@ final class EngineTests: XCTestCase {
         let strainedPresentation = engine.presentation(for: strained)
         let unavailablePresentation = engine.presentation(for: unavailable)
 
-        // "Excelente" debe acercarse a 100, no a 0 (pedido explicito del usuario).
-        XCTAssertEqual(relaxedPresentation.calmScore, 90)
-        XCTAssertEqual(relaxedPresentation.displayValue, "90")
+        // Historia de esta decision: primero se mostraba el indice directo;
+        // el usuario pidio invertirlo a "calma" (100 = Excelente); y el
+        // 10 ago 2026 pidio volver a la escala DIRECTA porque su otra app
+        // (Stress Watch) y todo el mercado muestran alto = mas estres, y
+        // ademas las bandas Excelente→Sobrecarga son nombres de escala de
+        // estres. Este test fija la convencion vigente: alto = presion.
+        XCTAssertEqual(relaxedPresentation.score, 10)
+        XCTAssertEqual(relaxedPresentation.displayValue, "10")
         XCTAssertEqual(relaxedPresentation.headline, "Excelente")
-        XCTAssertEqual(strainedPresentation.calmScore, 15)
-        XCTAssertGreaterThan(relaxedPresentation.ringProgress, strainedPresentation.ringProgress)
+        XCTAssertEqual(strainedPresentation.score, 85)
+        XCTAssertLessThan(relaxedPresentation.ringProgress, strainedPresentation.ringProgress)
 
-        XCTAssertNil(unavailablePresentation.calmScore)
+        XCTAssertNil(unavailablePresentation.score)
         XCTAssertEqual(unavailablePresentation.displayValue, "--")
         XCTAssertEqual(unavailablePresentation.ringProgress, 0)
     }
@@ -958,6 +963,9 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(HomeDayRingEngine.bandColor(for: .recovery, score: 50), ScoreKind.energy.color)
         XCTAssertEqual(HomeDayRingEngine.bandColor(for: .recovery, score: 20), ScoreKind.strain.color)
         XCTAssertEqual(HomeDayRingEngine.bandColor(for: .sleep, score: 90), HomeDayRingMetric.sleep.color)
+        // Estres directo: bajo = turquesa calma, alto = naranja de carga.
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .stress, score: 20), HomeDayRingMetric.stress.color)
+        XCTAssertEqual(HomeDayRingEngine.bandColor(for: .stress, score: 80), ScoreKind.strain.color)
         XCTAssertEqual(HomeDayRingEngine.bandColor(for: .strain, score: 90), HomeDayRingMetric.strain.color)
         XCTAssertEqual(HomeDayRingEngine.bandColor(for: .steps, score: nil), HomeDayRingMetric.steps.color)
     }
@@ -1042,8 +1050,8 @@ final class EngineTests: XCTestCase {
 
         XCTAssertNotNil(todayRings.first?.progress)
         XCTAssertNotNil(yesterdayRings.first?.progress)
-        // Calm today should present a higher calm-score progress than a strained past day.
-        XCTAssertGreaterThan(todayRings[0].progress ?? 0, yesterdayRings[0].progress ?? 1)
+        // Escala directa: el dia calmado llena MENOS anillo que el dia tenso.
+        XCTAssertLessThan(todayRings[0].progress ?? 1, yesterdayRings[0].progress ?? 0)
     }
 
     func testHomeWeekWorkoutSummaryCountsCalendarWeekSessions() throws {
