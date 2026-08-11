@@ -355,27 +355,45 @@ struct DashboardView: View {
                     .foregroundStyle(ScoreKind.recovery.color)
                 Text("home.morningSummary")
                     .font(.system(size: 29, weight: .bold))
-                // Entrypoint del calendario, como en Bevel: la propia fecha
-                // con un chevron abre el mes. Antes habia CUATRO caminos al
-                // mismo sitio (rotulo "Mes", chevron al final de la tira,
-                // doble toque y este) y ninguno era el de la referencia.
+                // Entrypoint del calendario, en el patron de chip de Bevel
+                // (la referencia usa capsulas con chevron: "Active ⌄").
+                //
+                // Como texto plano no funcionaba por dos razones: no se leia
+                // como control —era gris secundario, igual que un subtitulo— y
+                // el area de toque era la altura de la linea (~16 pt, muy por
+                // debajo de los 44 pt minimos), con el enlace del reporte justo
+                // debajo: un toque un poco bajo abria el reporte, no el mes.
                 Button {
                     Haptics.soft()
                     showsMonthCalendar = true
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11, weight: .bold))
                         Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(.tertiary)
                     }
-                    .contentShape(Rectangle())
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .frame(minHeight: 34)
+                    .background(Color.white.opacity(0.08), in: Capsule(style: .continuous))
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                    }
+                    .contentShape(Capsule(style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .padding(.top, 3)
                 .accessibilityIdentifier("dashboard.dayStrip.openMonth")
                 .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
+                .accessibilityAddTraits(.isButton)
                 // Un reporte que solo aparece solo es un reporte que no puedes consultar.
                 if health.dataMode != .empty {
                     Button {
