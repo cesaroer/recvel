@@ -1206,6 +1206,23 @@ private struct FluidRecoveryHero: View {
     }
 }
 
+/// Instrumento de Sueño / Carga / Energia del Home.
+///
+/// Linea visual tomada de la fila Strain·Recovery·Sleep de la referencia
+/// (`CalendarAndJournal.mp4`, t=0 s, medido a resolucion nativa 1290x2796).
+/// Lo que hace que ese anillo se lea como instrumento y no como una barra
+/// doblada son cuatro cosas, y las cuatro estan aqui:
+///
+///  1. **Profundidad.** El arco vive en un pozo: bisel exterior con la luz
+///     cargada arriba, disco interior mas oscuro que la tarjeta y un surco
+///     negro donde corre el trazo. Antes era un aro plano sobre el fondo.
+///  2. **Gradiente ANGULAR**, no lineal: el color viaja a lo largo del arco,
+///     de una version apagada en el origen a la plena en la punta. Un
+///     `LinearGradient` sobre un circulo cruza el trazo en diagonal y no
+///     acompaña el recorrido.
+///  3. **Glow** del color bajo el arco.
+///  4. **El valor y el `%` con el mismo cuerpo**, como una sola cifra. Antes
+///     el `%` iba diminuto y en secundario, y la cifra perdia peso.
 private struct DashboardScoreInstrument: View {
     /// Bajo esqueleto el anillo NO dibuja progreso: un arco a medias se lee
     /// como un valor real y estariamos enseñando un dato que aun no existe.
@@ -1216,39 +1233,44 @@ private struct DashboardScoreInstrument: View {
     let score: WellnessScore
     @State private var animatedProgress = 0.0
 
+    private let diameter: CGFloat = 68
+    private let lineWidth: CGFloat = 7
+
     private var displayValue: String {
         score.kind == .strain
             ? String(format: "%.1f", Double(score.value) / 100 * 21)
             : "\(score.value)"
     }
 
-    var body: some View {
-        VStack(spacing: 7) {
-            ZStack {
-                Circle().stroke(Color.white.opacity(0.07), lineWidth: 6)
-                Circle()
-                    .trim(from: 0, to: isRedacted ? 0 : animatedProgress)
-                    .stroke(score.kind.color.gradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                HStack(alignment: .lastTextBaseline, spacing: 1) {
-                    Text(displayValue)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .minimumScaleFactor(0.65)
-                    if score.kind != .strain {
-                        Text("%")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .frame(width: 62, height: 62)
+    /// Carga se expresa 0-21, no en porcentaje.
+    private var unitSuffix: String { score.kind == .strain ? "" : "%" }
 
-            Label(score.kind.displayName, systemImage: score.kind.icon)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.secondary)
+    /// Origen del gradiente: el mismo tono con menos brillo y algo menos de
+    /// saturacion. `Color.mix` es iOS 18 y el proyecto va a 17, asi que se
+    /// calcula por HSB.
+    private var deepTint: Color {
+        var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+        guard UIColor(score.kind.color).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else {
+            return score.kind.color.opacity(0.5)
+        }
+        return Color(hue: hue, saturation: saturation * 0.95, brightness: brightness * 0.56)
+    }
+
+    var body: some View {
+        VStack(spacing: 9) {
+            ZStack {
+                well
+                track
+                arc
+                readout
+            }
+            .frame(width: diameter, height: diameter)
+
+            Text(score.kind.displayName)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.62))
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .onAppear {
             withAnimation(reduceMotion ? nil : .spring(response: 0.72, dampingFraction: 0.78)) {
@@ -1262,5 +1284,70 @@ private struct DashboardScoreInstrument: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(score.kind.displayName), \(displayValue)")
+    }
+
+    /// Bisel elevado + disco hundido. La luz entra por arriba, asi que el
+    /// borde superior aclara y el inferior se apaga.
+    ///
+    /// El disco NO se oscurece a negro: en la referencia es una superficie
+    /// gris, y pintarlo negro convertia el centro en un agujero.
+    private var well: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.05))
+                .overlay {
+                    Circle()
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.16), Color.white.opacity(0.02)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 1
+                        )
+                }
+            Circle()
+                .fill(Color.white.opacity(0.028))
+                .padding(2)
+        }
+    }
+
+    /// Surco por el que corre el arco.
+    private var track: some View {
+        Circle()
+            .stroke(Color.black.opacity(0.34), lineWidth: lineWidth)
+            .padding(lineWidth / 2 + 3)
+    }
+
+    private var arc: some View {
+        Circle()
+            .trim(from: 0, to: isRedacted ? 0 : animatedProgress)
+            .stroke(
+                AngularGradient(
+                    gradient: Gradient(colors: [deepTint, score.kind.color]),
+                    center: .center,
+                    // El trazo arranca en las 12 por el giro de -90°, asi que
+                    // el gradiente arranca ahi tambien. El final SIGUE al
+                    // progreso para que la rampa completa quepa dentro del arco
+                    // dibujado: con `endAngle` fijo en 360, un arco corto solo
+                    // enseñaba el tramo apagado del degradado.
+                    startAngle: .degrees(0),
+                    endAngle: .degrees(max(360 * animatedProgress, 1))
+                ),
+                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+            )
+            .rotationEffect(.degrees(-90))
+            .padding(lineWidth / 2 + 3)
+            .shadow(color: score.kind.color.opacity(isRedacted ? 0 : 0.28), radius: 3.5)
+    }
+
+    private var readout: some View {
+        Text(displayValue + unitSuffix)
+            .font(.system(size: 19, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .contentTransition(.numericText())
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+            .padding(.horizontal, lineWidth + 6)
     }
 }
