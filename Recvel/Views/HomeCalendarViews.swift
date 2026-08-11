@@ -97,21 +97,26 @@ struct HomeDayStripCell: View {
         let isToday = Calendar.current.isDateInToday(date)
         Button(action: action) {
             VStack(spacing: 7) {
-                Text(date.formatted(.dateTime.weekday(.narrow).locale(RecvelL10n.locale)))
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(selected ? .white : .secondary)
+                // La inicial va FUERA de la pastilla, igual que la fila de
+                // encabezado de la rejilla del mes: asi la pastilla es la
+                // misma pieza en las dos pantallas.
+                Text(date.formatted(.dateTime.weekday(.narrow).locale(RecvelL10n.locale)).uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(selected ? Color.white.opacity(0.85) : Color.white.opacity(0.38))
 
-                // Pastilla Bevel: anillo arriba, numero debajo, dentro de una
-                // capsula alta. El numero de hoy va en azul, como la referencia.
-                VStack(spacing: 5) {
-                    HomeMiniDayRings(values: rings, size: 27, lineWidth: 2.4)
+                VStack(spacing: 4) {
+                    HomeMiniDayRings(values: rings, size: 26, lineWidth: 2.4)
                     Text(date.formatted(.dateTime.day().locale(RecvelL10n.locale)))
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(selected ? .white : (isToday ? todayBlue : Color.white.opacity(0.88)))
+                        // HOY manda sobre "seleccionado", como en la rejilla del
+                        // mes: el azul dice que dia es, la pastilla clara dice
+                        // cual estas mirando. Antes iban al reves y al abrir la
+                        // app —hoy seleccionado— el azul no aparecia nunca.
+                        .foregroundStyle(isToday ? todayBlue : (selected ? .white : Color.white.opacity(0.88)))
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 62)
+                .frame(height: 64)
                 .background {
                     Capsule(style: .continuous)
                         .fill(selected ? Color.white.opacity(0.14) : Color.white.opacity(0.055))

@@ -355,9 +355,27 @@ struct DashboardView: View {
                     .foregroundStyle(ScoreKind.recovery.color)
                 Text("home.morningSummary")
                     .font(.system(size: 29, weight: .bold))
-                Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                // Entrypoint del calendario, como en Bevel: la propia fecha
+                // con un chevron abre el mes. Antes habia CUATRO caminos al
+                // mismo sitio (rotulo "Mes", chevron al final de la tira,
+                // doble toque y este) y ninguno era el de la referencia.
+                Button {
+                    Haptics.soft()
+                    showsMonthCalendar = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("dashboard.dayStrip.openMonth")
+                .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
                 // Un reporte que solo aparece solo es un reporte que no puedes consultar.
                 if health.dataMode != .empty {
                     Button {
@@ -417,66 +435,28 @@ struct DashboardView: View {
         .padding(.top, 8)
     }
 
+    /// Tira de la semana. Las pastillas flotan sobre el fondo, sin caja: es la
+    /// misma pieza que la rejilla del mes (`HomeMonthCalendarSheet`), que
+    /// tampoco encierra sus celdas. El acceso al mes vive en la fecha del
+    /// encabezado, no aqui.
     private var dayStrip: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(RecvelL10n.text("home.recentDays"))
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("dashboard.dayStrip")
-                Spacer()
-                Button {
-                    Haptics.soft()
-                    showsMonthCalendar = true
-                } label: {
-                    Label("Mes", systemImage: "calendar")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(ScoreKind.recovery.color)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("dashboard.dayStrip.openMonth")
-            }
-            .padding(.horizontal, 4)
-
-            HStack(spacing: 2) {
-                ForEach(visibleDays) { day in
-                    let selected = Calendar.current.isDate(day.date, inSameDayAs: selectedDay)
-                    HomeDayStripCell(
-                        date: day.date,
-                        selected: selected,
-                        rings: rings(for: day),
-                        namespace: daySelectionNamespace
-                    ) {
-                        if !selected { Haptics.selection() }
-                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.28)) {
-                            selectedDay = Calendar.current.startOfDay(for: day.date)
-                        }
+        HStack(spacing: 4) {
+            ForEach(visibleDays) { day in
+                let selected = Calendar.current.isDate(day.date, inSameDayAs: selectedDay)
+                HomeDayStripCell(
+                    date: day.date,
+                    selected: selected,
+                    rings: rings(for: day),
+                    namespace: daySelectionNamespace
+                ) {
+                    if !selected { Haptics.selection() }
+                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.28)) {
+                        selectedDay = Calendar.current.startOfDay(for: day.date)
                     }
                 }
-
-                Button {
-                    Haptics.soft()
-                    showsMonthCalendar = true
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 28, height: 56)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
-            }
-            .padding(.leading, 4)
-            .padding(.trailing, 2)
-            .padding(.vertical, 4)
-            .liquidGlass(cornerRadius: 8)
-            .contentShape(Rectangle())
-            .onTapGesture(count: 2) {
-                Haptics.soft()
-                showsMonthCalendar = true
             }
         }
+        .accessibilityIdentifier("dashboard.dayStrip")
     }
 
     private func rings(for day: DailyHealthSnapshot) -> [HomeDayRingValue] {
