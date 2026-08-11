@@ -168,8 +168,9 @@ struct HomeStripMonthCell: View {
         Button(action: action) {
             VStack(spacing: 7) {
                 // Hueco de la inicial del dia, para alinear la capsula con las
-                // de al lado.
-                Text(" ")
+                // de al lado. `verbatim` a proposito: sin el, Xcode extrae el
+                // espacio al catalogo de strings como si fuera copy.
+                Text(verbatim: " ")
                     .font(.system(size: 11, weight: .semibold))
 
                 Image(systemName: "chevron.right")
