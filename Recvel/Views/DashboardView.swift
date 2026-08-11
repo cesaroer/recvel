@@ -391,7 +391,7 @@ struct DashboardView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 3)
-                .accessibilityIdentifier("dashboard.dayStrip.openMonth")
+                .accessibilityIdentifier("dashboard.header.openMonth")
                 .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
                 .accessibilityAddTraits(.isButton)
                 // Un reporte que solo aparece solo es un reporte que no puedes consultar.
@@ -473,7 +473,22 @@ struct DashboardView: View {
                     }
                 }
             }
+
+            // Acceso al mes DENTRO de la tira. Tocar una celda selecciona ese
+            // dia, asi que el acceso no puede ser la tira entera: necesita su
+            // propio control. Va con la misma capsula que los dias —es parte
+            // del componente, no un boton pegado al lado— pero en color de
+            // acento para que se lea como "hay mas aqui".
+            HomeStripMonthCell {
+                Haptics.soft()
+                showsMonthCalendar = true
+            }
         }
+        // Sin esto, el identificador del contenedor convierte la fila en UN
+        // solo elemento de accesibilidad y sus hijos dejan de ser alcanzables:
+        // el boton del mes existia en pantalla pero no para XCUITest ni para
+        // VoiceOver.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("dashboard.dayStrip")
     }
 

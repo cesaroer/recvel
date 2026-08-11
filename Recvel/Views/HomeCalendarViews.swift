@@ -146,6 +146,49 @@ struct HomeDayStripCell: View {
     }
 }
 
+/// Ultima celda de la tira semanal: abre la rejilla del mes.
+///
+/// Existe porque la tira NO puede abrirse tocandola en cualquier sitio —cada
+/// celda selecciona su dia— y sin un control propio el mes quedaba inalcanzable
+/// desde la tira.
+///
+/// Diseño deliberadamente callado: en la referencia los controles de navegacion
+/// del calendario son un glifo `›` apagado, sin relleno de color. Un primer
+/// intento la pinto como capsula verde con borde y dos iconos apilados: gritaba
+/// dentro de una fila de pastillas neutras, y al ocupar el mismo ancho que un
+/// dia estrechaba los siete. Ahora es la misma capsula neutra que un dia sin
+/// seleccionar, estrecha y con un solo chevron.
+struct HomeStripMonthCell: View {
+    let action: () -> Void
+
+    /// Estrecha a proposito: es un remate de la fila, no un octavo dia.
+    private let width: CGFloat = 30
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                // Hueco de la inicial del dia, para alinear la capsula con las
+                // de al lado.
+                Text(" ")
+                    .font(.system(size: 11, weight: .semibold))
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.5))
+                    .frame(width: width, height: 64)
+                    .background {
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.055))
+                    }
+                    .contentShape(Capsule(style: .continuous))
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("dashboard.dayStrip.openMonth")
+        .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
+    }
+}
+
 // MARK: - Month calendar sheet (Bevel CalendarAndJournal 1:1)
 
 struct HomeMonthCalendarSheet: View {
