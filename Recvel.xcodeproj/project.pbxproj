@@ -210,6 +210,7 @@
 		D38FA75377AC98C0D4424D1A /* BioAgeProViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554DE454E4B66D954C3DEB02 /* BioAgeProViews.swift */; };
 		D3BB50BD837B53A9ECD06CF9 /* HealthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D99C8B88330367A16B25D5F2 /* HealthModels.swift */; };
 		D959DD7537DD83D21DA56177 /* muscle_11_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1E2BCDBDBD7FAAE4A3C4EF45 /* muscle_11_main.svg */; };
+		DA1C2FE27AFAE485A1843095 /* NutritionAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46EB96DD93A0FA37D2377E0 /* NutritionAssistantView.swift */; };
 		DB18FFAC1A5989C05AADCFA7 /* muscle_7_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = B11EB5872FEE798A3D5CF6E6 /* muscle_7_main.svg */; };
 		DB527821C251362E2D23287D /* muscle_2_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = AB32117F15ECE78974196E14 /* muscle_2_main.svg */; };
 		DCD9F47F261FE642A4BD4C84 /* Superman_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E339CAF3501E8DC6AD7724DF /* Superman_1.jpg */; };
@@ -464,6 +465,7 @@
 		B098D9DAE296329ED1A11959 /* MorningReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningReportView.swift; sourceTree = "<group>"; };
 		B1063749D3E7BC76F5C55F56 /* Arm_Circles_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Arm_Circles_0.jpg; sourceTree = "<group>"; };
 		B11EB5872FEE798A3D5CF6E6 /* muscle_7_main.svg */ = {isa = PBXFileReference; path = muscle_7_main.svg; sourceTree = "<group>"; };
+		B46EB96DD93A0FA37D2377E0 /* NutritionAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionAssistantView.swift; sourceTree = "<group>"; };
 		B5602D3E538F31D44DE9D50E /* RecvelTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RecvelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D3F255A44C644DFAE1C4AC /* Plank_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Plank_0.jpg; sourceTree = "<group>"; };
 		B673E7AB16F3A72266991B59 /* Side_Bridge_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Side_Bridge_1.jpg; sourceTree = "<group>"; };
@@ -777,6 +779,7 @@
 				40F4FA4EA49757EE84E1F9A5 /* LaboratoryView.swift */,
 				B098D9DAE296329ED1A11959 /* MorningReportView.swift */,
 				7363EA2DBF9CA6DBC7C520A9 /* MuscleMapView.swift */,
+				B46EB96DD93A0FA37D2377E0 /* NutritionAssistantView.swift */,
 				739F1719B60029D776844007 /* NutritionSetupView.swift */,
 				CBD5AB6B40E512F6AA02537B /* NutritionView.swift */,
 				34FDE4A517289B49DFCD1C18 /* OnboardingView.swift */,
@@ -1319,6 +1322,7 @@
 				690577EA37726976097152A2 /* MuscleMapCatalog.swift in Sources */,
 				535F5FAD50A3CC85A325268B /* MuscleMapView.swift in Sources */,
 				7A495080342EEFCAB9669308 /* NotificationRouter.swift in Sources */,
+				DA1C2FE27AFAE485A1843095 /* NutritionAssistantView.swift in Sources */,
 				493DE4A74E97CD00490DB44F /* NutritionEstimator.swift in Sources */,
 				32C2919E48BE6641B92C13CD /* NutritionPlanEngine.swift in Sources */,
 				C22A011A54923027A6AFBE92 /* NutritionSetupView.swift in Sources */,

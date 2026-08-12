@@ -15,6 +15,8 @@ struct NutritionView: View {
     @State private var editingMeal: MealLog?
     /// Peticion abierta de la pantalla de registro (vacia o con texto reutilizado).
     @State private var recordRequest: RecordFoodRequest?
+    /// Peticion abierta del asistente de plan.
+    @State private var planRequest: NutritionPlanRequest?
     @State private var completedSetupProfile: NutritionProfile?
 
     private let planner = NutritionPlanEngine()
@@ -48,6 +50,9 @@ struct NutritionView: View {
             .navigationDestination(item: $recordRequest) { request in
                 RecordFoodView(initialText: request.text)
             }
+            .navigationDestination(item: $planRequest) { _ in
+                NutritionAssistantView()
+            }
         }
     }
 
@@ -69,7 +74,17 @@ struct NutritionView: View {
                     //    37 g de proteina") no significa nada hasta haber
                     //    visto los anillos.
                     // 4-5. Mañana e historial: futuro y pasado, menos urgentes.
+                    //
+                    // El asistente va ENCIMA de los anillos sin romper ese
+                    // orden: es una capsula delgada, no una tarjeta, asi que no
+                    // desplaza el resumen —los anillos siguen siendo lo primero
+                    // que se lee como bloque— y ofrece la pregunta que la
+                    // pantalla no resolvia: "armame un plan".
                     pageHeader(profile: profile)
+                    NutritionAssistantEntry {
+                        Haptics.soft()
+                        planRequest = NutritionPlanRequest()
+                    }
                     dailyHero(profile: profile)
                     recordFoodEntry
                     nextMealCard(profile: profile)
@@ -734,6 +749,13 @@ private final class NutritionVoiceCapture: NSObject, ObservableObject {
 
 /// Peticion de registro. Lleva el texto inicial para poder reutilizar una
 /// comida del historial sin que la pantalla tenga que consultarla.
+/// Peticion de apertura del asistente de plan. No lleva parametros todavia;
+/// existe para usar el mismo patron `navigationDestination(item:)` que el resto
+/// de pantallas empujadas de la pestaña.
+struct NutritionPlanRequest: Identifiable, Hashable {
+    let id = UUID()
+}
+
 struct RecordFoodRequest: Identifiable, Hashable {
     let id = UUID()
     var text: String = ""

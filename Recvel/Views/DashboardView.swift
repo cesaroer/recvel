@@ -366,109 +366,125 @@ struct DashboardView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("RECVEL · \(RecvelL10n.text(isShowingToday ? "home.eyebrow.today" : "home.eyebrow.history"))")
-                    .font(.caption2.weight(.heavy))
-                    .foregroundStyle(ScoreKind.recovery.color)
-                Text("home.morningSummary")
-                    .font(.system(size: 29, weight: .bold))
-                // Entrypoint del calendario, en el patron de chip de Bevel
-                // (la referencia usa capsulas con chevron: "Active ⌄").
-                //
-                // Como texto plano no funcionaba por dos razones: no se leia
-                // como control —era gris secundario, igual que un subtitulo— y
-                // el area de toque era la altura de la linea (~16 pt, muy por
-                // debajo de los 44 pt minimos), con el enlace del reporte justo
-                // debajo: un toque un poco bajo abria el reporte, no el mes.
-                Button {
-                    Haptics.soft()
-                    showsMonthCalendar = true
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
-                            .font(.system(size: 13, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .frame(minHeight: 34)
-                    .background(Color.white.opacity(0.08), in: Capsule(style: .continuous))
-                    .overlay {
-                        Capsule(style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-                    }
-                    .contentShape(Capsule(style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 3)
-                .accessibilityIdentifier("dashboard.header.openMonth")
-                .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
-                .accessibilityAddTraits(.isButton)
-                // Un reporte que solo aparece solo es un reporte que no puedes consultar.
-                if health.dataMode != .empty {
-                    Button {
-                        Haptics.soft()
-                        openMorningReport()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "sun.horizon.fill")
-                                .font(.caption2.weight(.bold))
-                            Text(RecvelL10n.text("home.openMorningReport"))
-                                .font(.caption.weight(.semibold))
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.tertiary)
-                        }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("RECVEL · \(RecvelL10n.text(isShowingToday ? "home.eyebrow.today" : "home.eyebrow.history"))")
+                        .font(.caption2.weight(.heavy))
                         .foregroundStyle(ScoreKind.recovery.color)
-                        .padding(.top, 2)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("dashboard.openMorningReport")
+                    Text("home.morningSummary")
+                        .font(.system(size: 29, weight: .bold))
                 }
+                Spacer()
+                dataSourceButton
+                moreMenu
             }
-            Spacer()
-            dataSourceButton
-            Menu {
-                Button {
-                    Haptics.menuSelect()
-                    showsSettings = true
-                } label: {
-                    Label("settings.title", systemImage: "gearshape")
-                }
-                Button {
-                    Haptics.menuSelect()
-                    Task { await health.refresh(trigger: .userInitiated) }
-                } label: {
-                    Label("home.refreshData", systemImage: "arrow.clockwise")
-                }
-                Button {
-                    Haptics.menuSelect()
-                    Task { await health.requestAuthorization() }
-                } label: {
-                    Label(RecvelL10n.text("home.healthPermissions"), systemImage: "heart.text.square")
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.body.weight(.bold))
-                    .frame(width: 40, height: 40)
-                    .contentShape(Circle())
-                    .platformGlass(tint: ScoreKind.recovery.color, interactive: true, shape: .circle)
-            }
-            .menuOrder(.fixed)
-            .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
-            .accessibilityIdentifier("dashboard.moreMenu")
-            .accessibilityLabel(RecvelL10n.text("home.moreOptions"))
+
+            dateChip
+            morningReportLink
         }
         .padding(.top, 8)
+    }
+
+    /// Entrypoint del calendario, en el patron de chip de Bevel (la referencia
+    /// usa capsulas con chevron: "Active ⌄").
+    ///
+    /// Va en su PROPIA FILA. Dentro de la columna del titulo solo le quedaban
+    /// ~176 pt —el resto se lo llevan el chip de fuente de datos, de ancho
+    /// variable, y el menu de 40 pt— y el peor caso de la fecha
+    /// ("miércoles, 28 de septiembre") pide ~247 pt. Por eso se truncaba: no es
+    /// que el texto sea largo, es que la fila no era suya. A ancho completo hay
+    /// 370 pt y cabe en los dos idiomas, asi que tampoco hace falta acortar el
+    /// formato ni encoger la tipografia.
+    private var dateChip: some View {
+        Button {
+            Haptics.soft()
+            showsMonthCalendar = true
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 11, weight: .bold))
+                Text(selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(RecvelL10n.locale)))
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(minHeight: 34)
+            .background(Color.white.opacity(0.08), in: Capsule(style: .continuous))
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            }
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("dashboard.header.openMonth")
+        .accessibilityLabel(RecvelL10n.text("home.openMonthCalendar"))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// Un reporte que solo aparece solo es un reporte que no puedes consultar.
+    @ViewBuilder
+    private var morningReportLink: some View {
+        if health.dataMode != .empty {
+            Button {
+                Haptics.soft()
+                openMorningReport()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "sun.horizon.fill")
+                        .font(.caption2.weight(.bold))
+                    Text(RecvelL10n.text("home.openMorningReport"))
+                        .font(.caption.weight(.semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .foregroundStyle(ScoreKind.recovery.color)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("dashboard.openMorningReport")
+        }
+    }
+
+    /// Menu "…" del encabezado. Se extrajo al reordenar el header en filas.
+    private var moreMenu: some View {
+        Menu {
+            Button {
+                Haptics.menuSelect()
+                showsSettings = true
+            } label: {
+                Label("settings.title", systemImage: "gearshape")
+            }
+            Button {
+                Haptics.menuSelect()
+                Task { await health.refresh(trigger: .userInitiated) }
+            } label: {
+                Label("home.refreshData", systemImage: "arrow.clockwise")
+            }
+            Button {
+                Haptics.menuSelect()
+                Task { await health.requestAuthorization() }
+            } label: {
+                Label(RecvelL10n.text("home.healthPermissions"), systemImage: "heart.text.square")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.body.weight(.bold))
+                .frame(width: 40, height: 40)
+                .contentShape(Circle())
+                .platformGlass(tint: ScoreKind.recovery.color, interactive: true, shape: .circle)
+        }
+        .menuOrder(.fixed)
+        .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
+        .accessibilityIdentifier("dashboard.moreMenu")
+        .accessibilityLabel(RecvelL10n.text("home.moreOptions"))
     }
 
     /// Tira de la semana. Las pastillas flotan sobre el fondo, sin caja: es la
