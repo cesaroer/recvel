@@ -4,6 +4,10 @@ import SwiftUI
 
 /// Tick-segment progress ring matching Bevel CalendarAndJournal day cells.
 struct HomeSegmentedDayRings: View {
+    /// Mismo criterio que el instrumento de Home: bajo esqueleto el anillo no
+    /// dibuja progreso. Es una Shape, no texto, asi que `.redacted` no lo tapa
+    /// solo y se quedaba enseñando el valor real entre bloques grises.
+    @Environment(\.redactionReasons) private var redactionReasons
     let values: [HomeDayRingValue]
     var size: CGFloat = 28
     var lineWidth: CGFloat = 2.6
@@ -19,7 +23,7 @@ struct HomeSegmentedDayRings: View {
                 let inset = CGFloat(index) * (lineWidth + 1.6)
                 let diameter = max(size - inset * 2, 10)
                 HomeSegmentedRingTrack(
-                    progress: value.progress,
+                    progress: redactionReasons.contains(.placeholder) ? nil : value.progress,
                     color: value.bandColor,
                     size: diameter,
                     lineWidth: lineWidth,

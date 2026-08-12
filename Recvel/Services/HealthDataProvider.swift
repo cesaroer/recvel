@@ -21,6 +21,30 @@ final class HealthDataProvider: ObservableObject {
     /// por ella sin necesidad.
     @Published private(set) var activationPhase: LoadPhase = .loading
 
+    /// Quien pidio el refresco. Decide si se enseña esqueleto, y existe porque
+    /// las dos situaciones se veian igual desde dentro de `refresh()`.
+    enum RefreshTrigger {
+        /// La vista aparecio o volvio a primer plano. Con datos ya cargados NO
+        /// se esqueleta: parpadear a gris cada vez que se vuelve a Home es peor
+        /// que enseñar un dato de hace un minuto.
+        case automatic
+        /// Pull-to-refresh o boton de actualizar. SIEMPRE esqueleta: es el
+        /// acuse de recibo del gesto, y sin el la pantalla se queda quieta y
+        /// parece que no paso nada.
+        case userInitiated
+    }
+
+    /// Decision pura, para poder verificarla sin HealthKit.
+    static func showsSkeleton(trigger: RefreshTrigger, hasData: Bool) -> Bool {
+        trigger == .userInitiated || !hasData
+    }
+
+    /// Cuanto dura el esqueleto en modo demo ante un refresco pedido por el
+    /// usuario. Demo no consulta nada, asi que sin esta pausa el gesto no
+    /// enseñaria el estado de carga que SI existe con datos reales, y el modo
+    /// demo esta justamente para enseñar el comportamiento real.
+    static let demoRefreshSkeletonDuration = Duration.milliseconds(900)
+
     private let healthStore = HKHealthStore()
     private let calendar = Calendar.autoupdatingCurrent
     private let useDemoData: Bool
@@ -48,6 +72,13 @@ final class HealthDataProvider: ObservableObject {
             dataMode = .empty
             permissionState = HKHealthStore.isHealthDataAvailable() ? .notRequested : .unavailable
             authorizationMessage = HKHealthStore.isHealthDataAvailable() ? "Conecta Apple Health" : RecvelL10n.text("hdp.healthKitUnavailableTitle")
+            // `-skipHealthKitRefresh` (tests de UI) significa que nadie va a
+            // consultar nada. Las fases no pueden quedarse en `.loading` o Home
+            // enseñaria el esqueleto para siempre en vez del estado vacio.
+            if UserDefaults.standard.bool(forKey: "skipHealthKitRefresh") {
+                corePhase = .empty
+                activationPhase = .empty
+            }
         }
         SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
     }
@@ -73,23 +104,29 @@ final class HealthDataProvider: ObservableObject {
         }
     }
 
-    func refresh(forceHealthKit: Bool = false) async {
-        guard isHealthDataAvailable, !isLoading else { return }
+    func refresh(trigger: RefreshTrigger = .automatic, forceHealthKit: Bool = false) async {
+        guard !isLoading else { return }
+        // La rama demo va ANTES de comprobar HealthKit: demo no consulta nada,
+        // asi que no puede depender de que HealthKit este disponible. Con el
+        // guard delante, en un dispositivo sin HealthKit el modo demo se quedaba
+        // sin refrescar nunca — y el esqueleto del gesto no llegaba a pintarse.
         if useDemoData && !forceHealthKit {
             dataMode = .demo
+            if trigger == .userInitiated {
+                isLoading = true
+                corePhase = .loading
+                activationPhase = .loading
+                try? await Task.sleep(for: Self.demoRefreshSkeletonDuration)
+                isLoading = false
+            }
             corePhase = .ready
             activationPhase = activation.isEmpty ? .empty : .ready
             return
         }
 
+        guard isHealthDataAvailable else { return }
         isLoading = true
-        // El esqueleto solo aparece cuando NO hay nada que enseñar todavia.
-        // Con datos ya cargados, un refresh mantiene visible lo anterior y lo
-        // sustituye cuando llega lo nuevo: parpadear a gris cada vez que se
-        // vuelve a Home es peor que mostrar un dato de hace un minuto. El
-        // refresh explicito del usuario ya tiene su propio indicador (el spinner
-        // de pull-to-refresh y el boton del menu).
-        if history.isEmpty {
+        if Self.showsSkeleton(trigger: trigger, hasData: !history.isEmpty) {
             corePhase = .loading
             activationPhase = .loading
         }

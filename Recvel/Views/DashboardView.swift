@@ -51,9 +51,21 @@ struct DashboardView: View {
         Calendar.current.isDateInToday(selectedDay)
     }
 
-    private var visibleDays: [DailyHealthSnapshot] {
-        let days = health.history.sorted { $0.date < $1.date }
-        return Array(days.suffix(7))
+    /// Los 7 dias hasta hoy, por FECHA y no por historial.
+    ///
+    /// Recorriendo `history` la fila se quedaba con menos celdas cuando faltaban
+    /// dias — y en la primera carga, con el historial aun vacio, se quedaba solo
+    /// con la capsula del mes. El esqueleto tiene que imitar la forma real de la
+    /// fila, y un dia sin datos ya se pinta con el anillo apagado.
+    private var visibleDays: [Date] {
+        let today = calendar.startOfDay(for: .now)
+        return (0..<7).reversed().compactMap {
+            calendar.date(byAdding: .day, value: -$0, to: today)
+        }
+    }
+
+    private func snapshot(on day: Date) -> DailyHealthSnapshot? {
+        health.history.first { calendar.isDate($0.date, inSameDayAs: day) }
     }
 
     private var scores: [WellnessScore] {
@@ -119,7 +131,13 @@ struct DashboardView: View {
                         // como esqueleto hasta que llegan SUS datos: antes un
                         // cartel de "Leyendo Apple Health" tapaba la pantalla
                         // entera y escondia lo que ya estaba listo.
-                        if health.dataMode == .empty && !health.isLoading {
+                        // `corePhase != .loading` es lo que evita el parpadeo de
+                        // la PRIMERA apertura: al arrancar, `dataMode` ya vale
+                        // `.empty` y `isLoading` aun es false, asi que el cartel
+                        // de "necesita mas datos" se pintaba un instante antes
+                        // de que el `.task` empezara a cargar. El vacio solo es
+                        // vacio cuando ya se miro.
+                        if health.dataMode == .empty && !health.isLoading && corePhase != .loading {
                             emptyHealthState
                         } else {
                             entrance(1) { dayStrip.skeleton(corePhase) }
@@ -151,7 +169,7 @@ struct DashboardView: View {
                 }
                 .scrollIndicators(.hidden)
                 .trackTabBarScroll()
-                .refreshable { await health.refresh() }
+                .refreshable { await health.refresh(trigger: .userInitiated) }
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showsMonthCalendar) {
@@ -428,7 +446,7 @@ struct DashboardView: View {
                 }
                 Button {
                     Haptics.menuSelect()
-                    Task { await health.refresh() }
+                    Task { await health.refresh(trigger: .userInitiated) }
                 } label: {
                     Label("home.refreshData", systemImage: "arrow.clockwise")
                 }
@@ -459,17 +477,17 @@ struct DashboardView: View {
     /// encabezado, no aqui.
     private var dayStrip: some View {
         HStack(spacing: 4) {
-            ForEach(visibleDays) { day in
-                let selected = Calendar.current.isDate(day.date, inSameDayAs: selectedDay)
+            ForEach(visibleDays, id: \.self) { day in
+                let selected = calendar.isDate(day, inSameDayAs: selectedDay)
                 HomeDayStripCell(
-                    date: day.date,
+                    date: day,
                     selected: selected,
                     rings: rings(for: day),
                     namespace: daySelectionNamespace
                 ) {
                     if !selected { Haptics.selection() }
                     withAnimation(reduceMotion ? nil : .snappy(duration: 0.28)) {
-                        selectedDay = Calendar.current.startOfDay(for: day.date)
+                        selectedDay = calendar.startOfDay(for: day)
                     }
                 }
             }
@@ -492,12 +510,12 @@ struct DashboardView: View {
         .accessibilityIdentifier("dashboard.dayStrip")
     }
 
-    private func rings(for day: DailyHealthSnapshot) -> [HomeDayRingValue] {
+    private func rings(for day: Date) -> [HomeDayRingValue] {
         HomeDayRingEngine.ringValues(
-            for: day,
+            for: snapshot(on: day),
             history: health.history,
             selected: selectedRingMetrics,
-            isToday: calendar.isDateInToday(day.date),
+            isToday: calendar.isDateInToday(day),
             scoreEngine: scoreEngine,
             stressEngine: stressEngine
         )
@@ -517,7 +535,7 @@ struct DashboardView: View {
         Menu {
             Button {
                 Haptics.menuSelect()
-                Task { await health.refresh() }
+                Task { await health.refresh(trigger: .userInitiated) }
             } label: {
                 Label("Actualizar ahora", systemImage: "arrow.clockwise")
             }
@@ -722,14 +740,21 @@ struct DashboardView: View {
         }
     }
 
+    /// Las mini-graficas quieren los ultimos dias CON datos, no los ultimos
+    /// siete del calendario: un hueco no es un cero, y dibujarlo como cero
+    /// hundiria la linea inventando una caida.
+    private var recentSnapshots: [DailyHealthSnapshot] {
+        Array(health.history.sorted { $0.date < $1.date }.suffix(7))
+    }
+
     private var recoveryTrend: [Double] {
-        visibleDays.map { day in
+        recentSnapshots.map { day in
             Double(scoreEngine.scores(for: day, history: health.history).first { $0.kind == .recovery }?.value ?? 0)
         }
     }
 
-    private var sleepTrend: [Double] { visibleDays.map { $0.sleepHours ?? 0 } }
-    private var hrvTrend: [Double] { visibleDays.map { $0.hrv ?? 0 } }
+    private var sleepTrend: [Double] { recentSnapshots.map { $0.sleepHours ?? 0 } }
+    private var hrvTrend: [Double] { recentSnapshots.map { $0.hrv ?? 0 } }
 
     private func trendSummary(title: String, value: String, color: Color, values: [Double]) -> some View {
         VStack(alignment: .leading, spacing: 5) {

@@ -3569,6 +3569,29 @@ final class EngineTests: XCTestCase {
                        "la diferencia de score debe explicarse por el ajuste expuesto")
     }
 
+    // MARK: - Esqueleto en refresco
+
+    @MainActor
+    func testSkeletonShowsOnUserRefreshButNotOnReappearWithData() {
+        typealias Trigger = HealthDataProvider.RefreshTrigger
+
+        // Primera carga: no hay nada que enseñar, el esqueleto es obligatorio
+        // venga de donde venga el refresco.
+        XCTAssertTrue(HealthDataProvider.showsSkeleton(trigger: .automatic, hasData: false))
+        XCTAssertTrue(HealthDataProvider.showsSkeleton(trigger: .userInitiated, hasData: false))
+
+        // Con datos ya cargados la distincion es el punto de todo esto: volver
+        // a Home NO parpadea, pero tirar para refrescar SI acusa recibo.
+        XCTAssertFalse(HealthDataProvider.showsSkeleton(trigger: .automatic, hasData: true),
+                       "reaparecer con datos no debe parpadear a gris")
+        XCTAssertTrue(HealthDataProvider.showsSkeleton(trigger: .userInitiated, hasData: true),
+                      "pull-to-refresh debe esqueletar aunque ya haya datos")
+
+        // El default es el caso seguro: quien no lo diga, no esqueleta de mas.
+        let implicit: Trigger = .automatic
+        XCTAssertFalse(HealthDataProvider.showsSkeleton(trigger: implicit, hasData: true))
+    }
+
     func testTemperatureFactorAppearsInRecoveryDrivers() {
         let calendar = Calendar(identifier: .gregorian)
         let now = Date(timeIntervalSince1970: 1_784_000_000)

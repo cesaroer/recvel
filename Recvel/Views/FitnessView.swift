@@ -391,7 +391,7 @@ struct FitnessView: View {
             Divider()
             Button {
                 Haptics.menuSelect()
-                Task { await health.refresh() }
+                Task { await health.refresh(trigger: .userInitiated) }
             } label: {
                 Label(RecvelL10n.text("training.appleHealth.refresh"), systemImage: "heart.text.square")
             }
