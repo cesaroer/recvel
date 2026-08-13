@@ -1486,14 +1486,13 @@ struct SkeletonBlock: View {
 /// desenfoques —eso da la profundidad del halo— y el degradado girando
 /// lentamente. Con Reduce Motion se queda quieto: el borde sigue ahi, solo deja
 /// de rotar.
-struct IntelligenceSurface: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    var cornerRadius: CGFloat = 22
-    @State private var angle: Double = 0
-
-    /// Secuencia iridiscente violeta → azul → cian → rosa → naranja → dorado.
-    /// El primer tono se repite al final para que el ciclo cierre sin costura.
-    private static let spectrum: [Color] = [
+/// Secuencia iridiscente violeta → azul → cian → rosa → naranja → dorado.
+/// El primer tono se repite al final para que el ciclo cierre sin costura.
+///
+/// Vive fuera de `IntelligenceSurface` porque Swift no admite propiedades
+/// estaticas almacenadas en tipos genericos.
+private enum IntelligenceSpectrum {
+    static let colors: [Color] = [
         Color(red: 0.60, green: 0.35, blue: 0.96),
         Color(red: 0.30, green: 0.56, blue: 0.98),
         Color(red: 0.26, green: 0.82, blue: 0.90),
@@ -1502,11 +1501,19 @@ struct IntelligenceSurface: ViewModifier {
         Color(red: 0.98, green: 0.78, blue: 0.30),
         Color(red: 0.60, green: 0.35, blue: 0.96)
     ]
+}
+
+struct IntelligenceSurface<Outline: InsettableShape>: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// La forma la decide quien lo usa: tarjeta redondeada o capsula. El borde
+    /// iridiscente es el mismo; lo unico que cambia es por donde corre.
+    var outline: Outline
+    @State private var angle: Double = 0
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let shape = outline
         let gradient = AngularGradient(
-            gradient: Gradient(colors: Self.spectrum),
+            gradient: Gradient(colors: IntelligenceSpectrum.colors),
             center: .center,
             angle: .degrees(angle)
         )
@@ -1545,10 +1552,16 @@ struct IntelligenceSurface: ViewModifier {
 }
 
 extension View {
-    /// Borde iridiscente animado. Ver `IntelligenceSurface` antes de usarlo:
-    /// es para componentes que estiman o interpretan, uno por pantalla.
+    /// Borde iridiscente animado sobre una tarjeta redondeada. Ver
+    /// `IntelligenceSurface` antes de usarlo: es para componentes que estiman o
+    /// interpretan, uno por pantalla.
     func intelligenceSurface(cornerRadius: CGFloat = 22) -> some View {
-        modifier(IntelligenceSurface(cornerRadius: cornerRadius))
+        modifier(IntelligenceSurface(outline: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)))
+    }
+
+    /// La misma superficie sobre una capsula, para los entrypoints de fila.
+    func intelligenceCapsule() -> some View {
+        modifier(IntelligenceSurface(outline: Capsule(style: .continuous)))
     }
 }
 

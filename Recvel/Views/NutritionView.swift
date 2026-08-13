@@ -298,46 +298,54 @@ struct NutritionView: View {
     /// porcion y guardado) vivia aqui dentro y empujaba el resto del dashboard
     /// hacia abajo cuando aparecia un resultado. Ahora esto solo invita, y el
     /// trabajo ocurre en `RecordFoodView`.
+    /// A diferencia del asistente, esta pieza abre una tarea concreta. Las
+    /// cuatro modalidades se eligen dentro de la pantalla de registro.
     private var recordFoodEntry: some View {
         Button {
             Haptics.soft()
             recordRequest = RecordFoodRequest()
         } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(ScoreKind.energy.color)
-                    .frame(width: 46, height: 46)
-                    .background(Color.white.opacity(0.05), in: Circle())
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.07), lineWidth: 1))
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(RecvelL10n.text("nutrition.record.eyebrow").uppercased())
-                        .font(.system(size: 10, weight: .heavy))
-                        .tracking(0.6)
-                        .foregroundStyle(ScoreKind.energy.color.opacity(0.85))
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(RecvelL10n.text("nutrition.record.title"))
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.white)
-                    Text(RecvelL10n.text("nutrition.record.entryDetail"))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(ScoreKind.energy.color)
+
+                    Spacer(minLength: 0)
                 }
 
-                Spacer(minLength: 4)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.tertiary)
+                Text(RecvelL10n.text("nutrition.record.card.detail"))
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.66))
+                    .lineSpacing(2)
+                    .lineLimit(2)
+
+                HStack {
+                    Spacer(minLength: 0)
+                    HStack(spacing: 8) {
+                        Text(RecvelL10n.text("nutrition.record.card.action").uppercased())
+                            .font(.system(size: 10, weight: .black))
+                            .tracking(0.7)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(ScoreKind.energy.color)
+                    .padding(.top, 2)
+                }
             }
-            .padding(17)
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .intelligenceSurface()
+            .intelligenceSurface(cornerRadius: 22)
             .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("nutrition.recordEntry")
+        .accessibilityLabel(RecvelL10n.text("nutrition.record.title"))
+        .accessibilityHint(RecvelL10n.text("nutrition.record.card.detail"))
     }
 
     private func nextMealRationale(_ plan: NutritionDayPlan) -> String {
@@ -945,6 +953,7 @@ struct RecordFoodView: View {
             PhotosPicker(selection: $selectedPhoto, matching: .images) {
                 quickAction(icon: "camera.fill", title: RecvelL10n.text("nutrition.input.photo"))
             }
+            .accessibilityIdentifier("nutrition.input.photo")
             .onChange(of: selectedPhoto) { _, item in
                 guard let item else { return }
                 Task { await analyzePhoto(item) }
@@ -955,6 +964,7 @@ struct RecordFoodView: View {
             } label: {
                 quickAction(icon: "text.cursor", title: RecvelL10n.text("nutrition.input.text"))
             }
+            .accessibilityIdentifier("nutrition.input.text")
 
             Button {
                 Task {
@@ -968,10 +978,12 @@ struct RecordFoodView: View {
                     isActive: voiceCapture.isRecording
                 )
             }
+            .accessibilityIdentifier("nutrition.input.voice")
 
             PhotosPicker(selection: $selectedBarcodePhoto, matching: .images) {
                 quickAction(icon: "barcode.viewfinder", title: RecvelL10n.text("nutrition.input.barcode"))
             }
+            .accessibilityIdentifier("nutrition.input.barcode")
             .onChange(of: selectedBarcodePhoto) { _, item in
                 guard let item else { return }
                 Task { await analyzeBarcode(item) }

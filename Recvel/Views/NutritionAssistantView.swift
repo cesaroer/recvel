@@ -117,48 +117,64 @@ struct AssistantOrb: View {
     }
 }
 
-// MARK: - Entrypoint
+// MARK: - Entrypoints de Nutricion
 
-/// Puerta de entrada al asistente desde Nutricion.
+/// Contenido de una puerta de entrada de Nutricion: elemento a la izquierda,
+/// titulo + subtitulo, y flecha.
 ///
-/// Capsula oscura con el orbe a la izquierda, nombre + beneficio en el centro y
-/// una flecha a la derecha.
+/// Las dos puertas de la pestaña —el asistente y el registro de comida—
+/// comparten esta fila para que se lean como una familia y no diverjan cada vez
+/// que se toque una. Lo unico que cambia entre ellas es el elemento de la
+/// izquierda y el tratamiento del contorno, que es donde vive la jerarquia.
+struct NutritionEntryRow<Leading: View>: View {
+    let title: String
+    let detail: String
+    @ViewBuilder var leading: () -> Leading
+
+    var body: some View {
+        HStack(spacing: 13) {
+            leading()
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "arrow.up.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white.opacity(0.5))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Puerta de entrada al asistente.
 ///
-/// **Sobre convivir con `IntelligenceSurface`.** Esa superficie esta documentada
-/// como "una por pantalla" (`GlassComponents.swift`) y Nutricion ya la gasta en
-/// `recordFoodEntry`. Esta capsula es la excepcion deliberada: la regla existe
-/// para que dos elementos no compitan por el mismo tipo de atencion, y aqui las
-/// siluetas son distintas —capsula alargada con orbe frente a tarjeta
-/// rectangular con borde iridiscente—, asi que se leen como dos cosas y no como
-/// dos versiones de la misma.
+/// **Sobre `IntelligenceSurface` y su regla de "una por pantalla".** Esta
+/// capsula NO la usa: su luz esta contenida en el orbe. La superficie
+/// iridiscente de Nutricion sigue siendo una sola, la de `recordFoodEntry`, que
+/// es la que estima macros — justo el trabajo para el que se reservo.
 struct NutritionAssistantEntry: View {
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 13) {
+            NutritionEntryRow(
+                title: RecvelL10n.text("nutrition.plan.entry.title"),
+                detail: RecvelL10n.text("nutrition.plan.entry.detail")
+            ) {
                 AssistantOrb(diameter: 34)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(RecvelL10n.text("nutrition.plan.entry.title"))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(RecvelL10n.text("nutrition.plan.entry.detail"))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.55))
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.5))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(red: 0.075, green: 0.078, blue: 0.094), in: Capsule(style: .continuous))
             .overlay {
                 Capsule(style: .continuous)

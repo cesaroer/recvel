@@ -30804,6 +30804,38 @@
         }
       }
     },
+    "nutrition.record.card.action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open food log"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir registro"
+          }
+        }
+      }
+    },
+    "nutrition.record.card.detail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimate calories and macros from a photo, text, voice, or barcode."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estima calorías y macros con una foto, texto, voz o código de barras."
+          }
+        }
+      }
+    },
     "nutrition.record.detail": {
       "extractionState": "stale",
       "localizations": {
@@ -30834,6 +30866,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Foto, texto, voz o código de barras. Estimamos los macros y tú confirmas."
+          }
+        }
+      }
+    },
+    "nutrition.record.entryShort": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo, text, voice or barcode"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto, texto, voz o código de barras"
           }
         }
       }

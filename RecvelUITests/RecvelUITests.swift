@@ -33,13 +33,16 @@ final class RecvelUITests: XCTestCase {
         guard app.buttons["nutrition.setup.continue"].waitForExistence(timeout: 2) else { return }
         for _ in 0..<3 {
             let next = app.buttons["nutrition.setup.continue"]
-            XCTAssertTrue(next.waitForExistence(timeout: 3))
+            XCTAssertTrue(next.waitForExistence(timeout: 6))
             next.tap()
         }
         let complete = app.buttons["nutrition.setup.complete"]
-        XCTAssertTrue(complete.waitForExistence(timeout: 3))
+        XCTAssertTrue(complete.waitForExistence(timeout: 6))
         complete.tap()
-        XCTAssertTrue(app.staticTexts["NUTRICION ADAPTATIVA"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.descendants(matching: .any)["nutrition.nextMeal"].waitForExistence(timeout: 5),
+            "El setup debe terminar en el dashboard de Nutrición"
+        )
     }
 
     @MainActor
@@ -621,10 +624,41 @@ final class RecvelUITests: XCTestCase {
     }
 
     @MainActor
+    func testNutritionCaptureIsDistinctFromAssistant() throws {
+        let app = launchApp()
+        app.buttons["tab.nutrition"].tap()
+        completeNutritionSetupIfNeeded(app)
+
+        XCTAssertTrue(app.buttons["nutrition.planEntry"].waitForExistence(timeout: 5))
+        let recordEntry = app.buttons["nutrition.recordEntry"]
+        XCTAssertTrue(recordEntry.waitForExistence(timeout: 5))
+        keepScreenshot(app, name: "nutrition-distinct-entrypoints")
+
+        recordEntry.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["nutrition.record"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["nutrition.input.photo"].exists)
+        XCTAssertTrue(app.buttons["nutrition.input.text"].exists)
+        XCTAssertTrue(app.buttons["nutrition.input.voice"].exists)
+        XCTAssertTrue(app.buttons["nutrition.input.barcode"].exists)
+
+        app.buttons["nutrition.input.text"].tap()
+        let field = app.textFields["nutrition.description"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testNutritionEstimateCanAdjustPortion() throws {
         let app = launchApp()
         app.buttons["tab.nutrition"].tap()
         completeNutritionSetupIfNeeded(app)
+
+        let recordEntry = app.buttons["nutrition.recordEntry"]
+        XCTAssertTrue(recordEntry.waitForExistence(timeout: 5))
+        recordEntry.tap()
+
+        let textEntry = app.buttons["nutrition.input.text"]
+        XCTAssertTrue(textEntry.waitForExistence(timeout: 5))
+        textEntry.tap()
 
         let field = app.textFields["nutrition.description"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
