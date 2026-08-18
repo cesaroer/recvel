@@ -76,7 +76,11 @@ Los catálogos `Shared/Localizable.xcstrings` y `Shared/InfoPlist.xcstrings` cub
 
 ### Nutricion con IA
 
-Entrada por foto, texto o voz. El flujo futuro combina reconocimiento visual, descripcion del usuario y una base nutricional local para proponer alimentos, porciones, calorias y macros. La persona revisa y confirma antes de guardar. Una fotografia 2D no determina por si sola volumen, ingredientes ocultos o metodo de coccion.
+Entrada por foto, texto o voz. El registro de una comida combina reconocimiento visual, descripcion del usuario y una base nutricional local para proponer alimentos, porciones, calorias y macros. La persona revisa y confirma antes de guardar. Una fotografia 2D no determina por si sola volumen, ingredientes ocultos o metodo de coccion.
+
+El **Asistente de nutricion** ya es un flujo distinto del registro rapido. Construye un plan de hasta tres comidas con el perfil, lo consumido hoy y el contexto disponible de Recuperacion, Sueno y Carga. Tambien acepta una lista o foto de ingredientes, muestra cuales reconocio y cuales faltan, filtra alergias, alimentos no deseados y estilo de alimentacion, y entrega cantidades y preparacion desde recetas locales. Los totales se calculan sumando el catalogo; si no reconoce un alimento o no existe una receta compatible, no inventa una estimacion.
+
+Un plan pendiente nunca se registra como consumo. Desde el detalle, la persona confirma `Registrar como comida` para guardarlo en SwiftData o `Registrar y enviar a Apple Health` para solicitar autorizacion contextual y escribir energia, proteina, carbohidratos y grasa. La escritura es opcional, no cambia los permisos generales de lectura y conserva el registro local si HealthKit rechaza o falla la operacion.
 
 ### Estrategia local para detectar comida y calorias
 

@@ -147,8 +147,15 @@ struct FitnessView: View {
     @State private var progressionExercise: MetricSelection?
     @AppStorage("fitness.showCardio") private var showCardio = true
     @AppStorage("fitness.showStrength") private var showStrength = true
+    /// Mismo nombre que pide el onboarding y edita Ajustes.
+    @AppStorage("userName") private var userName = ""
+    /// Copia viva del plan para el hero y el resumen. Se recarga con
+    /// `routineRevision`, el mismo mecanismo que ya usa la agenda.
+    @State private var headerRoutine = WeeklyRoutineStore.load()
 
     private let engine = FitnessEngine()
+    private let heroGlassRadius: CGFloat = 28
+    private let heroCardHeight: CGFloat = 300
 
     private var fitnessHistory: [DailyHealthSnapshot] {
         let withoutToday = health.history.filter { !Calendar.current.isDate($0.date, inSameDayAs: health.snapshot.date) }
@@ -175,19 +182,12 @@ struct FitnessView: View {
                         // se muda aqui, y de paso desaparece el titulo duplicado:
                         // antes se veia "Entrenamiento" dos veces, el de la barra
                         // y este.
-                        HStack(alignment: .firstTextBaseline) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text("tab.training")
-                                    .font(.system(size: 34, weight: .bold))
-                                Text(RecvelL10n.text("training.header.subtitle"))
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 8)
-                            addMenu
-                        }
-                        .padding(.top, 4)
-                        .padding(.bottom, 2)
+                        greetingHeader
+                            .padding(.top, 4)
+                            .padding(.bottom, 2)
+
+                        entrance(0) { nextWorkoutHero }
+                        entrance(1) { weekSummarySection }
 
                         // Cada tarjeta aplica SU fase dentro de su propia
                         // propiedad (`.skeleton(healthPhase)` al final de cada
@@ -339,6 +339,7 @@ struct FitnessView: View {
                 .presentationDetents([.large])
                 .presentationCornerRadius(30)
             }
+            .onChange(of: routineRevision) { _, _ in headerRoutine = WeeklyRoutineStore.load() }
             .sheet(isPresented: $showRoutineOnboarding, onDismiss: { routineRevision += 1 }) {
                 WeeklyPlanOnboardingView(templates: templates)
                     .presentationDetents([.large])
@@ -350,6 +351,7 @@ struct FitnessView: View {
                     .presentationCornerRadius(30)
             }
             .task {
+                headerRoutine = WeeklyRoutineStore.load()
                 // Abrir la pestaña NO crea plantillas. Antes sembraba el
                 // catalogo entero (24) en la biblioteca del usuario; ahora solo
                 // se materializa el preset que el usuario elige, al guardarlo.
@@ -372,6 +374,412 @@ struct FitnessView: View {
                 reduceMotion ? nil : .spring(response: 0.55, dampingFraction: 0.86).delay(Double(index) * 0.04),
                 value: appeared
             )
+    }
+
+    // MARK: Cabecera con saludo, hero del proximo entrenamiento y resumen
+    // (linea visual de la referencia de agosto 2026: avatar + "Hey…", hero
+    // oscuro con badge de cuando toca y chips de ejercicios/minutos, y la
+    // tarjeta de la semana con estados por dia).
+
+    /// Saludo con avatar. No hay selector de foto en la app, asi que el avatar
+    /// son las iniciales del nombre del onboarding; sin nombre, un simbolo.
+    private var greetingHeader: some View {
+        HStack(spacing: 12) {
+            avatarCircle
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(
+                    userName.trimmingCharacters(in: .whitespaces).isEmpty
+                        ? RecvelL10n.text("training.hello.anonymous")
+                        : RecvelL10n.text("training.hello", values: ["name": firstName])
+                )
+                .font(.system(size: 26, weight: .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                Text(RecvelL10n.text("training.hello.subtitle"))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+            addMenu
+        }
+    }
+
+    /// Rotulo de seccion de la referencia: mayusculas pequeñas, gris, FUERA de
+    /// la tarjeta. No es el `RevelSectionHeader` (ese lleva titulo grande):
+    /// aqui el protagonista es la tarjeta y el rotulo solo la presenta.
+    private func heroSectionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 11, weight: .heavy))
+            .kerning(1.3)
+            .foregroundStyle(.secondary)
+            .padding(.leading, 4)
+    }
+
+    private var firstName: String {
+        userName.trimmingCharacters(in: .whitespaces)
+            .components(separatedBy: .whitespaces).first ?? userName
+    }
+
+    private var avatarCircle: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [ScoreKind.strain.color.opacity(0.85), ScoreKind.strain.color.opacity(0.45)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            if initials.isEmpty {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.92))
+            } else {
+                Text(initials)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: 44, height: 44)
+        .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+        .accessibilityHidden(true)
+    }
+
+    private var initials: String {
+        let parts = userName.trimmingCharacters(in: .whitespaces)
+            .components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty }
+        return parts.prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased()
+    }
+
+    /// Fechas de sesión para hero y resumen: workouts detallados, registros
+    /// manuales y días con minutos agregados (>=20) de Apple Health.
+    private var headerSessionDates: [Date] {
+        fitnessHistory.flatMap(\.workouts).map(\.startDate)
+            + manualActivities.map(\.startDate)
+            + fitnessHistory.filter { ($0.workoutMinutes ?? 0) >= 20 }.map(\.date)
+    }
+
+    /// Plantilla ejecutable de la proxima sesion, si existe.
+    private func heroTemplate(for session: NextTrainingSession) -> WorkoutTemplate? {
+        guard let id = headerRoutine.templateID(forWeekday: session.weekday) else { return nil }
+        return templates.first { $0.id == id }
+    }
+
+    @ViewBuilder
+    private var nextWorkoutHero: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            heroSectionLabel(RecvelL10n.text("training.next.eyebrow"))
+            nextWorkoutHeroCard
+        }
+        .background(alignment: .top) { trainingGlassHalo }
+    }
+
+    /// Halo maroon local para que el cristal del hero y el resumen refracten
+    /// algo distinto al teal global de `AppBackground` en producto.
+    private var trainingGlassHalo: some View {
+        RadialGradient(
+            colors: [
+                ScoreKind.strain.color.opacity(0.58),
+                ScoreKind.strain.color.opacity(0.20),
+                .clear
+            ],
+            center: UnitPoint(x: 0.52, y: 0.38),
+            startRadius: 8,
+            endRadius: 300
+        )
+        .frame(height: 560)
+        .offset(y: 28)
+        .blur(radius: 28)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var nextWorkoutHeroCard: some View {
+        if let session = TrainingHeaderEngine.nextSession(
+            routine: headerRoutine,
+            sessionDates: headerSessionDates
+        ) {
+            let template = heroTemplate(for: session)
+            let exercises = template.map { TemplateCodec.parse($0.exercisesText) } ?? []
+            let exerciseCount = exercises.count
+            let minutes = template?.durationMinutes ?? headerRoutine.minutes(forWeekday: session.weekday)
+            let artSymbol = heroArtSymbol(template: template, fallback: session.assignment.icon)
+
+            Button {
+                Haptics.soft()
+                if let template {
+                    activeSessionTemplate = template
+                }
+            } label: {
+                ZStack(alignment: .bottomLeading) {
+                    heroArt(symbol: artSymbol)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .top) {
+                            heroBadge(daysAway: session.daysAway)
+                            Spacer(minLength: 8)
+                            VStack(alignment: .trailing, spacing: 6) {
+                                if exerciseCount > 0 {
+                                    heroChip(
+                                        icon: "bolt.fill",
+                                        text: exerciseCount == 1
+                                            ? RecvelL10n.text("training.next.oneExercise")
+                                            : RecvelL10n.text("training.next.exerciseCount", values: ["count": "\(exerciseCount)"])
+                                    )
+                                }
+                                heroChip(icon: "clock.fill", text: "\(minutes) min")
+                            }
+                        }
+
+                        Spacer(minLength: 26)
+
+                        Text(template?.name ?? session.assignment.displayLabel)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.7)
+                        Text(RecvelL10n.text("training.next.weekdayLine", values: [
+                            "weekday": weekdayName(session.daysAway == 0
+                                ? Calendar.current.component(.weekday, from: .now)
+                                : session.weekday),
+                            "plan": headerRoutine.displayName
+                        ]))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.65))
+                        .padding(.top, 3)
+                    }
+                    .padding(18)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: heroCardHeight)
+                .livingGlass(cornerRadius: heroGlassRadius)
+                .contentShape(RoundedRectangle(cornerRadius: heroGlassRadius, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("fitness.nextWorkoutHero")
+        } else {
+            Button {
+                Haptics.soft()
+                showRoutineOnboarding = true
+            } label: {
+                ZStack(alignment: .bottomLeading) {
+                    heroArt(symbol: "figure.strengthtraining.traditional")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(RecvelL10n.text("Define tu semana de entrenamiento"))
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text(RecvelL10n.text("Elige objetivo, días y modalidades. Recvel crea un plan local y ajusta la sugerencia del día según tu Recuperación."))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: heroCardHeight)
+                .livingGlass(cornerRadius: heroGlassRadius)
+                .contentShape(RoundedRectangle(cornerRadius: heroGlassRadius, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("fitness.nextWorkoutHero")
+        }
+    }
+
+    /// Silueta del primer ejercicio de la plantilla, o el icono de tipo/sesion.
+    private func heroArtSymbol(template: WorkoutTemplate?, fallback: String) -> String {
+        guard let template else { return fallback }
+        if let first = TemplateCodec.parse(template.exercisesText).first {
+            return ExerciseLibrary.thumbnail(for: first.name).symbol
+        }
+        return template.kind.icon
+    }
+
+    private func heroArt(symbol: String) -> some View {
+        ZStack {
+            Image(systemName: symbol)
+                .font(.system(size: 168, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.white.opacity(0.90))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: -12)
+                .accessibilityHidden(true)
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.42),
+                    .init(color: Color.black.opacity(0.55), location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func heroBadge(daysAway: Int) -> some View {
+        let text: String = switch daysAway {
+        case 0: RecvelL10n.text("training.next.readyBadge.today")
+        case 1: RecvelL10n.text("training.next.tomorrow")
+        default: RecvelL10n.text("training.next.inDays", values: ["days": "\(daysAway)"])
+        }
+        return HStack(spacing: 5) {
+            Image(systemName: "calendar")
+                .font(.system(size: 10, weight: .bold))
+            Text(text)
+                .font(.system(size: 12, weight: .bold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(Color(red: 0.48, green: 0.32, blue: 0.95), in: Capsule(style: .continuous))
+    }
+
+    private func heroChip(icon: String, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(ScoreKind.energy.color)
+            Text(text)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.92))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .platformGlass(shape: .capsule)
+    }
+
+    private func weekdayName(_ weekday: Int) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = RecvelL10n.locale
+        let symbols = calendar.standaloneWeekdaySymbols
+        let name = symbols[(weekday - 1 + 7) % 7]
+        return name.prefix(1).uppercased() + name.dropFirst()
+    }
+
+    /// "Resumen de tu entrenamiento": la semana del plan, dia por dia.
+    @ViewBuilder
+    private var weekSummarySection: some View {
+        if headerRoutine.onboarded {
+            // Cuenta como sesion: workouts detallados, registros manuales y
+            // dias del historial con minutos agregados (>=20). Sin lo ultimo,
+            // un dia con "45 min de entrenamiento" en Apple Health pero sin
+            // `WorkoutSummary` detallado salia tachado en rojo.
+            let summary = TrainingHeaderEngine.weekSummary(
+                routine: headerRoutine,
+                sessionDates: headerSessionDates
+            )
+            VStack(alignment: .leading, spacing: 9) {
+                heroSectionLabel(RecvelL10n.text("training.summary.header"))
+
+                VStack(alignment: .leading, spacing: 15) {
+                    HStack {
+                        Text(RecvelL10n.text("training.summary.workouts"))
+                            .font(.system(size: 16, weight: .semibold))
+                        Spacer()
+                        // Abre la biblioteca de rutinas: es el "ver mas" natural
+                        // de una tarjeta que resume entrenamientos.
+                        Button {
+                            Haptics.soft()
+                            showTemplateManager = true
+                        } label: {
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 28, height: 28)
+                                .background(Color.white.opacity(0.06), in: Circle())
+                                .contentShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(RecvelL10n.text("Plantillas de entrenamiento"))
+                    }
+
+                    HStack(spacing: 0) {
+                        ForEach(Array(zip(summary.days.indices, summary.days)), id: \.0) { index, day in
+                            VStack(spacing: 7) {
+                                weekDayIcon(day.state)
+                                Text(RecvelL10n.mondayFirstWeekdayInitials[index])
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    Divider().overlay(Color.white.opacity(0.08))
+
+                    HStack(alignment: .firstTextBaseline) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text("\(summary.completed)")
+                                .font(.system(size: 30, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                            + Text("/\(summary.planned)")
+                                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.secondary)
+                            Text(RecvelL10n.text("training.summary.completedLabel"))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 12)
+                        if let percent = summary.onTrackPercent {
+                            // Caja oscura de dos lineas, como el "85% On Track"
+                            // de la referencia.
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("\(percent)%")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .monospacedDigit()
+                                    .foregroundStyle(percent >= 70 ? ScoreKind.recovery.color : ScoreKind.energy.color)
+                                Text(RecvelL10n.text("training.summary.onTrackShort"))
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+                            }
+                        } else {
+                            Text(RecvelL10n.text("training.summary.noneYet"))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                .padding(16)
+                .livingGlass(cornerRadius: 22, tint: ScoreKind.strain.color.opacity(0.35))
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("fitness.weekSummary")
+        }
+    }
+
+    @ViewBuilder
+    private func weekDayIcon(_ state: TrainingWeekDayState) -> some View {
+        switch state {
+        case .completed:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 21))
+                .foregroundStyle(ScoreKind.recovery.color)
+        case .missed:
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 21))
+                .foregroundStyle(ScoreKind.strain.color.opacity(0.9))
+        case .rest:
+            Image(systemName: "moon.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.white.opacity(0.28))
+                .frame(height: 22)
+        case .upcoming:
+            Circle()
+                .strokeBorder(Color.white.opacity(0.22), style: StrokeStyle(lineWidth: 1.6, dash: [3, 3]))
+                .frame(width: 19, height: 19)
+                .frame(height: 22)
+        }
     }
 
     private var addMenu: some View {

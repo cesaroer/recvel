@@ -3592,6 +3592,155 @@ final class EngineTests: XCTestCase {
         XCTAssertFalse(HealthDataProvider.showsSkeleton(trigger: implicit, hasData: true))
     }
 
+    // MARK: - Cabecera de Entrenamiento (hero + resumen semanal)
+
+    /// Miercoles 12 ago 2026 al mediodia LOCAL (America/Mexico_City, la zona
+    /// de la maquina de CI/desarrollo) como "hoy" sintetico. Weekday 4.
+    private var trainingNow: Date { Date(timeIntervalSince1970: 1_786_557_600) }
+
+    private func routineMonWedFri() -> WeeklyRoutine {
+        var routine = WeeklyRoutine()
+        routine.onboarded = true
+        // 2=lunes, 4=miercoles, 6=viernes
+        routine.days = [2: .cardio("Correr"), 4: .mobility, 6: .cardio("Correr")]
+        return routine
+    }
+
+    func testNextTrainingSessionFindsTodayFirstThenWraps() {
+        let calendar = Calendar(identifier: .gregorian)
+        var routine = routineMonWedFri()
+
+        // Hoy (miercoles) hay sesion: daysAway 0.
+        let today = TrainingHeaderEngine.nextSession(routine: routine, now: trainingNow, calendar: calendar)
+        XCTAssertEqual(today?.daysAway, 0)
+        XCTAssertEqual(today?.weekday, 4)
+
+        // Sin sesion planeada hoy: se ofrece la de viernes como HOY (daysAway 0)
+        // hasta que haya un registro. El weekday sigue siendo el del hueco del plan.
+        routine.days[4] = DayAssignment.rest
+        let friday = TrainingHeaderEngine.nextSession(routine: routine, now: trainingNow, calendar: calendar)
+        XCTAssertEqual(friday?.daysAway, 0)
+        XCTAssertEqual(friday?.weekday, 6)
+
+        // Plan sin configurar: no se inventa una proxima sesion.
+        routine.onboarded = false
+        XCTAssertNil(TrainingHeaderEngine.nextSession(routine: routine, now: trainingNow, calendar: calendar))
+    }
+
+    func testNextTrainingSessionStaysOnTodayUntilCompleted() {
+        let calendar = Calendar(identifier: .gregorian)
+        let routine = routineMonWedFri()
+        let monday = calendar.date(byAdding: .day, value: -2, to: trainingNow)!
+
+        // Sesion de otro dia no adelanta el hero: hoy sigue pendiente.
+        let stillToday = TrainingHeaderEngine.nextSession(
+            routine: routine,
+            sessionDates: [monday],
+            now: trainingNow,
+            calendar: calendar
+        )
+        XCTAssertEqual(stillToday?.daysAway, 0)
+        XCTAssertEqual(stillToday?.weekday, 4)
+
+        // Recién cuando hay registro HOY pasa al siguiente día de plan (viernes).
+        let afterToday = TrainingHeaderEngine.nextSession(
+            routine: routine,
+            sessionDates: [monday, trainingNow],
+            now: trainingNow,
+            calendar: calendar
+        )
+        XCTAssertEqual(afterToday?.daysAway, 2)
+        XCTAssertEqual(afterToday?.weekday, 6)
+    }
+
+    func testNextTrainingSessionRestDayIsOfferedAsTodayUntilTrained() {
+        let calendar = Calendar(identifier: .gregorian)
+        let routine = routineMonWedFri()
+        // Jueves: descanso en lun/mie/vie. El viernes se ofrece como hoy;
+        // un registro en el día de descanso no adelanta el badge.
+        let thursday = calendar.date(byAdding: .day, value: 1, to: trainingNow)!
+
+        let offeredToday = TrainingHeaderEngine.nextSession(
+            routine: routine,
+            sessionDates: [],
+            now: thursday,
+            calendar: calendar
+        )
+        XCTAssertEqual(offeredToday?.weekday, 6)
+        XCTAssertEqual(offeredToday?.daysAway, 0)
+
+        // Entrenar en un día de descanso no adelanta el hero: sigue siendo el
+        // siguiente hueco del plan, ofrecido como hoy.
+        let afterUnplanned = TrainingHeaderEngine.nextSession(
+            routine: routine,
+            sessionDates: [thursday],
+            now: thursday,
+            calendar: calendar
+        )
+        XCTAssertEqual(afterUnplanned?.weekday, 6)
+        XCTAssertEqual(afterUnplanned?.daysAway, 0)
+    }
+
+    func testTrainingWeekSummaryStatesAndOnTrack() {
+        let calendar = Calendar(identifier: .gregorian)
+        let routine = routineMonWedFri()
+        // Sesion registrada SOLO el lunes de esta semana (10 ago).
+        let monday = calendar.date(byAdding: .day, value: -2, to: trainingNow)!
+        let summary = TrainingHeaderEngine.weekSummary(
+            routine: routine,
+            sessionDates: [monday],
+            now: trainingNow,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(summary.days.count, 7)
+        // Orden lunes-primero: lun=completado, mar=descanso, mie(hoy, sin
+        // sesion aun)=pendiente, jue=descanso, vie=pendiente...
+        XCTAssertEqual(summary.days[0].state, .completed)
+        XCTAssertEqual(summary.days[1].state, .rest)
+        XCTAssertEqual(summary.days[2].state, .upcoming,
+                       "hoy sin sesion todavia NO es incumplido")
+        XCTAssertEqual(summary.days[4].state, .upcoming)
+
+        XCTAssertEqual(summary.planned, 3)
+        XCTAssertEqual(summary.completed, 1)
+        // Hasta hoy solo ha tocado el lunes (hoy no cuenta hasta que termine
+        // o se entrene): 1 de 1.
+        XCTAssertEqual(summary.onTrackPercent, 100)
+    }
+
+    func testTrainingWeekSummaryMarksMissedDays() {
+        let calendar = Calendar(identifier: .gregorian)
+        let routine = routineMonWedFri()
+        // Ninguna sesion en la semana: el lunes ya paso -> incumplido; hoy
+        // (miercoles) sigue pendiente.
+        let summary = TrainingHeaderEngine.weekSummary(
+            routine: routine,
+            sessionDates: [],
+            now: trainingNow,
+            calendar: calendar
+        )
+        XCTAssertEqual(summary.days[0].state, .missed)
+        XCTAssertEqual(summary.days[2].state, .upcoming)
+        XCTAssertEqual(summary.onTrackPercent, 0)
+    }
+
+    func testTrainingWeekSummarySessionOnRestDayStaysRest() {
+        let calendar = Calendar(identifier: .gregorian)
+        let routine = routineMonWedFri()
+        // Entreno el martes (descanso): el dia sigue siendo descanso y no
+        // infla el conteo de completados.
+        let tuesday = calendar.date(byAdding: .day, value: -1, to: trainingNow)!
+        let summary = TrainingHeaderEngine.weekSummary(
+            routine: routine,
+            sessionDates: [tuesday],
+            now: trainingNow,
+            calendar: calendar
+        )
+        XCTAssertEqual(summary.days[1].state, .rest)
+        XCTAssertEqual(summary.completed, 0)
+    }
+
     func testTemperatureFactorAppearsInRecoveryDrivers() {
         let calendar = Calendar(identifier: .gregorian)
         let now = Date(timeIntervalSince1970: 1_784_000_000)

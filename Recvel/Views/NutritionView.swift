@@ -52,6 +52,7 @@ struct NutritionView: View {
             }
             .navigationDestination(item: $planRequest) { _ in
                 NutritionAssistantView()
+                    .hidesTabBar()
             }
         }
     }
@@ -641,7 +642,7 @@ private struct MacroRings: View {
     }
 }
 
-private struct NutritionFlowLayout: Layout {
+struct NutritionFlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

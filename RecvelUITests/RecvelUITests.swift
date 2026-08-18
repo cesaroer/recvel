@@ -425,7 +425,9 @@ final class RecvelUITests: XCTestCase {
         keepScreenshot(app, name: "journal-bevel-recvel")
 
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        // La tab ya no tiene barra de navegacion (cabecera propia con saludo
+        // y menu "+"): el ancla estable es el boton de agregar de la cabecera.
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["fitness.calendar"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["fitness.workoutList"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["fitness.cardioLoad"].exists)
@@ -442,10 +444,11 @@ final class RecvelUITests: XCTestCase {
     func testFitnessNativeMenuAndMeasuredDetailOpen() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
 
+        // Sin barra de navegacion en esta tab: el "+" de la cabecera es la
+        // señal de que la pantalla cargo.
         let addMenu = app.buttons["fitness.add"]
-        XCTAssertTrue(addMenu.waitForExistence(timeout: 3))
+        XCTAssertTrue(addMenu.waitForExistence(timeout: 5))
         app.coordinate(withNormalizedOffset: .zero)
             .withOffset(CGVector(dx: addMenu.frame.midX, dy: addMenu.frame.midY))
             .tap()

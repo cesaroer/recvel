@@ -192,12 +192,11 @@ struct NutritionAssistantEntry: View {
 
 // MARK: - Pantalla
 
-/// Bienvenida del asistente de nutricion.
+/// Recorrido breve por las capacidades del asistente de nutricion.
 ///
-/// **Andamiaje visual.** Esta pasada valida la apariencia: el boton de abajo NO
-/// hace nada todavia. Se deja vivo y no deshabilitado a proposito — un boton
-/// apagado se lee como "algo falla", y lo que se esta revisando aqui es la
-/// intencion del diseño. No debe llegar asi a una build de usuarios.
+/// El contenido es una presentacion del producto, no un segundo espacio de
+/// trabajo. Al terminar, el usuario vuelve al plan de nutricion desde el que
+/// entro. Cada pagina describe una capacidad trazable del flujo local.
 ///
 /// **Por que fondo claro en una app oscura.** Es una decision explicita para
 /// esta iteracion; el modo oscuro viene despues. Conseguirlo pide DOS cosas, y
@@ -212,8 +211,58 @@ struct NutritionAssistantView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var appeared = false
+    @State private var showMethodology = false
+    @State private var selectedPage = 0
+    @State private var carouselContentOpacity = 1.0
+    @State private var isChangingPage = false
+    @State private var showPlanFlow = false
+
+    private struct Slide: Identifiable {
+        let id: Int
+        let symbol: String
+        let titleKey: String
+        let detailKey: String
+    }
+
+    private let slides: [Slide] = [
+        Slide(
+            id: 0,
+            symbol: "calendar",
+            titleKey: "nutrition.assistant.slide.plan.title",
+            detailKey: "nutrition.assistant.slide.plan.detail"
+        ),
+        Slide(
+            id: 1,
+            symbol: "text.viewfinder",
+            titleKey: "nutrition.assistant.slide.ingredients.title",
+            detailKey: "nutrition.assistant.slide.ingredients.detail"
+        ),
+        Slide(
+            id: 2,
+            symbol: "heart.text.square.fill",
+            titleKey: "nutrition.assistant.slide.health.title",
+            detailKey: "nutrition.assistant.slide.health.detail"
+        ),
+        Slide(
+            id: 3,
+            symbol: "lock.fill",
+            titleKey: "nutrition.assistant.slide.privacy.title",
+            detailKey: "nutrition.assistant.slide.privacy.detail"
+        )
+    ]
 
     var body: some View {
+        Group {
+            if showPlanFlow {
+                NutritionPlanFlowView()
+            } else {
+                intro
+            }
+        }
+        .hidesTabBar()
+    }
+
+    private var intro: some View {
         ZStack {
             background
 
@@ -222,28 +271,8 @@ struct NutritionAssistantView: View {
 
                 Spacer(minLength: 12)
 
-                VStack(spacing: 22) {
-                    AssistantOrb(diameter: 150)
-                        .scaleEffect(appeared || reduceMotion ? 1 : 0.86)
-                        .opacity(appeared ? 1 : 0)
-
-                    VStack(spacing: 7) {
-                        Text(RecvelL10n.text("nutrition.assistant.name"))
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(Self.ink)
-
-                        Text(RecvelL10n.text("nutrition.assistant.descriptor"))
-                            .font(.system(size: 14))
-                            .foregroundStyle(Self.inkSoft)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 34)
-                    }
+                assistantCarousel
                     .opacity(appeared ? 1 : 0)
-
-                    pulseIndicator
-                        .opacity(appeared ? 1 : 0)
-                }
 
                 Spacer(minLength: 12)
 
@@ -263,14 +292,18 @@ struct NutritionAssistantView: View {
         // desaparece solo cuando esta vista tenga modo oscuro.
         .statusBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
         .onAppear {
             guard !reduceMotion else { appeared = true; return }
             withAnimation(.spring(response: 0.75, dampingFraction: 0.85).delay(0.06)) {
                 appeared = true
             }
         }
-
+        .alert(RecvelL10n.text("nutrition.assistant.method.title"), isPresented: $showMethodology) {
+            Button(RecvelL10n.text("common.close"), role: .cancel) {}
+        } message: {
+            Text(RecvelL10n.text("nutrition.assistant.method.summary"))
+        }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("nutrition.assistant")
     }
 
@@ -278,7 +311,13 @@ struct NutritionAssistantView: View {
 
     private static let ink = Color(red: 0.09, green: 0.09, blue: 0.13)
     private static let inkSoft = Color(red: 0.42, green: 0.43, blue: 0.50)
+    private static let accent = Color(red: 0.38, green: 0.34, blue: 0.84)
     private static let control = Color.black.opacity(0.05)
+    /// El orbe ya aporta movimiento continuo. El carrusel solo disuelve su
+    /// contenido para no competir con el ritmo sereno de la pantalla.
+    private static let fadeOut = Animation.easeOut(duration: 0.20)
+    private static let fadeIn = Animation.easeIn(duration: 0.34)
+    private static let indicatorFade = Animation.easeInOut(duration: 0.32)
 
     /// Blanco que vira a lavanda muy suave hacia abajo, como la referencia.
     private var background: some View {
@@ -306,9 +345,10 @@ struct NutritionAssistantView: View {
                     dismiss()
                 }
                 Spacer()
-                // Informativo: explicara como se arma el plan. Inerte por ahora,
-                // igual que el boton principal.
-                circleButton(icon: "info", label: RecvelL10n.text("nutrition.assistant.info")) {}
+                circleButton(icon: "info", label: RecvelL10n.text("nutrition.assistant.info")) {
+                    Haptics.soft()
+                    showMethodology = true
+                }
             }
         }
         .padding(.horizontal, 18)
@@ -329,34 +369,152 @@ struct NutritionAssistantView: View {
         .accessibilityLabel(label)
     }
 
-    /// Guion animado de la referencia: tres puntos que respiran junto al trazo.
-    /// Es decorativo; no comunica ningun estado.
-    private var pulseIndicator: some View {
+    private var assistantCarousel: some View {
+        VStack(spacing: 18) {
+            ZStack(alignment: .bottomTrailing) {
+                AssistantOrb(diameter: 150)
+
+                ZStack {
+                    ForEach(slides) { slide in
+                        if slide.id == selectedPage {
+                            Image(systemName: slide.symbol)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Self.ink.opacity(0.78))
+                        }
+                    }
+                }
+                .opacity(carouselContentOpacity)
+                .frame(width: 38, height: 38)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.65), lineWidth: 1))
+                .shadow(color: Self.ink.opacity(0.12), radius: 12, y: 5)
+                .offset(x: -2, y: -2)
+            }
+            .scaleEffect(appeared || reduceMotion ? 1 : 0.86)
+
+            ZStack {
+                ForEach(slides) { slide in
+                    if slide.id == selectedPage {
+                        slideCopy(slide)
+                    }
+                }
+            }
+            .opacity(carouselContentOpacity)
+            .frame(maxWidth: .infinity)
+            .frame(height: 96, alignment: .top)
+
+            pageIndicator
+        }
+        .contentShape(Rectangle())
+        .gesture(carouselGesture)
+        .task(id: selectedPage) {
+            guard !reduceMotion else { return }
+            do {
+                try await Task.sleep(for: .seconds(5))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            movePage(by: 1)
+        }
+        .accessibilityIdentifier("nutrition.assistant.slide.\(selectedPage)")
+    }
+
+    private func slideCopy(_ slide: Slide) -> some View {
+        VStack(spacing: 7) {
+            Text(RecvelL10n.text("nutrition.assistant.name"))
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Self.accent.opacity(0.9))
+                .textCase(.uppercase)
+
+            Text(RecvelL10n.text(slide.titleKey))
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Self.ink)
+
+            Text(RecvelL10n.text(slide.detailKey))
+                .font(.system(size: 14))
+                .foregroundStyle(Self.inkSoft)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 28)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var carouselGesture: some Gesture {
+        DragGesture(minimumDistance: 16)
+            .onEnded { value in
+                guard abs(value.translation.width) > 42 else { return }
+                Haptics.soft()
+                movePage(by: value.translation.width < 0 ? 1 : -1)
+            }
+    }
+
+    private func movePage(by delta: Int) {
+        guard !isChangingPage else { return }
+        let nextPage = (selectedPage + delta + slides.count) % slides.count
+
+        guard !reduceMotion else {
+            selectedPage = nextPage
+            return
+        }
+
+        isChangingPage = true
+        withAnimation(Self.fadeOut) {
+            carouselContentOpacity = 0
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.20))
+            selectedPage = nextPage
+
+            withAnimation(Self.fadeIn) {
+                carouselContentOpacity = 1
+            }
+
+            try? await Task.sleep(for: .seconds(0.34))
+            isChangingPage = false
+        }
+    }
+
+    private var pageIndicator: some View {
         TimelineView(.animation(minimumInterval: 1 / 12, paused: reduceMotion)) { timeline in
             let phase = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 6) {
-                Capsule()
-                    .fill(Self.ink.opacity(0.7))
-                    .frame(width: 16, height: 3)
-                ForEach(0..<3, id: \.self) { index in
-                    Circle()
-                        .fill(Self.inkSoft.opacity(0.45 + 0.35 * pulse(phase: phase, index: index)))
-                        .frame(width: 4, height: 4)
+            HStack(spacing: 7) {
+                ForEach(slides) { slide in
+                    Button {
+                        guard slide.id != selectedPage else { return }
+                        Haptics.soft()
+                        let delta = slide.id - selectedPage
+                        movePage(by: delta)
+                    } label: {
+                        Capsule(style: .continuous)
+                            .fill(indicatorColor(for: slide.id, phase: phase))
+                            .frame(width: slide.id == selectedPage ? 18 : 5, height: 5)
+                            .contentShape(Rectangle().inset(by: -8))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(RecvelL10n.text(slide.titleKey))
+                    .accessibilityAddTraits(slide.id == selectedPage ? .isSelected : [])
                 }
             }
         }
-        .accessibilityHidden(true)
+        .animation(reduceMotion ? nil : Self.indicatorFade, value: selectedPage)
+        .accessibilityIdentifier("nutrition.assistant.pages")
     }
 
-    private func pulse(phase: Double, index: Int) -> Double {
-        (sin(phase * 2.2 - Double(index) * 0.7) + 1) / 2
+    private func indicatorColor(for page: Int, phase: Double) -> Color {
+        guard page != selectedPage else { return Self.ink.opacity(0.78) }
+        let pulse = (sin(phase * 2.2 - Double(page) * 0.7) + 1) / 2
+        return Self.inkSoft.opacity(0.24 + 0.18 * pulse)
     }
 
     private var startButton: some View {
         Button {
-            // Sin accion todavia: ver la nota de andamiaje en la cabecera del
-            // tipo. Se conectara al motor de plan.
-            Haptics.soft()
+            Haptics.medium()
+            withAnimation(reduceMotion ? nil : .snappy) { showPlanFlow = true }
         } label: {
             Text(RecvelL10n.text("nutrition.assistant.start"))
                 .font(.system(size: 16, weight: .semibold))

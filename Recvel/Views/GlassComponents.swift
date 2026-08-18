@@ -164,6 +164,23 @@ private struct LiquidGlassSurface: ViewModifier {
     }
 
     private func onboardingSurface(content: Content) -> some View {
+        content.modifier(LivingGlassReplica(cornerRadius: cornerRadius, tint: tint))
+    }
+}
+
+/// Replica 1:1 del cristal (sheen, especular, sombra interior, hairline).
+/// No pasa por `productSurface`: Fitness usa `.product`, y ahi `.liquidGlass()`
+/// aplana a ultraThinMaterial. Este modificador ignora ese aplanado.
+private struct LivingGlassReplica: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    let cornerRadius: CGFloat
+    var tint: Color?
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
+
+    func body(content: Content) -> some View {
         content
             .background {
                 if reduceTransparency {
@@ -171,7 +188,6 @@ private struct LiquidGlassSurface: ViewModifier {
                 } else {
                     ZStack {
                         shape.fill(.ultraThinMaterial)
-                        // Gradiente de vidrio: mas claro arriba (luz), mas oscuro abajo
                         shape.fill(
                             LinearGradient(
                                 colors: [Color.white.opacity(0.09), Color.white.opacity(0.015)],
@@ -185,7 +201,6 @@ private struct LiquidGlassSurface: ViewModifier {
                     }
                 }
             }
-            // Sheen diagonal (reflejo de luz sobre el cristal)
             .overlay {
                 if !reduceTransparency {
                     shape
@@ -204,7 +219,6 @@ private struct LiquidGlassSurface: ViewModifier {
                         .allowsHitTesting(false)
                 }
             }
-            // Highlight especular en el borde superior
             .overlay {
                 shape
                     .stroke(
@@ -222,7 +236,6 @@ private struct LiquidGlassSurface: ViewModifier {
                     .blendMode(.screen)
                     .allowsHitTesting(false)
             }
-            // Sombra interior inferior (profundidad del cristal)
             .overlay {
                 shape
                     .stroke(Color.black.opacity(0.40), lineWidth: 5)
@@ -239,7 +252,6 @@ private struct LiquidGlassSurface: ViewModifier {
                     .blendMode(.multiply)
                     .allowsHitTesting(false)
             }
-            // Borde hairline continuo
             .overlay {
                 shape.strokeBorder(
                     LinearGradient(
@@ -256,32 +268,80 @@ private struct LiquidGlassSurface: ViewModifier {
     }
 }
 
+private struct LivingGlass: ViewModifier {
+    let cornerRadius: CGFloat
+    var tint: Color?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+#if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            content
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .glassEffect(
+                    .regular.tint(tint),
+                    in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                )
+        } else {
+            content.modifier(LivingGlassReplica(cornerRadius: cornerRadius, tint: tint))
+        }
+#else
+        content.modifier(LivingGlassReplica(cornerRadius: cornerRadius, tint: tint))
+#endif
+    }
+}
+
 extension View {
     func liquidGlass(cornerRadius: CGFloat = 8, tint: Color? = nil) -> some View {
         modifier(LiquidGlassSurface(cornerRadius: cornerRadius, tint: tint))
+    }
+
+    /// Liquid Glass 1:1. En iOS 26 usa `glassEffect` nativo; en 17/18 la replica
+    /// completa (sheen/especular), sin el aplanado de `.liquidGlass()` en product.
+    func livingGlass(cornerRadius: CGFloat = 22, tint: Color? = nil) -> some View {
+        modifier(LivingGlass(cornerRadius: cornerRadius, tint: tint))
     }
 
     @ViewBuilder
     func platformGlass(
         tint: Color? = nil,
         interactive: Bool = false,
-        shape: PlatformGlassShape = .rounded
+        shape: PlatformGlassShape = .rounded,
+        cornerRadius: CGFloat? = nil
+    ) -> some View {
+        platformGlassBody(
+            tint: tint,
+            interactive: interactive,
+            shape: shape,
+            radius: cornerRadius ?? shape.fallbackRadius
+        )
+    }
+
+    @ViewBuilder
+    private func platformGlassBody(
+        tint: Color?,
+        interactive: Bool,
+        shape: PlatformGlassShape,
+        radius: CGFloat
     ) -> some View {
 #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
             switch shape {
             case .rounded:
-                glassEffect(.regular.tint(tint).interactive(interactive), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                glassEffect(
+                    .regular.tint(tint).interactive(interactive),
+                    in: RoundedRectangle(cornerRadius: radius, style: .continuous)
+                )
             case .capsule:
                 glassEffect(.regular.tint(tint).interactive(interactive), in: Capsule())
             case .circle:
                 glassEffect(.regular.tint(tint).interactive(interactive), in: Circle())
             }
         } else {
-            liquidGlass(cornerRadius: shape.fallbackRadius, tint: tint)
+            liquidGlass(cornerRadius: radius, tint: tint)
         }
 #else
-        liquidGlass(cornerRadius: shape.fallbackRadius, tint: tint)
+        liquidGlass(cornerRadius: radius, tint: tint)
 #endif
     }
 

@@ -3,28 +3,29 @@ import SwiftData
 
 enum LocalStore {
     @MainActor
+    @discardableResult
     static func save(
         _ estimate: NutritionEstimate,
         mealType: MealType? = nil,
         notes: String? = nil,
         in context: ModelContext
-    ) {
-        context.insert(
-            MealLog(
-                title: estimate.title,
-                calories: estimate.calories,
-                protein: estimate.protein,
-                carbohydrates: estimate.carbohydrates,
-                fat: estimate.fat,
-                source: estimate.source,
-                mealType: mealType?.rawValue,
-                confidence: estimate.confidence.rawValue,
-                kcalLower: estimate.kcalLower,
-                kcalUpper: estimate.kcalUpper,
-                notes: notes
-            )
+    ) -> MealLog {
+        let meal = MealLog(
+            title: estimate.title,
+            calories: estimate.calories,
+            protein: estimate.protein,
+            carbohydrates: estimate.carbohydrates,
+            fat: estimate.fat,
+            source: estimate.source,
+            mealType: mealType?.rawValue,
+            confidence: estimate.confidence.rawValue,
+            kcalLower: estimate.kcalLower,
+            kcalUpper: estimate.kcalUpper,
+            notes: notes
         )
+        context.insert(meal)
         try? context.save()
+        return meal
     }
 
     @MainActor

@@ -334,7 +334,7 @@ struct GeminiNutritionAIClient: ExternalNutritionAIClient {
     }
 }
 
-private struct GeminiEnvelope: Decodable {
+struct GeminiEnvelope: Decodable {
     let candidates: [Candidate]
     struct Candidate: Decodable { let content: Content }
     struct Content: Decodable { let parts: [Part] }

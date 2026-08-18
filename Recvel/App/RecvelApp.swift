@@ -40,7 +40,8 @@ struct RecvelApp: App {
                 BiomarkerSample.self,
                 BioAgeReportRecord.self,
                 ExerciseSetLog.self,
-                TrainingReadinessCheckIn.self
+                TrainingReadinessCheckIn.self,
+                GeneratedPlanRecord.self
             ])
             return try ModelContainer(
                 for: schema,
