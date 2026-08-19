@@ -443,16 +443,32 @@ struct GeminiPlanService {
 
     // MARK: Generacion del plan
 
+    /// `feedback` + `previousPlan` son el modo "ajustar": el usuario pide un
+    /// cambio sobre un plan que ya recibio, y el plan anterior viaja completo
+    /// en el prompt para que "quita la cena pesada" tenga referente. Sin
+    /// feedback es una generacion normal.
     func generatePlan(
         apiKey: String,
         model: String,
         profile: NutritionProfile,
         answers: NutritionPlanAnswers,
-        health: PlanHealthContext
+        health: PlanHealthContext,
+        feedback: String? = nil,
+        previousPlan: GeneratedNutritionPlan? = nil
     ) async throws -> GeneratedNutritionPlan {
+        let previousJSON = previousPlan
+            .flatMap { try? JSONEncoder().encode($0) }
+            .flatMap { String(data: $0, encoding: .utf8) }
+        let prompt = planPrompt(
+            profile: profile,
+            answers: answers,
+            health: health,
+            feedback: feedback,
+            previousPlanJSON: previousJSON
+        )
         let body: [String: Any] = [
             "system_instruction": ["parts": [["text": systemInstruction()]]],
-            "contents": [["role": "user", "parts": [["text": planPrompt(profile: profile, answers: answers, health: health)]]]],
+            "contents": [["role": "user", "parts": [["text": prompt]]]],
             "generationConfig": [
                 "responseMimeType": "application/json",
                 "temperature": 0.4
@@ -597,10 +613,31 @@ struct GeminiPlanService {
         """
     }
 
+    /// Bloque de ajuste del prompt. Interno (no private) para poder verificar
+    /// en tests que el feedback y el plan anterior llegan al modelo.
+    static func adjustmentPromptSection(feedback: String?, previousPlanJSON: String?) -> [String] {
+        guard let feedback, !feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return []
+        }
+        var lines = [
+            "",
+            "AJUSTE SOLICITADO POR EL USUARIO:",
+            "- Ya recibio el plan anterior (JSON al final de esta seccion) y pide: \"\(feedback)\"",
+            "- Genera un plan COMPLETO nuevo aplicando ese cambio y conservando todo lo que no lo contradiga.",
+            "- Manten las reglas cientificas y de seguridad: si el ajuste pedido las viola, acercate lo maximo posible y explica el limite en `precautions`."
+        ]
+        if let previousPlanJSON {
+            lines.append("PLAN ANTERIOR: \(previousPlanJSON)")
+        }
+        return lines
+    }
+
     private func planPrompt(
         profile: NutritionProfile,
         answers: NutritionPlanAnswers,
-        health: PlanHealthContext
+        health: PlanHealthContext,
+        feedback: String? = nil,
+        previousPlanJSON: String? = nil
     ) -> String {
         let age = Calendar.current.dateComponents([.year], from: profile.birthDate, to: .now).year ?? 30
         let planDays = max(1, min(answers.planDays, 7))
@@ -661,6 +698,11 @@ struct GeminiPlanService {
         if !activeBarriers.isEmpty {
             lines.append("- Barreras de adherencia (dato previo): \(describe(answers.barriers))")
         }
+
+        lines.append(contentsOf: Self.adjustmentPromptSection(
+            feedback: feedback,
+            previousPlanJSON: previousPlanJSON
+        ))
 
         let language = RecvelL10n.locale.language.languageCode?.identifier ?? "es"
         lines.append("")

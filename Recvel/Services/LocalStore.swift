@@ -97,6 +97,15 @@ enum LocalStore {
         if let bioReports = try? context.fetch(FetchDescriptor<BioAgeReportRecord>()) {
             bioReports.forEach(context.delete)
         }
+        if let planRecords = try? context.fetch(FetchDescriptor<GeneratedPlanRecord>()) {
+            planRecords.forEach(context.delete)
+        }
+        if let setLogs = try? context.fetch(FetchDescriptor<ExerciseSetLog>()) {
+            setLogs.forEach(context.delete)
+        }
+        if let readinessCheckIns = try? context.fetch(FetchDescriptor<TrainingReadinessCheckIn>()) {
+            readinessCheckIns.forEach(context.delete)
+        }
         try? context.save()
     }
 

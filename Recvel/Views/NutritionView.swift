@@ -11,6 +11,20 @@ struct NutritionView: View {
     @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var profiles: [NutritionProfile]
     @Query(sort: \DailyScoreRecord.date, order: .reverse) private var scoreRecords: [DailyScoreRecord]
+    // Filtrado en memoria y no con #Predicate en el @Query: la variante con
+    // predicado + sort por opcional crasheaba al destruirse la vista
+    // (swift_release sobre 0x9 en "outlined destroy of NutritionView"), y los
+    // registros de planes se cuentan con una mano.
+    @Query(sort: \GeneratedPlanRecord.createdAt, order: .reverse)
+    private var planRecords: [GeneratedPlanRecord]
+
+    /// Solo planes guardados explicitamente: los borradores (savedAt nil) son
+    /// asunto interno del flujo del asistente y aqui no existen.
+    private var savedPlans: [GeneratedPlanRecord] {
+        planRecords
+            .filter(\.isSaved)
+            .sorted { ($0.savedAt ?? .distantPast) > ($1.savedAt ?? .distantPast) }
+    }
 
     @State private var editingMeal: MealLog?
     /// Peticion abierta de la pantalla de registro (vacia o con texto reutilizado).
@@ -18,6 +32,11 @@ struct NutritionView: View {
     /// Peticion abierta del asistente de plan.
     @State private var planRequest: NutritionPlanRequest?
     @State private var completedSetupProfile: NutritionProfile?
+    /// Plan guardado abierto como visor (directo al resultado, sin intro).
+    @State private var openPlanRecord: GeneratedPlanRecord?
+    @State private var planToRename: GeneratedPlanRecord?
+    @State private var renameInput = ""
+    @State private var planToDelete: GeneratedPlanRecord?
 
     private let planner = NutritionPlanEngine()
 
@@ -54,6 +73,13 @@ struct NutritionView: View {
                 NutritionAssistantView()
                     .hidesTabBar()
             }
+            // Reabrir un guardado NO pasa por el carrusel de intro del
+            // asistente: eso presenta la feature, y un plan existente ya la
+            // conoce. Directo al resultado con su chat.
+            .navigationDestination(item: $openPlanRecord) { record in
+                NutritionPlanFlowView(record: record)
+                    .hidesTabBar()
+            }
         }
     }
 
@@ -75,6 +101,11 @@ struct NutritionView: View {
                     //    37 g de proteina") no significa nada hasta haber
                     //    visto los anillos.
                     // 4-5. Mañana e historial: futuro y pasado, menos urgentes.
+                    //    Entre ambos van los planes guardados del asistente:
+                    //    son guia futura (pareja natural de "mañana") y tras
+                    //    las 8 filas de historial quedarian enterrados. La
+                    //    seccion solo existe si hay guardados: la capsula del
+                    //    asistente ya publicita la feature.
                     //
                     // El asistente va ENCIMA de los anillos sin romper ese
                     // orden: es una capsula delgada, no una tarjeta, asi que no
@@ -90,6 +121,7 @@ struct NutritionView: View {
                     recordFoodEntry
                     nextMealCard(profile: profile)
                     tomorrowPlan(profile: profile)
+                    savedPlansSection
                     recentMeals
                 }
                 .padding(.horizontal, 16)
@@ -100,6 +132,76 @@ struct NutritionView: View {
             .trackTabBarScroll()
         }
         .toolbar(.hidden, for: .navigationBar)
+        .alert(
+            RecvelL10n.text("nutrition.savedPlans.rename"),
+            isPresented: Binding(
+                get: { planToRename != nil },
+                set: { if !$0 { planToRename = nil } }
+            )
+        ) {
+            TextField(RecvelL10n.text("planflow.save.namePlaceholder"), text: $renameInput)
+            Button(RecvelL10n.text("planflow.save.confirm")) {
+                guard let record = planToRename else { return }
+                Haptics.success()
+                let trimmed = renameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                record.name = trimmed.isEmpty ? nil : trimmed
+                try? modelContext.save()
+            }
+            Button(RecvelL10n.text("common.cancel"), role: .cancel) {}
+        }
+        .confirmationDialog(
+            RecvelL10n.text("nutrition.savedPlans.deleteConfirm"),
+            isPresented: Binding(
+                get: { planToDelete != nil },
+                set: { if !$0 { planToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(RecvelL10n.text("nutrition.savedPlans.delete"), role: .destructive) {
+                guard let record = planToDelete else { return }
+                Haptics.warning()
+                modelContext.delete(record)
+                try? modelContext.save()
+            }
+            Button(RecvelL10n.text("common.cancel"), role: .cancel) {}
+        } message: {
+            Text(RecvelL10n.text("nutrition.savedPlans.deleteDetail"))
+        }
+    }
+
+    // MARK: - Planes guardados
+
+    @ViewBuilder
+    private var savedPlansSection: some View {
+        if !savedPlans.isEmpty {
+            RevelSectionHeader(
+                eyebrow: RecvelL10n.text("nutrition.savedPlans.eyebrow"),
+                title: RecvelL10n.text("nutrition.savedPlans.title"),
+                accent: .purple
+            )
+            VStack(spacing: 10) {
+                ForEach(savedPlans) { record in
+                    SavedPlanRow(
+                        record: record,
+                        onOpen: {
+                            Haptics.soft()
+                            openPlanRecord = record
+                        },
+                        onRename: {
+                            Haptics.menuSelect()
+                            renameInput = record.name ?? ""
+                            planToRename = record
+                        },
+                        onDelete: {
+                            Haptics.warning()
+                            planToDelete = record
+                        }
+                    )
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("nutrition.savedPlans")
+        }
     }
 
     private var todayMeals: [MealLog] {
@@ -768,6 +870,94 @@ struct NutritionPlanRequest: Identifiable, Hashable {
 struct RecordFoodRequest: Identifiable, Hashable {
     let id = UUID()
     var text: String = ""
+}
+
+/// Fila de un plan guardado del asistente. Vista propia para decodificar
+/// `planJSON` UNA vez por fila (en `init`), no en cada acceso del body.
+private struct SavedPlanRow: View {
+    let record: GeneratedPlanRecord
+    let onOpen: () -> Void
+    let onRename: () -> Void
+    let onDelete: () -> Void
+
+    private let displayName: String
+    private let meta: String?
+
+    init(
+        record: GeneratedPlanRecord,
+        onOpen: @escaping () -> Void,
+        onRename: @escaping () -> Void,
+        onDelete: @escaping () -> Void
+    ) {
+        self.record = record
+        self.onOpen = onOpen
+        self.onRename = onRename
+        self.onDelete = onDelete
+        self.displayName = NutritionPlanDraftPolicy.displayName(for: record)
+        self.meta = record.plan.map { plan in
+            let dayLabel = plan.days.count == 1
+                ? RecvelL10n.text("planflow.duration.one")
+                : RecvelL10n.text("planflow.duration.days", values: ["count": "\(plan.days.count)"])
+            return RecvelL10n.text("nutrition.savedPlans.meta", values: [
+                "days": dayLabel,
+                "kcal": "\(plan.targets.calories)"
+            ])
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: onOpen) {
+                HStack(spacing: 12) {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.purple)
+                        .frame(width: 34, height: 34)
+                        .background(Color.purple.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(displayName).font(.subheadline.weight(.semibold)).lineLimit(1)
+                        HStack(spacing: 5) {
+                            if let savedAt = record.savedAt {
+                                Text(savedAt.formatted(.dateTime.day().month(.abbreviated).locale(RecvelL10n.locale)))
+                            }
+                            if let meta {
+                                Text("· \(meta)")
+                            }
+                        }
+                        .font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Menu {
+                Button {
+                    Haptics.menuSelect()
+                    onOpen()
+                } label: { Label(RecvelL10n.text("nutrition.savedPlans.open"), systemImage: "arrow.up.right") }
+                Button {
+                    onRename()
+                } label: { Label(RecvelL10n.text("nutrition.savedPlans.rename"), systemImage: "pencil") }
+                Divider()
+                Button(role: .destructive) {
+                    onDelete()
+                } label: { Label(RecvelL10n.text("nutrition.savedPlans.delete"), systemImage: "trash") }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32).contentShape(Circle())
+                    .platformGlass(tint: .purple, interactive: true, shape: .circle)
+            }
+            .menuOrder(.fixed)
+            .hapticMenuLabel()
+            .accessibilityLabel(RecvelL10n.text("nutrition.savedPlans.actions", values: ["name": displayName]))
+        }
+        .padding(14)
+        .revelSurface(cornerRadius: 18)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("nutrition.savedPlans.row.\(record.id.uuidString)")
+    }
 }
 
 /// Pantalla dedicada a registrar una comida.

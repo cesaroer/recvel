@@ -29501,8 +29501,72 @@
         }
       }
     },
+    "nutrition.assistant.health.unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health isn't available on this device."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health no está disponible en este dispositivo."
+          }
+        }
+      }
+    },
+    "nutrition.assistant.health.unsupported": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device can't write that data to Apple Health."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este dispositivo no puede escribir esos datos en Apple Health."
+          }
+        }
+      }
+    },
     "nutrition.assistant.info": {
       "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How this plan is built"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se arma este plan"
+          }
+        }
+      }
+    },
+    "nutrition.assistant.method.summary": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan is estimated from your profile, what you've logged, and your recovery, sleep, and load context. It's a guide, not a prescription: you review and confirm every meal."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El plan se estima con tu perfil, lo que has registrado y tu contexto de recuperación, sueño y carga. Es una guía, no una prescripción: tú revisas y confirmas cada comida."
+          }
+        }
+      }
+    },
+    "nutrition.assistant.method.title": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -31267,6 +31331,150 @@
         }
       }
     },
+    "nutrition.savedPlans.actions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions for {name}"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acciones de {name}"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.deleteConfirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this plan?"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Eliminar este plan?"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.deleteDetail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan and its chat will be deleted."
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se borra el plan y su conversación."
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.eyebrow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biblioteca"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.meta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} · {kcal} kcal"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{days} · {kcal} kcal"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.open": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.rename": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renombrar"
+          }
+        }
+      }
+    },
+    "nutrition.savedPlans.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved plans"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planes guardados"
+          }
+        }
+      }
+    },
     "nutrition.sex.female": {
       "extractionState": "stale",
       "localizations": {
@@ -32635,6 +32843,54 @@
         }
       }
     },
+    "planflow.adjust.confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerar"
+          }
+        }
+      }
+    },
+    "planflow.adjust.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do you want to change?"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué quieres cambiar?"
+          }
+        }
+      }
+    },
+    "planflow.adjust.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust plan"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustar plan"
+          }
+        }
+      }
+    },
     "planflow.advanced.detail": {
       "extractionState": "stale",
       "localizations": {
@@ -33485,6 +33741,22 @@
         }
       }
     },
+    "planflow.defaultName": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "{kcal} kcal plan · {date}"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan {kcal} kcal · {date}"
+          }
+        }
+      }
+    },
     "planflow.duration.days": {
       "localizations": {
         "en": {
@@ -33768,6 +34040,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gemini no respondió. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "planflow.exit.discard": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard plan"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descartar plan"
+          }
+        }
+      }
+    },
+    "planflow.exit.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave without saving the plan?"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Salir sin guardar el plan?"
           }
         }
       }
@@ -34951,6 +35255,22 @@
         }
       }
     },
+    "planflow.result.adjust": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust plan"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustar plan"
+          }
+        }
+      }
+    },
     "planflow.result.day": {
       "localizations": {
         "en": {
@@ -35069,6 +35389,70 @@
         }
       }
     },
+    "planflow.result.regenerate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate another"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generar otro"
+          }
+        }
+      }
+    },
+    "planflow.result.rename": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renombrar"
+          }
+        }
+      }
+    },
+    "planflow.result.save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save plan"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar plan"
+          }
+        }
+      }
+    },
+    "planflow.result.saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado"
+          }
+        }
+      }
+    },
     "planflow.result.science": {
       "extractionState": "stale",
       "localizations": {
@@ -35150,6 +35534,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reintentar"
+          }
+        }
+      }
+    },
+    "planflow.save.confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar"
+          }
+        }
+      }
+    },
+    "planflow.save.namePlaceholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan name (optional)"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre del plan (opcional)"
+          }
+        }
+      }
+    },
+    "planflow.save.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save plan"
+          }
+        },
+        "es-MX": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar plan"
           }
         }
       }

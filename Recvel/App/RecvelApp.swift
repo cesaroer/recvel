@@ -43,13 +43,24 @@ struct RecvelApp: App {
                 TrainingReadinessCheckIn.self,
                 GeneratedPlanRecord.self
             ])
-            return try ModelContainer(
+            let container = try ModelContainer(
                 for: schema,
                 configurations: ModelConfiguration(
                     schema: schema,
                     isStoredInMemoryOnly: RecvelApp.usesEphemeralStore
                 )
             )
+            // La generacion real necesita red y la API key del usuario, asi
+            // que el UI test de "Planes guardados" no puede fabricar un plan:
+            // se siembra uno ya guardado en el store efimero.
+            if RecvelApp.usesEphemeralStore,
+               ProcessInfo.processInfo.arguments.contains("-uiTestSeedSavedNutritionPlan") {
+                MainActor.assumeIsolated {
+                    container.mainContext.insert(GeneratedPlanRecord.uiTestSeed())
+                    try? container.mainContext.save()
+                }
+            }
+            return container
         } catch {
             fatalError("Unable to create local store: \(error)")
         }

@@ -465,6 +465,16 @@ final class GeneratedPlanRecord {
     var planJSON: String
     var answersJSON: String
     var chatJSON: String
+    /// Nombre puesto por el usuario al guardar; nil muestra el nombre por
+    /// defecto (`NutritionPlanDraftPolicy.displayName`).
+    var name: String?
+    /// Fecha de guardado explicito. nil = borrador: el plan se persistio al
+    /// generarse (para sobrevivir a un cierre de la app) pero el usuario aun
+    /// no decidio conservarlo, y la purga de borradores puede eliminarlo.
+    /// Fecha y no Bool porque ademas ordena la seccion "Planes guardados".
+    var savedAt: Date?
+
+    var isSaved: Bool { savedAt != nil }
 
     init(
         modelName: String,
@@ -500,5 +510,30 @@ final class GeneratedPlanRecord {
                   let json = String(data: data, encoding: .utf8) else { return }
             chatJSON = json
         }
+    }
+}
+
+extension GeneratedPlanRecord {
+    /// Plan guardado de utileria para UI tests: la generacion real necesita
+    /// red y la API key del usuario, asi que la seccion "Planes guardados" se
+    /// prueba sembrando esto en el store efimero (`-uiTestSeedSavedNutritionPlan`).
+    static func uiTestSeed() -> GeneratedPlanRecord {
+        let planJSON = """
+        {"summary":"Plan de un dia para probar la biblioteca.","scienceBasis":["Semilla de UI test"],\
+        "targets":{"calories":2200,"protein":150,"carbohydrates":230,"fat":70,"hydrationLiters":2.5},\
+        "days":[{"day":1,"label":"Dia 1","note":null,"meals":[\
+        {"mealType":"Desayuno","time":"07:30","title":"Avena con fruta","detail":"80 g de avena, 1 platano","calories":600,"protein":25,"carbohydrates":90,"fat":15},\
+        {"mealType":"Comida","time":"14:00","title":"Pollo con arroz","detail":"200 g de pollo, 150 g de arroz","calories":900,"protein":70,"carbohydrates":95,"fat":25},\
+        {"mealType":"Cena","time":"20:30","title":"Salmon con verduras","detail":"180 g de salmon, verduras al vapor","calories":700,"protein":55,"carbohydrates":45,"fat":30}]}],\
+        "shoppingList":["Avena 80 g","Pollo 200 g","Salmon 180 g"],"supplementGuidance":[],"precautions":[]}
+        """
+        let record = GeneratedPlanRecord(
+            modelName: "gemini-ui-test",
+            planJSON: planJSON,
+            answersJSON: "{}"
+        )
+        record.name = "Plan de prueba"
+        record.savedAt = .now
+        return record
     }
 }

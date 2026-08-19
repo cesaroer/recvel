@@ -15,6 +15,7 @@
 		081379F295F3CFF0A0084851 /* LocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69EA00A65CFE352738D8AA9A /* LocalStore.swift */; };
 		0816B8E65AB4F564431B54FF /* Rowing_Stationary_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 8E1C61222F9E4CFED674C7BE /* Rowing_Stationary_0.jpg */; };
 		087D8FECC706A25FF3BB83FB /* Pushups_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 7C8FC10E6A1D2FDB3C22B369 /* Pushups_1.jpg */; };
+		08CAB6EF8C0350B3DE5F2DBF /* NutritionPlanLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43EACDB4F59F8530CE45C66 /* NutritionPlanLibraryTests.swift */; };
 		08EC8F669B1AC324BF9B1549 /* Ab_Roller_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 76FD04EF372194B9B9B19501 /* Ab_Roller_0.jpg */; };
 		09ECBA7838DC8C977E72D21F /* muscle_5_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4E8F660E2D8CE5998C31D19E /* muscle_5_main.svg */; };
 		0A59DA0EAA01035D12EAF3EC /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 4E737BF259C173FD3A341B19 /* InfoPlist.xcstrings */; };
@@ -223,6 +224,7 @@
 		DCD9F47F261FE642A4BD4C84 /* Superman_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E339CAF3501E8DC6AD7724DF /* Superman_1.jpg */; };
 		E1A2B89E461F85CFC2E61745 /* muscle_9_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 021DB171715DCD46F62E62C7 /* muscle_9_main.svg */; };
 		E3F211C9C3E7E7119B77640C /* RecvelActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BB61EB0C779E9F02A02D4E /* RecvelActivityAttributes.swift */; };
+		E4AD55291B8CC4263120EF7C /* NutritionPlanLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F22EA37762718D4FB827C84 /* NutritionPlanLibrary.swift */; };
 		E4B2505D92E2F1613D64B241 /* muscle_10_main.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1370674B1A6AA6EE69F8668F /* muscle_10_main.svg */; };
 		E56B2FFB70DA20F48019ECCD /* Standing_Military_Press_0.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A6627DF6A4AB4803E4B51540 /* Standing_Military_Press_0.jpg */; };
 		E5F7ED5B953F1E9785E7D5B6 /* Barbell_Incline_Bench_Press___Medium_Grip_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4075C8B1299B763F5564A68E /* Barbell_Incline_Bench_Press___Medium_Grip_1.jpg */; };
@@ -447,6 +449,7 @@
 		8B4CD2986731D623F0E3F90A /* muscle_1_main.svg */ = {isa = PBXFileReference; path = muscle_1_main.svg; sourceTree = "<group>"; };
 		8E0976376EA59ACA53AB4505 /* Mountain_Climbers_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Mountain_Climbers_0.jpg; sourceTree = "<group>"; };
 		8E1C61222F9E4CFED674C7BE /* Rowing_Stationary_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Rowing_Stationary_0.jpg; sourceTree = "<group>"; };
+		8F22EA37762718D4FB827C84 /* NutritionPlanLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanLibrary.swift; sourceTree = "<group>"; };
 		8FEE2EFEFB4C02B2C3EFE6F3 /* BiomarkerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiomarkerEngine.swift; sourceTree = "<group>"; };
 		929A42CF48FCEA06D7F49D46 /* BaselineEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaselineEngine.swift; sourceTree = "<group>"; };
 		93AAF5CB83F0659E9DB62ADD /* JournalProEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalProEngine.swift; sourceTree = "<group>"; };
@@ -534,6 +537,7 @@
 		E339CAF3501E8DC6AD7724DF /* Superman_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Superman_1.jpg; sourceTree = "<group>"; };
 		E3E636FDFC820D29F379A55F /* JournalProView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalProView.swift; sourceTree = "<group>"; };
 		E40BA608BFA0E992DFC9D071 /* Butt_Lift_Bridge_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Butt_Lift_Bridge_0.jpg; sourceTree = "<group>"; };
+		E43EACDB4F59F8530CE45C66 /* NutritionPlanLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanLibraryTests.swift; sourceTree = "<group>"; };
 		E449849798A94EC16B7B488C /* ProductIntelligenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductIntelligenceModels.swift; sourceTree = "<group>"; };
 		E49D8AC64D6A5F440E81B529 /* SharedSnapshotPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotPublisher.swift; sourceTree = "<group>"; };
 		E6A14852833F47A61DEB3933 /* Barbell_Deadlift_0.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Barbell_Deadlift_0.jpg; sourceTree = "<group>"; };
@@ -746,6 +750,7 @@
 				CFF6962DC201A0F6496FA1A4 /* HardcodedStringsTests.swift */,
 				088C30ECF3384EE04A95F6A8 /* LocalizationTests.swift */,
 				ACEB171B6DC940A1A0D68A18 /* NutritionAssistantTests.swift */,
+				E43EACDB4F59F8530CE45C66 /* NutritionPlanLibraryTests.swift */,
 				2262DC2A6D69744F5218F6AE /* SharedSurfaceTests.swift */,
 				CA75EE9282A0282E69B463F6 /* StringCatalogTests.swift */,
 			);
@@ -873,6 +878,7 @@
 				99E0070EF8A47B09952B1014 /* NutritionEstimator.swift */,
 				71954F4CEFCBF02C5AF95D54 /* NutritionHealthKitWriter.swift */,
 				DC8E756165DFCEC0B9812B50 /* NutritionPlanEngine.swift */,
+				8F22EA37762718D4FB827C84 /* NutritionPlanLibrary.swift */,
 				4EF748812F49B7D29B2EFAB3 /* RecoveryInsightsEngine.swift */,
 				FF1DFD88AF59B808BC92D19F /* ScoreEngine.swift */,
 				E49D8AC64D6A5F440E81B529 /* SharedSnapshotPublisher.swift */,
@@ -1354,6 +1360,7 @@
 				5957B3D560CABC57DDEC089A /* NutritionHealthKitWriter.swift in Sources */,
 				32C2919E48BE6641B92C13CD /* NutritionPlanEngine.swift in Sources */,
 				344BE88B8FF0D41B3902C893 /* NutritionPlanFlowView.swift in Sources */,
+				E4AD55291B8CC4263120EF7C /* NutritionPlanLibrary.swift in Sources */,
 				75AAA45076D0EE91EED23657 /* NutritionPlanModels.swift in Sources */,
 				C22A011A54923027A6AFBE92 /* NutritionSetupView.swift in Sources */,
 				BBB333E266C51317715E67ED /* NutritionView.swift in Sources */,
@@ -1417,6 +1424,7 @@
 				FF5B101BF80457B9F79E3D72 /* HardcodedStringsTests.swift in Sources */,
 				3087FC4FFE4B6762A03AFB26 /* LocalizationTests.swift in Sources */,
 				2284200DF212FAD450C66132 /* NutritionAssistantTests.swift in Sources */,
+				08CAB6EF8C0350B3DE5F2DBF /* NutritionPlanLibraryTests.swift in Sources */,
 				0E0DA5AA89323CC1313DA92D /* SharedSurfaceTests.swift in Sources */,
 				9AC5DFC02C2D0A6FC2191E40 /* StringCatalogTests.swift in Sources */,
 			);

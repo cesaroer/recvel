@@ -79,9 +79,30 @@ struct NutritionPlanFlowView: View {
     @State private var chatInput = ""
     @State private var isChatting = false
     @State private var appeared = false
+    @State private var showSaveAlert = false
+    @State private var saveNameInput = ""
+    @State private var showAdjustAlert = false
+    @State private var adjustInput = ""
+    @State private var showExitConfirm = false
+    /// Feedback del ultimo "Ajustar", para que Reintentar tras un error no
+    /// pierda lo que el usuario pidio cambiar.
+    @State private var lastFeedback: String?
+
+    /// Plan guardado que se reabre como visor: arranca en `.result` con su
+    /// chat, sin pasar por cuestionario ni picker de modelo. nil = flujo
+    /// normal de generacion.
+    private let initialRecord: GeneratedPlanRecord?
+
+    init(record: GeneratedPlanRecord? = nil) {
+        self.initialRecord = record
+    }
 
     private let service = GeminiPlanService()
     private static let apiKeyAccount = "nutrition.gemini.apiKey"
+
+    /// Modelo para chat y regeneracion: el elegido en el picker o, al reabrir
+    /// un guardado (donde el picker nunca corrio), el que genero ese plan.
+    private var activeModelID: String? { selectedModel?.id ?? initialRecord?.modelName }
 
     // MARK: Paleta (la misma del asistente)
 
@@ -119,6 +140,21 @@ struct NutritionPlanFlowView: View {
         .onAppear {
             guard !appeared else { return }
             appeared = true
+            // La purga corre siempre: solo toca borradores (savedAt nil), que
+            // por definicion no son el registro reabierto.
+            purgeDraftsSalvagingAnswers()
+            if let record = initialRecord {
+                plan = record.plan
+                activeRecord = record
+                chatMessages = record.chatMessages
+                if let stored = record.answers { answers = stored }
+                resolvedAPIKey = KeychainStore.get(Self.apiKeyAccount)
+                stage = .result
+                // Best-effort: si la lista carga, "Generar otro" puede usar el
+                // picker; si no, `activeModelID` cae al modelo del registro.
+                Task { await loadModels() }
+                return
+            }
             prefillAnswersFromLastPlan()
             inferFromAppData()
             if answers.filledAdvancedPlan { showAdvancedPlan = true }
@@ -128,6 +164,37 @@ struct NutritionPlanFlowView: View {
                 stage = .questionnaire
                 Task { await loadModels() }
             }
+        }
+        // Red de seguridad del descarte: cubre el pop por gesto del
+        // NavigationStack, que no pasa por el dialogo del xmark.
+        .onDisappear { discardDraft() }
+        .alert(RecvelL10n.text("planflow.save.title"), isPresented: $showSaveAlert) {
+            TextField(RecvelL10n.text("planflow.save.namePlaceholder"), text: $saveNameInput)
+            Button(RecvelL10n.text("planflow.save.confirm")) { saveCurrentPlan() }
+            Button(RecvelL10n.text("common.cancel"), role: .cancel) {}
+        }
+        .alert(RecvelL10n.text("planflow.adjust.title"), isPresented: $showAdjustAlert) {
+            TextField(RecvelL10n.text("planflow.adjust.placeholder"), text: $adjustInput)
+            // "Regenerar" y no "Aplicar": el ajuste es una generacion completa
+            // nueva contra la API del usuario, y el copy no lo esconde.
+            Button(RecvelL10n.text("planflow.adjust.confirm")) {
+                let text = adjustInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !text.isEmpty else { return }
+                Task { await startGeneration(feedback: text) }
+            }
+            Button(RecvelL10n.text("common.cancel"), role: .cancel) {}
+        }
+        .confirmationDialog(
+            RecvelL10n.text("planflow.exit.title"),
+            isPresented: $showExitConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(RecvelL10n.text("planflow.exit.discard"), role: .destructive) {
+                Haptics.warning()
+                discardDraft()
+                dismiss()
+            }
+            Button(RecvelL10n.text("common.cancel"), role: .cancel) {}
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("planflow.root")
@@ -169,7 +236,7 @@ struct NutritionPlanFlowView: View {
                 Spacer()
                 circleButton(icon: "xmark", label: RecvelL10n.text("common.close")) {
                     Haptics.soft()
-                    dismiss()
+                    attemptClose()
                 }
             }
         }
@@ -198,9 +265,50 @@ struct NutritionPlanFlowView: View {
         case .generating:
             break
         case .result:
-            stage = .questionnaire
-            questionIndex = QuestionStep.allCases.count - 1
+            // Visor de un plan guardado: atras = salir (no hay cuestionario
+            // detras). En el flujo normal regresa al ultimo paso, listo para
+            // regenerar; el borrador NO se descarta aqui (se sobrescribira al
+            // regenerar, o lo resolvera el cierre).
+            if initialRecord != nil {
+                attemptClose()
+            } else {
+                stage = .questionnaire
+                questionIndex = QuestionStep.allCases.count - 1
+            }
         }
+    }
+
+    /// Cierre con conciencia del borrador: si hay un plan sin guardar se
+    /// pregunta antes de tirarlo; si no, cierra directo.
+    private func attemptClose() {
+        if let record = activeRecord, !record.isSaved {
+            showExitConfirm = true
+        } else {
+            dismiss()
+        }
+    }
+
+    private func discardDraft() {
+        guard let record = activeRecord, !record.isSaved else { return }
+        modelContext.delete(record)
+        try? modelContext.save()
+        activeRecord = nil
+    }
+
+    /// Purga al abrir el flujo: rescata primero las respuestas mas recientes
+    /// hacia `NutritionPlanAnswersStore` (cubre registros pre-migracion, que
+    /// eran la unica fuente del prefill) y borra todo borrador restante.
+    private func purgeDraftsSalvagingAnswers() {
+        if let salvage = NutritionPlanDraftPolicy.answersJSONToSalvage(
+            records: Array(planRecords),
+            storeHasAnswers: NutritionPlanAnswersStore.hasAnswers()
+        ) {
+            NutritionPlanAnswersStore.saveJSON(salvage)
+        }
+        let drafts = NutritionPlanDraftPolicy.purgeableDrafts(in: Array(planRecords))
+        guard !drafts.isEmpty else { return }
+        drafts.forEach(modelContext.delete)
+        try? modelContext.save()
     }
 
     // MARK: - Contenido por etapa
@@ -741,7 +849,8 @@ struct NutritionPlanFlowView: View {
 
             if let flowError {
                 errorBanner(flowError)
-                retryButton { Task { await startGeneration() } }
+                // Reintentar conserva el feedback de "Ajustar" si lo hubo.
+                retryButton { Task { await startGeneration(feedback: lastFeedback) } }
             } else {
                 VStack(spacing: 8) {
                     Text(RecvelL10n.text("planflow.generating.title"))
@@ -749,7 +858,7 @@ struct NutritionPlanFlowView: View {
                         .foregroundStyle(Self.ink)
                     Text(RecvelL10n.text(
                         "planflow.generating.detail",
-                        values: ["model": selectedModel?.displayName ?? ""]
+                        values: ["model": selectedModel?.displayName ?? activeModelID ?? ""]
                     ))
                     .font(.system(size: 14))
                     .foregroundStyle(Self.inkSoft)
@@ -764,8 +873,8 @@ struct NutritionPlanFlowView: View {
     }
 
     @MainActor
-    private func startGeneration() async {
-        guard let key = resolvedAPIKey, let model = selectedModel else { return }
+    private func startGeneration(feedback: String? = nil) async {
+        guard let key = resolvedAPIKey, let modelID = activeModelID else { return }
         guard let profile else {
             flowError = RecvelL10n.text("planflow.error.noProfile")
             withAnimation(reduceMotion ? nil : .snappy) { stage = .generating }
@@ -773,17 +882,22 @@ struct NutritionPlanFlowView: View {
         }
         Haptics.medium()
         flowError = nil
+        lastFeedback = feedback
         withAnimation(reduceMotion ? nil : .snappy) { stage = .generating }
         do {
             let generated = try await service.generatePlan(
                 apiKey: key,
-                model: model.id,
+                model: modelID,
                 profile: profile,
                 answers: answers,
-                health: healthContext
+                health: healthContext,
+                feedback: feedback,
+                // El plan vigente solo viaja como referente cuando hay ajuste;
+                // "Generar otro" es una generacion limpia.
+                previousPlan: feedback != nil ? plan : nil
             )
             plan = generated
-            persistPlan(generated, modelName: model.id)
+            persistPlan(generated, modelName: modelID)
             withAnimation(reduceMotion ? nil : .snappy) { stage = .result }
         } catch {
             flowError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
@@ -809,15 +923,39 @@ struct NutritionPlanFlowView: View {
               let planJSON = String(data: planData, encoding: .utf8),
               let answersData = try? JSONEncoder().encode(answers),
               let answersJSON = String(data: answersData, encoding: .utf8) else { return }
-        let record = GeneratedPlanRecord(modelName: modelName, planJSON: planJSON, answersJSON: answersJSON)
-        modelContext.insert(record)
+        // Las respuestas viven fuera de SwiftData: el prefill del proximo
+        // cuestionario no depende de que este plan sobreviva.
+        NutritionPlanAnswersStore.saveJSON(answersJSON)
+
+        // El borrador de la sesion se reutiliza entre regeneraciones. Un plan
+        // GUARDADO nunca se sobrescribe: regenerar/ajustar desde un guardado
+        // reabierto abre un borrador nuevo y deja el original intacto.
+        if let record = activeRecord, !record.isSaved {
+            record.planJSON = planJSON
+            record.answersJSON = answersJSON
+            record.modelName = modelName
+            record.createdAt = .now
+            record.chatJSON = "[]"
+        } else {
+            let record = GeneratedPlanRecord(modelName: modelName, planJSON: planJSON, answersJSON: answersJSON)
+            modelContext.insert(record)
+            activeRecord = record
+        }
+        // El chat anterior hablaba de otro plan; arrastrarlo confundiria a la
+        // persona y al modelo por igual.
+        chatMessages = []
         try? modelContext.save()
-        activeRecord = record
     }
 
-    /// Rellena el cuestionario con las respuestas del ultimo plan: el usuario
-    /// solo confirma en vez de contestar de cero (los datos ya los tenemos).
+    /// Rellena el cuestionario con las respuestas de la ultima generacion: el
+    /// usuario solo confirma en vez de contestar de cero. Primero el store
+    /// (sobrevive a la purga de borradores); el registro mas reciente queda de
+    /// fallback para datos creados antes del store.
     private func prefillAnswersFromLastPlan() {
+        if let stored = NutritionPlanAnswersStore.load() {
+            answers = stored
+            return
+        }
         guard let last = planRecords.first, let stored = last.answers else { return }
         answers = stored
     }
@@ -863,6 +1001,7 @@ struct NutritionPlanFlowView: View {
                     LazyVStack(alignment: .leading, spacing: 16) {
                         if let plan {
                             planHero(plan)
+                            resultActionBar
                             dayPager(plan)
                             dayContent(plan)
                             extrasSections(plan)
@@ -902,6 +1041,92 @@ struct NutritionPlanFlowView: View {
             chatInputBar
         }
         .accessibilityIdentifier("planflow.result")
+    }
+
+    // MARK: Acciones sobre el plan
+
+    /// Guardar / Ajustar / Generar otro, pegadas al hero: son decisiones
+    /// sobre ESTE plan y se toman con las metas a la vista.
+    private var resultActionBar: some View {
+        HStack(spacing: 8) {
+            if let record = activeRecord, record.isSaved {
+                // Ya guardado: el mismo boton pasa a confirmar el estado y a
+                // ofrecer renombrar (mismo alert, precargado con su nombre).
+                actionPill(icon: "checkmark", titleKey: "planflow.result.saved", filled: true) {
+                    Haptics.soft()
+                    saveNameInput = record.name ?? defaultNameForCurrentPlan
+                    showSaveAlert = true
+                }
+                .accessibilityLabel(RecvelL10n.text("planflow.result.rename"))
+                .accessibilityIdentifier("planflow.result.save")
+            } else {
+                actionPill(icon: "bookmark.fill", titleKey: "planflow.result.save", filled: true) {
+                    Haptics.soft()
+                    saveNameInput = defaultNameForCurrentPlan
+                    showSaveAlert = true
+                }
+                .accessibilityIdentifier("planflow.result.save")
+            }
+
+            actionPill(icon: "slider.horizontal.3", titleKey: "planflow.result.adjust", filled: false) {
+                Haptics.soft()
+                adjustInput = ""
+                showAdjustAlert = true
+            }
+            .accessibilityIdentifier("planflow.result.adjust")
+
+            actionPill(icon: "arrow.clockwise", titleKey: "planflow.result.regenerate", filled: false) {
+                Task { await startGeneration() }
+            }
+            .accessibilityIdentifier("planflow.result.regenerate")
+        }
+    }
+
+    private func actionPill(
+        icon: String,
+        titleKey: String,
+        filled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(RecvelL10n.text(titleKey))
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .foregroundStyle(filled ? .white : Self.ink)
+            .frame(maxWidth: .infinity, minHeight: 42)
+            .background(
+                filled ? Self.ink : Color.white.opacity(0.75),
+                in: Capsule(style: .continuous)
+            )
+            .overlay {
+                if !filled {
+                    Capsule(style: .continuous).strokeBorder(Self.hairline, lineWidth: 1)
+                }
+            }
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var defaultNameForCurrentPlan: String {
+        guard let plan else { return "" }
+        return NutritionPlanDraftPolicy.defaultName(targets: plan.targets, date: .now)
+    }
+
+    private func saveCurrentPlan() {
+        guard let record = activeRecord else { return }
+        Haptics.success()
+        let trimmed = saveNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Campo vacio = sin nombre propio: la fila mostrara el nombre por
+        // defecto calculado, que sigue a las metas si el plan cambia.
+        record.name = trimmed.isEmpty ? nil : trimmed
+        if record.savedAt == nil { record.savedAt = .now }
+        try? modelContext.save()
     }
 
     // MARK: Hero
@@ -1265,7 +1490,7 @@ struct NutritionPlanFlowView: View {
 
     private func sendChat() {
         let text = chatInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, let key = resolvedAPIKey, let model = selectedModel, let plan else { return }
+        guard !text.isEmpty, let key = resolvedAPIKey, let modelID = activeModelID, let plan else { return }
         Haptics.soft()
         let userMessage = PlanChatMessage(role: .user, text: text)
         chatMessages.append(userMessage)
@@ -1279,7 +1504,7 @@ struct NutritionPlanFlowView: View {
                 let history = Array(chatMessages.dropLast())
                 let reply = try await service.sendChatMessage(
                     apiKey: key,
-                    model: model.id,
+                    model: modelID,
                     plan: plan,
                     history: history,
                     message: text
