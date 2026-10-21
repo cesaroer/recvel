@@ -2,6 +2,8 @@
 
 **Inventario:** [FEATURES.md](FEATURES.md) — estado Done / Partial / Missing del app vs plan original y Sugerencias Grok.
 
+**Auditoría comparativa:** [Recvel y NOOP](README_NOOP_COMPARISON.md) y la [revisión del código local del 19 de octubre de 2026](README_NOOP_LOCAL_CODE_REVIEW.md) comparan funciones, consumidores reales, límites científicos y privacidad. La segunda profundiza en sesiones persistentes, Live Activities, zonas personales, HRR y estrés. Distinguen implementación actual de documentación desactualizada y no implican cambios funcionales entregados.
+
 Recvel es una app de bienestar para iPhone y Apple Watch que convierte los datos de Apple Health en una lectura diaria clara de recuperacion, carga, sueno, estres, energia, actividad y nutricion. La experiencia visual es dark-first, moderna y glassy, inspirada conceptualmente en productos como Bevel, WHOOP y Garmin, sin copiar su marca, textos, algoritmos privados ni assets.
 
 ## Principios del producto
