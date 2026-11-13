@@ -5,14 +5,15 @@ import SwiftUI
 struct PlanView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
-    @Query(sort: \EmotionLog.date, order: .reverse) private var emotionLogs: [EmotionLog]
+    // Semana en curso.
+    @Query(MealLog.recent(400)) private var meals: [MealLog]
+    @Query(EmotionLog.recent(120)) private var emotionLogs: [EmotionLog]
     @Query(sort: \HabitLog.date, order: .reverse) private var habitLogs: [HabitLog]
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var nutritionProfiles: [NutritionProfile]
     @Query(sort: \SleepRoutineStep.sortOrder) private var routineSteps: [SleepRoutineStep]
     @Query(sort: \PlannedSleepNight.nightDate, order: .reverse) private var plannedNights: [PlannedSleepNight]
 
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @AppStorage("wakeMinutes") private var wakeMinutes = 420
     @AppStorage("weeklyWorkoutGoal") private var workoutGoal = 4
     @AppStorage("weeklySleepGoal") private var sleepGoal = 5

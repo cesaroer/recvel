@@ -116,7 +116,7 @@ struct TonightDetailView: View {
     @Query(sort: \SleepRoutineStep.sortOrder) private var routineSteps: [SleepRoutineStep]
     @Query(sort: \PlannedSleepNight.nightDate, order: .reverse) private var plannedNights: [PlannedSleepNight]
 
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @AppStorage("wakeMinutes") private var wakeMinutes = 420
     @AppStorage("planSleepReminderEnabled") private var sleepReminderEnabled = false
     /// 0 = usar el ciclo preferido del motor; otro valor = override del usuario.

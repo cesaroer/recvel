@@ -17,9 +17,10 @@ struct DashboardView: View {
     @Query private var workoutTemplates: [WorkoutTemplate]
     // Contexto extra del reporte de la mañana (ayuno, nutricion, animo).
     @Query(sort: \FastingSession.startDate, order: .reverse) private var fastingSessions: [FastingSession]
-    @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
-    @Query(sort: \EmotionLog.date, order: .reverse) private var emotionLogs: [EmotionLog]
-    @StateObject private var health = HealthDataProvider()
+    // Solo se miran las comidas de hoy.
+    @Query(MealLog.recent(60)) private var meals: [MealLog]
+    @Query(EmotionLog.recent(60)) private var emotionLogs: [EmotionLog]
+    @EnvironmentObject private var health: HealthDataProvider
     @State private var appeared = false
     @State private var showsSettings = false
     @State private var showsPlan = false
@@ -31,6 +32,9 @@ struct DashboardView: View {
     @Namespace private var daySelectionNamespace
 
     private let scoreEngine = ScoreEngine()
+    @State private var derived = DerivedCache()
+    /// Clave de todo lo que depende del dia elegido y de los datos de salud.
+    private var dayKey: AnyHashable { [AnyHashable(health.revision), AnyHashable(selectedDay)] }
     private let insightEngine = InsightEngine()
     private let stressEngine = StressEngine()
     private let bioAgeEngine = BioAgeEngine()
@@ -69,7 +73,9 @@ struct DashboardView: View {
     }
 
     private var scores: [WellnessScore] {
-        scoreEngine.scores(for: selectedSnapshot, history: health.history)
+        derived.value("scores", key: dayKey) {
+            scoreEngine.scores(for: selectedSnapshot, history: health.history)
+        }
     }
 
     private var recovery: WellnessScore {
@@ -77,20 +83,26 @@ struct DashboardView: View {
     }
 
     private var brief: DailyBrief {
-        insightEngine.briefing(
-            snapshot: selectedSnapshot,
-            history: health.history,
-            scores: scores,
-            wakeMinutes: wakeMinutes
-        )
+        derived.value("brief", key: [dayKey, AnyHashable(wakeMinutes)] as [AnyHashable]) {
+            insightEngine.briefing(
+                snapshot: selectedSnapshot,
+                history: health.history,
+                scores: scores,
+                wakeMinutes: wakeMinutes
+            )
+        }
     }
 
     private var factors: [RecoveryFactor] {
-        scoreEngine.factors(for: selectedSnapshot, history: health.history)
+        derived.value("factors", key: dayKey) {
+            scoreEngine.factors(for: selectedSnapshot, history: health.history)
+        }
     }
 
     private var stressAssessment: StressAssessment {
-        stressEngine.assess(snapshot: selectedSnapshot, history: health.history)
+        derived.value("stress", key: dayKey) {
+            stressEngine.assess(snapshot: selectedSnapshot, history: health.history)
+        }
     }
 
     private var latestVO2Snapshot: DailyHealthSnapshot? {
@@ -313,6 +325,16 @@ struct DashboardView: View {
 
     /// Se compone con los motores existentes; nunca con datos precalculados.
     private var morningReport: MorningReport {
+        // La hoja relee esto en cada pasada mientras esta abierta; sin cache
+        // corria todos los motores (scores dos veces) y releia la rutina.
+        let key: [AnyHashable] = [
+            AnyHashable(health.revision), AnyHashable(wakeMinutes), AnyHashable(sleepGoalHours),
+            AnyHashable(meals.count), AnyHashable(emotionLogs.count), AnyHashable(fastingSessions.count)
+        ]
+        return derived.value("morningReport", key: key) { composeMorningReport() }
+    }
+
+    private func composeMorningReport() -> MorningReport {
         MorningReportEngine.report(
             snapshot: health.snapshot,
             history: health.history,
@@ -350,7 +372,10 @@ struct DashboardView: View {
         // Presentar dentro del `task` inicial se pierde: la ventana aun no es
         // key y SwiftUI descarta la hoja. Se espera a que Home este en pantalla.
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(450))
+            // Esperar a que termine la entrada escalonada de Hoy (~1.2 s). A
+            // los 450 ms la hoja subia encima de once tarjetas todavia
+            // animandose, y las dos animaciones se trababan entre si.
+            try? await Task.sleep(for: .milliseconds(1300))
             showsMorningReport = true
         }
     }
@@ -527,14 +552,21 @@ struct DashboardView: View {
     }
 
     private func rings(for day: Date) -> [HomeDayRingValue] {
-        HomeDayRingEngine.ringValues(
-            for: snapshot(on: day),
-            history: health.history,
-            selected: selectedRingMetrics,
-            isToday: calendar.isDateInToday(day),
-            scoreEngine: scoreEngine,
-            stressEngine: stressEngine
-        )
+        // Los anillos de un dia no dependen del dia SELECCIONADO: tocar otra
+        // celda no debe recalcular los siete.
+        derived.value(
+            "rings.\(day.timeIntervalSinceReferenceDate)",
+            key: [AnyHashable(health.revision), AnyHashable(ringMetricsRaw)] as [AnyHashable]
+        ) {
+            HomeDayRingEngine.ringValues(
+                for: snapshot(on: day),
+                history: health.history,
+                selected: selectedRingMetrics,
+                isToday: calendar.isDateInToday(day),
+                scoreEngine: scoreEngine,
+                stressEngine: stressEngine
+            )
+        }
     }
 
     private var weekWorkoutsSection: some View {
@@ -650,6 +682,9 @@ struct DashboardView: View {
                 .hidesTabBar()
         } label: {
             FluidRecoveryHero(score: recovery, mode: health.dataMode, date: selectedDay, reduceMotion: reduceMotion)
+                // Con el reporte encima, el fondo animado del hero no se ve
+                // pero seguia redibujando su blur a la vez que la hoja.
+                .transformEnvironment(\.isTabActive) { $0 = $0 && !showsMorningReport }
         }
         .buttonStyle(.glassCardLink)
         .simultaneousGesture(TapGesture().onEnded { Haptics.soft() })
@@ -1030,7 +1065,7 @@ struct DashboardView: View {
                 HStack(spacing: 11) {
                     Image(systemName: factor.icon)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(factor.contribution >= 0 ? ScoreKind.recovery.color : ScoreKind.strain.color)
+                        .foregroundStyle(contributionColor(factor.contribution))
                         .frame(width: 26)
                     VStack(alignment: .leading, spacing: 3) {
                         HStack {
@@ -1044,7 +1079,7 @@ struct DashboardView: View {
                             Spacer()
                             Text(contributionText(factor.contribution))
                                 .font(.caption2.weight(.bold))
-                                .foregroundStyle(factor.contribution >= 0 ? ScoreKind.recovery.color : ScoreKind.strain.color)
+                                .foregroundStyle(contributionColor(factor.contribution))
                         }
                     }
                 }
@@ -1057,8 +1092,20 @@ struct DashboardView: View {
         .liquidGlass(cornerRadius: 8)
     }
 
+    /// Por debajo de esto la señal esta "en su rango". La contribucion va
+    /// normalizada a ±18 % de desviacion, asi que 0.25 ≈ 4.5 %: con el 0.08
+    /// anterior, 53 lpm frente a 52 habituales ya salia "en contra".
+    private static let neutralContribution = 0.25
+
+    /// Neutro es gris en TODAS las filas; antes heredaba verde o naranja segun
+    /// el signo de una desviacion minima.
+    private func contributionColor(_ value: Double) -> Color {
+        guard abs(value) > Self.neutralContribution else { return .secondary }
+        return value > 0 ? ScoreKind.recovery.color : ScoreKind.strain.color
+    }
+
     private func contributionText(_ value: Double) -> String {
-        guard abs(value) > 0.08 else { return RecvelL10n.text("home.contribution.neutral") }
+        guard abs(value) > Self.neutralContribution else { return RecvelL10n.text("home.contribution.neutral") }
         return RecvelL10n.text(value > 0 ? "home.contribution.for" : "home.contribution.against")
     }
 
@@ -1131,10 +1178,13 @@ private struct FluidRecoveryHero: View {
     let mode: HealthDataMode
     let date: Date
     let reduceMotion: Bool
+    @Environment(\.isTabActive) private var isTabActive
     @State private var progress = 0.0
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 24, paused: reduceMotion)) { timeline in
+        // 15 fps: la ola se mueve <1 pt por cuadro, asi que mas cuadros solo
+        // repetian un blur de 24 pt sin que se notara.
+        TimelineView(.animation(minimumInterval: 1 / 15, paused: reduceMotion || !isTabActive)) { timeline in
             let phase = timeline.date.timeIntervalSinceReferenceDate
             ZStack(alignment: .topLeading) {
                 Canvas { context, size in
@@ -1178,7 +1228,9 @@ private struct FluidRecoveryHero: View {
                             .font(.caption.weight(.bold))
                             .foregroundStyle(ScoreKind.recovery.color)
                         Spacer()
-                        Text(score.confidence.displayName.uppercased())
+                        // "BAJA" a secas junto al 60% se leia como "recuperacion
+                        // baja"; es la confianza del dato.
+                        Text(RecvelL10n.text("score.confidenceBadge", values: ["level": score.confidence.displayName]).uppercased())
                             .font(.system(size: 9, weight: .heavy))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)

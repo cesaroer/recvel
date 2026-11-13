@@ -29,8 +29,10 @@ struct AssistantOrb: View {
     private static let mid = Color(red: 0.60, green: 0.65, blue: 0.98)
     private static let light = Color(red: 0.93, green: 0.95, blue: 1.0)
 
+    @Environment(\.isTabActive) private var isTabActive
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 24, paused: reduceMotion)) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / 24, paused: reduceMotion || !isTabActive)) { timeline in
             let phase = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
             ZStack {
                 base

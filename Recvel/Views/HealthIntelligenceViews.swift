@@ -52,7 +52,7 @@ struct StressHomeCard: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(color)
                 Spacer()
-                Text(profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : "PRESION FISIOLOGICA")
+                Text(profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : RecvelL10n.text("stress.pressure.eyebrow"))
                     .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(.tertiary)
             }
@@ -126,11 +126,11 @@ struct VO2HomeCard: View {
 
     var body: some View {
         MetricIntelligenceCard(
-            eyebrow: "VO2 MAX",
+            eyebrow: RecvelL10n.text("home.vo2.eyebrow"),
             icon: "lungs.fill",
             value: snapshot?.vo2Max.map { String(format: "%.1f", $0) } ?? "--",
             unit: "ml/kg/min",
-            detail: snapshot?.vo2MaxDate.map { "Apple Health · \($0.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)))" } ?? RecvelL10n.text("bioage.noRecentEstimate"),
+            detail: snapshot?.vo2MaxDate.map { "Apple Health · \(RecvelL10n.relativeDay($0))" } ?? RecvelL10n.text("bioage.noRecentEstimate"),
             color: .cyan
         )
     }
@@ -227,7 +227,8 @@ struct StressDetailView: View {
     let activation: [ActivationPoint]
 
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \EmotionLog.date, order: .reverse) private var emotionLogs: [EmotionLog]
+    // Hoy + los 5 registros previos.
+    @Query(EmotionLog.recent(60)) private var emotionLogs: [EmotionLog]
     @Query(sort: \HabitLog.date, order: .reverse) private var habitLogs: [HabitLog]
     @State private var selectedEmotion: StressEmotion?
     @State private var emotionNote = ""
@@ -284,7 +285,7 @@ struct StressDetailView: View {
     var body: some View {
         IntelligenceDetailScaffold(title: RecvelL10n.text("score.stress.title"), symbol: "waveform.path.ecg", color: color, identifier: "detail.stress") {
             IntelligenceHero(
-                eyebrow: profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : "PRESION FISIOLOGICA",
+                eyebrow: profile.hasEnoughData ? RecvelL10n.text("PROMEDIO DEL DIA") : RecvelL10n.text("stress.pressure.eyebrow"),
                 value: heroValue,
                 unit: RecvelL10n.text("stress.unit").uppercased(),
                 status: displayLevel.displayName,
@@ -1099,7 +1100,7 @@ struct VO2DetailView: View {
     }
 
     private var freshness: String {
-        snapshot?.vo2MaxDate.map { "Medido \($0.formatted(.relative(presentation: .named).locale(RecvelL10n.locale)))" } ?? RecvelL10n.text("vo2.noSamples")
+        snapshot?.vo2MaxDate.map { "Medido \(RecvelL10n.relativeDay($0))" } ?? RecvelL10n.text("vo2.noSamples")
     }
 }
 

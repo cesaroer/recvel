@@ -132,7 +132,7 @@ struct FitnessView: View {
     @Query(sort: \FitnessActivityLog.startDate, order: .reverse) private var manualActivities: [FitnessActivityLog]
     @Query(sort: \WorkoutTemplate.createdAt, order: .reverse) private var templates: [WorkoutTemplate]
     @Query(sort: \ExerciseSetLog.date, order: .reverse) private var setLogs: [ExerciseSetLog]
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @Query(sort: \DailyScoreRecord.date, order: .reverse) private var scoreRecords: [DailyScoreRecord]
     @State private var selectedDetail: FitnessDetailRoute?
     @State private var composer: FitnessComposer?
@@ -157,18 +157,39 @@ struct FitnessView: View {
     private let heroGlassRadius: CGFloat = 28
     private let heroCardHeight: CGFloat = 300
 
+    @State private var derived = DerivedCache()
+    /// Clave de lo que depende solo de Apple Health.
+    private var healthKey: AnyHashable { AnyHashable(health.revision) }
+    /// Clave de lo que ademas depende de los registros manuales.
+    private var activityKey: AnyHashable {
+        [AnyHashable(health.revision), AnyHashable(manualActivities.count),
+         AnyHashable(manualActivities.first?.startDate)] as [AnyHashable]
+    }
+
+    // Estas cinco se leen decenas de veces por pasada del `body` (solo
+    // `points`, mas de 30); sin cache, cada lectura reordenaba el historial y
+    // volvia a correr el motor.
     private var fitnessHistory: [DailyHealthSnapshot] {
-        let withoutToday = health.history.filter { !Calendar.current.isDate($0.date, inSameDayAs: health.snapshot.date) }
-        return (withoutToday + (health.snapshot.availableSignalCount > 0 ? [health.snapshot] : []))
-            .sorted { $0.date < $1.date }
+        derived.value("history", key: healthKey) {
+            let withoutToday = health.history.filter { !Calendar.current.isDate($0.date, inSameDayAs: health.snapshot.date) }
+            return (withoutToday + (health.snapshot.availableSignalCount > 0 ? [health.snapshot] : []))
+                .sorted { $0.date < $1.date }
+        }
     }
 
     private var points: [FitnessDayPoint] {
-        engine.points(history: fitnessHistory, manualActivities: manualActivities)
+        derived.value("points", key: activityKey) {
+            engine.points(history: fitnessHistory, manualActivities: manualActivities)
+        }
     }
 
-    private var focus: FitnessFocusBreakdown { engine.focus(history: fitnessHistory) }
-    private var latestHRR: Double? { engine.latestHeartRateRecovery(history: fitnessHistory) }
+    private var focus: FitnessFocusBreakdown {
+        derived.value("focus", key: healthKey) { engine.focus(history: fitnessHistory) }
+    }
+
+    private var latestHRR: Double? {
+        derived.value("hrr", key: healthKey) { engine.latestHeartRateRecovery(history: fitnessHistory) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -457,9 +478,11 @@ struct FitnessView: View {
     /// Fechas de sesión para hero y resumen: workouts detallados, registros
     /// manuales y días con minutos agregados (>=20) de Apple Health.
     private var headerSessionDates: [Date] {
-        fitnessHistory.flatMap(\.workouts).map(\.startDate)
-            + manualActivities.map(\.startDate)
-            + fitnessHistory.filter { ($0.workoutMinutes ?? 0) >= 20 }.map(\.date)
+        derived.value("sessionDates", key: activityKey) {
+            fitnessHistory.flatMap(\.workouts).map(\.startDate)
+                + manualActivities.map(\.startDate)
+                + fitnessHistory.filter { ($0.workoutMinutes ?? 0) >= 20 }.map(\.date)
+        }
     }
 
     /// Plantilla ejecutable de la proxima sesion, si existe.
@@ -601,11 +624,13 @@ struct FitnessView: View {
     private func heroArt(symbol: String) -> some View {
         ZStack {
             Image(systemName: symbol)
-                .font(.system(size: 168, weight: .medium))
+                // Silueta de fondo, no protagonista: a 168 pt, blanca y centrada
+                // tapaba media tarjeta y competia con el titulo.
+                .font(.system(size: 150, weight: .medium))
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.white.opacity(0.90))
+                .foregroundStyle(.white.opacity(0.26))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .offset(y: -12)
+                .offset(x: 72, y: -6)
                 .accessibilityHidden(true)
             LinearGradient(
                 stops: [

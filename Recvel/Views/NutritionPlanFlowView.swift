@@ -17,14 +17,15 @@ struct NutritionPlanFlowView: View {
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var profiles: [NutritionProfile]
     @Query(sort: \DailyScoreRecord.date, order: .reverse) private var scoreRecords: [DailyScoreRecord]
     @Query(sort: \GeneratedPlanRecord.createdAt, order: .reverse) private var planRecords: [GeneratedPlanRecord]
-    @Query(sort: \FitnessActivityLog.startDate, order: .reverse) private var activityLogs: [FitnessActivityLog]
+    @Query(FitnessActivityLog.recent(300)) private var activityLogs: [FitnessActivityLog]
     @Query(sort: \HabitLog.date, order: .reverse) private var habitLogs: [HabitLog]
     @Query(sort: \MentalJournalEntry.date, order: .reverse) private var journalEntries: [MentalJournalEntry]
-    @Query(sort: \MealLog.createdAt, order: .reverse) private var mealLogs: [MealLog]
-    @Query(sort: \EmotionLog.date, order: .reverse) private var emotionLogs: [EmotionLog]
-    @Query(sort: \TrainingReadinessCheckIn.date, order: .reverse) private var readinessLogs: [TrainingReadinessCheckIn]
+    // El contexto del plan mira 14-90 dias; ver `PlanContextBuilder`.
+    @Query(MealLog.recent(600)) private var mealLogs: [MealLog]
+    @Query(EmotionLog.recent(200)) private var emotionLogs: [EmotionLog]
+    @Query(TrainingReadinessCheckIn.recent(60)) private var readinessLogs: [TrainingReadinessCheckIn]
 
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
 
     private enum Stage {
         case apiKey

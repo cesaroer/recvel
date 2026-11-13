@@ -7,7 +7,7 @@ struct LegacyJournalView: View {
     @Query(sort: \HabitLog.date, order: .reverse) private var logs: [HabitLog]
     @Query(sort: \DailyScoreRecord.date, order: .reverse) private var scores: [DailyScoreRecord]
     @Query(sort: \MentalJournalEntry.date, order: .reverse) private var mentalEntries: [MentalJournalEntry]
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @State private var selectedDate = Date.now
 
     private let habits = HabitSpec.defaults

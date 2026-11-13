@@ -858,302 +858,6 @@ enum TabQuickAction: String, CaseIterable, Identifiable {
 }
 
 
-/// Floating Liquid Glass tab bar.
-///
-/// Behavior (Bevel + iOS 26 Liquid Glass):
-/// - **Expanded:** capsule with all tabs + separate circular FAB (`+`) on the trailing edge.
-/// - **Minimized (scroll down):** morph to two floating circles — active tab (leading) + FAB (trailing).
-/// - **FAB:** toggles a radial glass action menu; icon morphs `+` → `xmark` with rotation.
-/// - **Hidden (detail push):** slides fully off-screen.
-struct LiquidGlassTabBar: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(TabBarVisibility.self) private var visibility
-    @Binding var selection: AppTab
-    /// Visual selection for the pill/icons — updates immediately on tap.
-    /// `selection` (content) is deferred one frame so the highlight never waits on page layout.
-    @State private var highlight: AppTab = .today
-    @State private var menuOpen = false
-
-    private var pillAnimation: Animation? {
-        reduceMotion ? nil : .snappy(duration: 0.18, extraBounce: 0)
-    }
-
-    private var chromeAnimation: Animation? {
-        if reduceMotion || visibility.isKeyboardVisible { return nil }
-        return .snappy(duration: 0.24, extraBounce: 0)
-    }
-
-    private var menuAnimation: Animation? {
-        if reduceMotion || visibility.isKeyboardVisible { return nil }
-        return .snappy(duration: 0.2, extraBounce: 0)
-    }
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            if menuOpen {
-                Color.black.opacity(0.40)
-                    .ignoresSafeArea()
-                    .onTapGesture { closeMenu() }
-                    .transition(.opacity)
-                    .accessibilityLabel(RecvelL10n.text("common.closeMenu"))
-                    .accessibilityIdentifier("tabbar.menu.scrim")
-            }
-
-            VStack(spacing: 12) {
-                if menuOpen {
-                    quickActionMenu
-                        .transition(.opacity)
-                }
-
-                barChrome
-            }
-            .padding(.bottom, 2)
-        }
-        .modifier(TabBarChromeMotion(mode: visibility.mode, reduceMotion: reduceMotion))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("tabbar")
-        .onAppear {
-            highlight = selection
-            Haptics.prepare()
-        }
-        .onChange(of: selection) { _, newValue in
-            if highlight != newValue {
-                highlight = newValue
-            }
-            if menuOpen { closeMenu() }
-        }
-        .onChange(of: visibility.mode) { _, mode in
-            if mode != .expanded, menuOpen { closeMenu() }
-        }
-    }
-
-    // MARK: - Bar chrome (expanded ↔ minimized)
-
-    private var barChrome: some View {
-        HStack(spacing: visibility.isMinimized ? 0 : 10) {
-            if visibility.isMinimized {
-                compactTabButton
-                Spacer(minLength: 0)
-            } else {
-                expandedCapsule
-            }
-
-            fabButton
-        }
-        .padding(.horizontal, visibility.isMinimized ? 20 : 14)
-        .animation(chromeAnimation, value: visibility.mode)
-        .animation(menuAnimation, value: menuOpen)
-    }
-
-#if compiler(>=6.2)
-    @available(iOS 26.0, *)
-    private var glassWrappedCapsule: some View {
-        GlassEffectContainer(spacing: 8) { expandedCapsuleInner }
-    }
-#endif
-
-    private var expandedCapsule: some View {
-#if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            glassWrappedCapsule
-        } else {
-            expandedCapsuleInner
-        }
-#else
-        expandedCapsuleInner
-#endif
-    }
-
-    private var expandedCapsuleInner: some View {
-        HStack(spacing: 2) {
-            ForEach(AppTab.allCases) { tab in
-                Button {
-                    select(tab)
-                } label: {
-                    tabLabel(tab)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background {
-                            // Cheap per-tab pill (no matchedGeometry) — paints in the same frame as the tap.
-                            Capsule()
-                                .fill(accent.opacity(0.16))
-                                .overlay {
-                                    Capsule().strokeBorder(accent.opacity(0.35), lineWidth: 0.7)
-                                }
-                                .opacity(highlight == tab ? 1 : 0)
-                                .scaleEffect(highlight == tab ? 1 : 0.88)
-                        }
-                }
-                .buttonStyle(GlassPressStyle())
-                .accessibilityIdentifier("tab.\(tab.rawValue)")
-                .accessibilityLabel(tab.title)
-                .accessibilityAddTraits(highlight == tab ? [.isSelected] : [])
-            }
-        }
-        .padding(5)
-        .platformGlass(tint: accent.opacity(0.10), shape: .capsule)
-        .animation(pillAnimation, value: highlight)
-    }
-
-    /// Minimized leading control: current tab icon. Tap expands the bar.
-    private var compactTabButton: some View {
-        Button {
-            Haptics.soft()
-            withAnimation(chromeAnimation) {
-                visibility.expand()
-            }
-        } label: {
-            Image(systemName: highlight.icon)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(accent)
-                .frame(width: 52, height: 52)
-                .contentShape(Circle())
-                .platformGlass(tint: accent.opacity(0.14), interactive: true, shape: .circle)
-        }
-        .buttonStyle(GlassPressStyle())
-        .accessibilityIdentifier("tab.compact.\(highlight.rawValue)")
-        .accessibilityLabel("Expandir navegacion · \(highlight.title)")
-    }
-
-    // MARK: - FAB (+ ↔ x) + menu
-
-    private var fabButton: some View {
-        Button {
-            toggleMenu()
-        } label: {
-            Image(systemName: menuOpen ? "xmark" : "plus")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 52, height: 52)
-                .contentShape(Circle())
-                .rotationEffect(.degrees(menuOpen ? 90 : 0))
-                .platformGlass(
-                    tint: menuOpen ? ScoreKind.strain.color.opacity(0.28) : accent.opacity(0.14),
-                    interactive: true,
-                    shape: .circle
-                )
-        }
-        .buttonStyle(GlassPressStyle())
-        .accessibilityIdentifier(menuOpen ? "tabbar.fab.close" : "tabbar.fab.open")
-        .accessibilityLabel(RecvelL10n.text(menuOpen ? "a11y.closeActions" : "a11y.quickActions"))
-    }
-
-    private var quickActionMenu: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            ForEach(TabQuickAction.allCases) { action in
-                quickActionRow(action)
-            }
-        }
-        .padding(.trailing, visibility.isMinimized ? 20 : 14)
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
-
-    private func quickActionRow(_ action: TabQuickAction) -> some View {
-        Button {
-            perform(action)
-        } label: {
-            HStack(spacing: 10) {
-                Text(action.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                Image(systemName: action.icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(action.color)
-                    .frame(width: 40, height: 40)
-                    .platformGlass(tint: action.color.opacity(0.18), interactive: true, shape: .circle)
-            }
-            .padding(.leading, 12)
-            .padding(.vertical, 3)
-            .padding(.trailing, 3)
-            .background {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.6)
-                    }
-            }
-        }
-        .buttonStyle(GlassPressStyle())
-        .accessibilityIdentifier("tabbar.action.\(action.rawValue)")
-        .accessibilityLabel(action.title)
-    }
-
-    // MARK: - Helpers
-
-    private var accent: Color { Color(red: 0.204, green: 0.827, blue: 0.600) }
-
-    private func select(_ tab: AppTab) {
-        if menuOpen { menuOpen = false }
-
-        // Tick de seleccion: pill + iconos se sienten instantaneos.
-        if highlight != tab {
-            Haptics.selection()
-        }
-
-        // 1) Pill + icon colors move immediately (cheap).
-        withAnimation(pillAnimation) {
-            highlight = tab
-        }
-
-        guard selection != tab else { return }
-
-        // 2) Heavy page swap waits one run-loop turn so the highlight isn't blocked
-        //    by Dashboard/Fitness layout + HealthKit work on first mount.
-        Task { @MainActor in
-            await Task.yield()
-            selection = tab
-        }
-    }
-
-    private func toggleMenu() {
-        if menuOpen {
-            Haptics.soft()
-        } else {
-            Haptics.rigid()
-        }
-        withAnimation(menuAnimation) {
-            menuOpen.toggle()
-            if menuOpen, visibility.isMinimized {
-                visibility.expand()
-            }
-        }
-    }
-
-    private func closeMenu() {
-        Haptics.soft()
-        withAnimation(menuAnimation) {
-            menuOpen = false
-        }
-    }
-
-    private func perform(_ action: TabQuickAction) {
-        Haptics.medium()
-        withAnimation(menuAnimation) {
-            menuOpen = false
-        }
-        if let tab = action.tab {
-            select(tab)
-        } else if action == .settings {
-            select(.today)
-            visibility.openSettings()
-        } else if action == .plan {
-            select(.today)
-            visibility.openPlan()
-        }
-    }
-
-    private func tabLabel(_ tab: AppTab) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: tab.icon)
-                .font(.system(size: 15, weight: .semibold))
-            Text(tab.title)
-                .font(.system(size: 9, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .foregroundStyle(highlight == tab ? accent : .secondary)
-    }
-}
 
 /// Instant press scale — no spring, so it never delays the tap.
 /// Soft haptic on finger-down for floating chrome (tabs, FAB, quick actions).
@@ -1206,9 +910,10 @@ struct StardustField: View {
     var tint: Color = .white
     var count: Int = 90
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isTabActive) private var isTabActive
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion || !isTabActive)) { timeline in
             Canvas { context, size in
                 guard size.width > 1, size.height > 1 else { return }
                 let t: Double = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
@@ -1568,7 +1273,22 @@ struct IntelligenceSurface<Outline: InsettableShape>: ViewModifier {
     /// La forma la decide quien lo usa: tarjeta redondeada o capsula. El borde
     /// iridiscente es el mismo; lo unico que cambia es por donde corre.
     var outline: Outline
+    @Environment(\.isTabActive) private var isTabActive
     @State private var angle: Double = 0
+
+    private func spin(_ active: Bool) {
+        guard !reduceMotion else { return }
+        if active {
+            angle = 0
+            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                angle = 360
+            }
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { angle = 0 }
+        }
+    }
 
     func body(content: Content) -> some View {
         let shape = outline
@@ -1602,12 +1322,10 @@ struct IntelligenceSurface<Outline: InsettableShape>: ViewModifier {
                 }
                 .allowsHitTesting(false)
             }
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    angle = 360
-                }
-            }
+            .onAppear { spin(isTabActive) }
+            // Un `repeatForever` no se pausa solo al ocultar la pestaña: hay
+            // que cortarlo, o los dos blurs del borde siguen recalculandose.
+            .onChange(of: isTabActive) { _, active in spin(active) }
     }
 }
 

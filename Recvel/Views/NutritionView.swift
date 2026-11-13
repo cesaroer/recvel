@@ -8,7 +8,8 @@ import Vision
 
 struct NutritionView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
+    // Hoy, historial reciente y los ~30 dias que mira el planificador.
+    @Query(MealLog.recent(600)) private var meals: [MealLog]
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var profiles: [NutritionProfile]
     @Query(sort: \DailyScoreRecord.date, order: .reverse) private var scoreRecords: [DailyScoreRecord]
     // Filtrado en memoria y no con #Predicate en el @Query: la variante con
@@ -1048,6 +1049,9 @@ struct RecordFoodView: View {
             guard !reduceMotion else { appeared = true; return }
             withAnimation(.spring(response: 0.8, dampingFraction: 0.85).delay(0.08)) { appeared = true }
         }
+        // Salir de la pantalla a media grabacion dejaba el microfono y el
+        // motor de audio vivos: nada llamaba a `stop()`.
+        .onDisappear { if voiceCapture.isRecording { voiceCapture.stop() } }
         .onChange(of: voiceCapture.transcript) { _, transcript in
             guard !transcript.isEmpty else { return }
             composer.text = transcript
@@ -1438,12 +1442,15 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
     private func analyzePhoto(_ item: PhotosPickerItem) async {
         isAnalyzing = true
         defer { isAnalyzing = false }
+        // 1280 px sobran para clasificar un plato y para el modelo remoto; la
+        // original a resolucion completa era un pico de memoria y una subida
+        // lenta sin ganar precision.
         guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data), let cgImage = image.cgImage else {
+              let cgImage = MealPhotoPreprocessor.downscaled(data, maxPixel: 1280) else {
             message = RecvelL10n.text("No se pudo leer la foto.")
             return
         }
-        selectedPhotoData = data
+        selectedPhotoData = MealPhotoPreprocessor.jpegData(from: cgImage)
         let classifications: [String] = await Task.detached {
             let request = VNClassifyImageRequest()
             let handler = VNImageRequestHandler(cgImage: cgImage)
@@ -1473,8 +1480,10 @@ private func quickAction(icon: String, title: String, isActive: Bool = false) ->
     private func analyzeBarcode(_ item: PhotosPickerItem) async {
         isAnalyzing = true
         defer { isAnalyzing = false }
+        // El codigo de barras necesita mas detalle que el plato, pero no la
+        // foto entera.
         guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data), let cgImage = image.cgImage else {
+              let cgImage = MealPhotoPreprocessor.downscaled(data, maxPixel: 2400) else {
             message = RecvelL10n.text("No se pudo leer la imagen del codigo.")
             return
         }

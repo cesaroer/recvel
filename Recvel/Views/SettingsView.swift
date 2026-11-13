@@ -5,7 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject private var language: LanguageController
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var nutritionProfiles: [NutritionProfile]
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @AppStorage("userName") private var userName = ""
     @AppStorage("wakeMinutes") private var wakeMinutes = 420

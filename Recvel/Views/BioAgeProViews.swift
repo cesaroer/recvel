@@ -120,7 +120,8 @@ struct BioAgeDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \BiomarkerSample.observedAt, order: .reverse) private var samples: [BiomarkerSample]
     @Query(sort: \NutritionProfile.updatedAt, order: .reverse) private var profiles: [NutritionProfile]
-    @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
+    // Factores de las ultimas 4 semanas.
+    @Query(MealLog.recent(600)) private var meals: [MealLog]
     @Query(sort: \HabitLog.date, order: .reverse) private var habits: [HabitLog]
     @State private var preferredLens: BioAgeLens?
     @State private var sheet: BioAgeSheet?

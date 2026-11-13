@@ -291,9 +291,9 @@ struct GeminiNutritionAIClient: ExternalNutritionAIClient {
 
     func estimate(text: String, imageData: Data?) async throws -> NutritionEstimate {
         guard !apiKey.isEmpty else { throw NutritionNetworkError.missingAPIKey }
-        var components = URLComponents(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent")
-        components?.queryItems = [URLQueryItem(name: "key", value: apiKey)]
-        guard let url = components?.url else { throw NutritionNetworkError.invalidResponse }
+        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent") else {
+            throw NutritionNetworkError.invalidResponse
+        }
 
         let prompt = """
         Estima esta comida como apoyo de registro, no como diagnostico. Devuelve SOLO JSON con:
@@ -308,6 +308,8 @@ struct GeminiNutritionAIClient: ExternalNutritionAIClient {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // La clave va en header, no en la URL: las URLs acaban en logs y proxies.
+        request.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)

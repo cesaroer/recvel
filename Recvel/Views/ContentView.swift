@@ -6,6 +6,9 @@ struct ContentView: View {
     /// Keep visited tabs mounted so switching back is instant (no full remount / HealthKit redo).
     @State private var mountedTabs: Set<AppTab> = [.today]
 
+    /// Mismo tono que la parte alta de `AppBackground`.
+    private static let chromeColor = Color(red: 0.05, green: 0.075, blue: 0.075)
+
     var body: some View {
         ZStack(alignment: .bottom) {
             AppBackground()
@@ -20,9 +23,31 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Never animate root page swaps — that was the tap lag.
             .transaction { $0.animation = nil }
+            // Velo bajo la barra de estado: sin el, al hacer scroll el reloj y
+            // la bateria quedaban pintados encima de titulos y tarjetas. Solo
+            // en la raiz de cada pestaña: las pantallas empujadas traen su
+            // propio fondo (y el asistente es claro).
+            .overlay(alignment: .top) {
+                Color.clear
+                    .frame(height: 14)
+                    .background {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Self.chromeColor, location: 0),
+                                .init(color: Self.chromeColor, location: 0.8),
+                                .init(color: Self.chromeColor.opacity(0), location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .top)
+                    }
+                    .opacity(tabBarVisibility.isHiddenByDetail ? 0 : 1)
+                    .allowsHitTesting(false)
+            }
 
-            LiquidGlassTabBar(selection: $selection)
-                .padding(.bottom, 10)
+            RecvelTabBar(selection: $selection)
+                .padding(.bottom, 26)
                 .ignoresSafeArea(edges: .bottom)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -77,6 +102,10 @@ struct ContentView: View {
     ) -> some View {
         if mountedTabs.contains(tab) {
             content()
+                // Las pestañas visitadas siguen montadas con opacidad 0, y eso
+                // NO pausa nada: sin este flag, las animaciones continuas y los
+                // timers de las cinco pestañas corrian a la vez.
+                .environment(\.isTabActive, selection == tab)
                 .opacity(selection == tab ? 1 : 0)
                 .allowsHitTesting(selection == tab)
                 .accessibilityHidden(selection != tab)
@@ -88,6 +117,7 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(HealthDataProvider())
         .modelContainer(
             for: [
                 MealLog.self,

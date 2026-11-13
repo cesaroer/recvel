@@ -12,7 +12,7 @@ struct JournalView: View {
     @Query(sort: \MealLog.createdAt, order: .reverse) private var meals: [MealLog]
     @Query(sort: \JournalTagConfiguration.updatedAt, order: .reverse) private var configurations: [JournalTagConfiguration]
     @Query(sort: \FastingSession.startDate, order: .reverse) private var fastingSessions: [FastingSession]
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @State private var selectedDate = Calendar.current.startOfDay(for: .now)
     @State private var presentedSheet: JournalSheet?
     @Namespace private var selectionNamespace

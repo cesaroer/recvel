@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 struct TrendsView: View {
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     private let scoreEngine = ScoreEngine()
     private let baselineEngine = BaselineEngine()
 

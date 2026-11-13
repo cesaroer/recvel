@@ -73,6 +73,8 @@ final class NutritionAssistantUITests: XCTestCase {
             NSPredicate(format: "label CONTAINS %@", "Plan de prueba")
         ).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 4))
+        // La fila puede quedar justo detras de la barra flotante.
+        if row.frame.maxY > app.frame.height - 140 { app.swipeUp(velocity: .slow) }
         row.tap()
 
         // Visor: directo al resultado, con hero y sin cuestionario.

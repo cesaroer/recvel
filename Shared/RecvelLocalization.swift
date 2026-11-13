@@ -83,6 +83,20 @@ enum RecvelL10n {
         return Array(symbols[1...6]) + [symbols[0]]
     }
 
+    /// "hoy", "ayer", "hace 3 días": antigüedad en DIAS de calendario. El
+    /// formato relativo normal baja hasta segundos ("hace 1 segundo"), que para
+    /// una medicion diaria como VO₂ máx. es ruido.
+    static func relativeDay(_ date: Date, now: Date = .now) -> String {
+        let calendar = Calendar.current
+        let days = calendar.dateComponents(
+            [.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)
+        ).day ?? 0
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = locale
+        formatter.dateTimeStyle = .named
+        return formatter.localizedString(from: DateComponents(day: -max(days, 0)))
+    }
+
     static func text(
         _ key: String,
         language: AppLanguage = RecvelLanguageStore.load(),

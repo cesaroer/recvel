@@ -466,6 +466,7 @@ struct FastingView: View {
     @State private var expandedHistoryId: UUID?
     private let engine = FastingEngine()
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.isTabActive) private var isTabActive
 
     private var activeSession: FastingSession? { sessions.first { $0.isActive } }
     private var completedSessions: [FastingSession] { sessions.filter { !$0.isActive && $0.endDate != nil } }
@@ -518,8 +519,15 @@ struct FastingView: View {
             // `scrollContentLockedToViewportWidth()` arriba.
             .toolbar(.hidden, for: .navigationBar)
             .onReceive(timer) { tick in
+                // Sin ayuno activo no hay nada que avance, y con la pestaña
+                // oculta nadie lo ve: antes este tick redibujaba la pantalla
+                // entera cada segundo en ambos casos.
+                guard isTabActive, activeSession != nil else { return }
                 now = tick
                 detectPhaseChange()
+            }
+            .onChange(of: isTabActive) { _, active in
+                if active { now = .now }
             }
             .onChange(of: activeSession?.startDate) { _, _ in
                 guard let session = activeSession else { return }
@@ -1077,6 +1085,24 @@ struct FastingView: View {
                 Text(RecvelL10n.text("fasting.pickProtocol"))
                     .font(.headline)
 
+                // Iniciar va ARRIBA: con el protocolo ya elegido, el boton
+                // quedaba debajo de seis tarjetas y fuera de pantalla.
+                Button {
+                    haptic(.medium)
+                    if screeningCompleted {
+                        startFast()
+                    } else {
+                        showScreening = true
+                    }
+                } label: {
+                    Label(RecvelL10n.text("fasting.start", values: ["target": targetText(selectedTargetHours)]), systemImage: "play.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity).contentShape(Rectangle())
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(ScoreKind.strain.color)
+                .accessibilityIdentifier("fasting.start")
+
                 ForEach(FastingProtocol.allCases) { proto in
                     protocolCard(proto)
                     if proto == .custom && selectedProtocol == .custom {
@@ -1098,21 +1124,6 @@ struct FastingView: View {
                 .tint(ScoreKind.recovery.color)
                 .accessibilityIdentifier("fasting.notifyToggle")
 
-                Button {
-                    haptic(.medium)
-                    if screeningCompleted {
-                        startFast()
-                    } else {
-                        showScreening = true
-                    }
-                } label: {
-                    Label(RecvelL10n.text("fasting.start", values: ["target": targetText(selectedTargetHours)]), systemImage: "play.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).contentShape(Rectangle())
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(ScoreKind.strain.color)
-                .accessibilityIdentifier("fasting.start")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

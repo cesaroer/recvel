@@ -470,37 +470,12 @@ final class RecvelUITests: XCTestCase {
         keepScreenshot(app, name: "fitness-cardio-load-detail")
     }
 
-    /// Biblioteca Bevel-like: tocar un ejercicio lo selecciona; Agregar lo mete en la plantilla.
-    @MainActor
-    func testFitnessLibrarySelectAddsExerciseToTemplate() throws {
-        let app = launchApp()
-        app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
-
-        openCreateTemplate(app)
-        fillTemplateName(app, "UITest Push Day")
-        openLibrary(app)
-
-        tapLibraryItem(app, id: "fitness.library.item.Press_de_banca")
-
-        confirmLibraryAdd(app)
-
-        let added = app.descendants(matching: .any)["fitness.templateEditor.exercise.Press_de_banca"]
-        XCTAssertTrue(added.waitForExistence(timeout: 5), "El ejercicio seleccionado debe aparecer en la plantilla")
-        keepScreenshot(app, name: "fitness-library-add-to-template")
-
-        let save = app.buttons["fitness.templateEditor.save"]
-        XCTAssertTrue(save.waitForExistence(timeout: 3))
-        save.tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
-    }
-
     /// Multi-select: dos ejercicios + Agregar deben quedar en el editor.
     @MainActor
     func testFitnessLibraryMultiSelectAddsSeveralExercises() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         openCreateTemplate(app)
         fillTemplateName(app, "UITest Full Body")
@@ -521,7 +496,7 @@ final class RecvelUITests: XCTestCase {
     func testFitnessTemplateCanBeDeletedFromPreview() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         openCreateTemplate(app)
         fillTemplateName(app, "UITest Borrame")
@@ -529,7 +504,7 @@ final class RecvelUITests: XCTestCase {
         let save = app.buttons["fitness.templateEditor.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 3))
         save.tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         // Abrir el preview de la plantilla recien creada.
         let card = app.buttons["fitness.template.card.UITest_Borrame"]
@@ -791,7 +766,7 @@ final class RecvelUITests: XCTestCase {
 
         // Ajustar inicio abre el editor y regresa.
         app.buttons["fasting.adjustStart"].tap()
-        XCTAssertTrue(app.staticTexts["¿A que hora dejaste de comer realmente?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["¿A qué hora dejaste de comer realmente?"].waitForExistence(timeout: 5))
         app.buttons["Listo"].tap()
         XCTAssertTrue(app.otherElements["fasting.activeRing"].waitForExistence(timeout: 5))
 
@@ -864,7 +839,9 @@ final class RecvelUITests: XCTestCase {
         app.buttons["tabbar.fab.open"].tap()
         XCTAssertTrue(app.buttons["tabbar.fab.close"].waitForExistence(timeout: 3), "+ debe morph a X")
         XCTAssertTrue(app.buttons["tabbar.action.meal"].waitForExistence(timeout: 3), "Menu con accion Comida")
-        app.buttons["tabbar.action.meal"].tap()
+        // El panel va animado sobre la barra; el toque por coordenada no
+        // depende de que XCUITest lo considere "scrollable to visible".
+        app.buttons["tabbar.action.meal"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(
             waitForHittable(app.buttons["tab.nutrition"], true, timeout: 5),
             "Accion Comida debe llevar a la tab Nutricion"
@@ -873,7 +850,7 @@ final class RecvelUITests: XCTestCase {
     }
 
     @MainActor
-    func testTabBarHidesWhenPushingDetail() throws {
+    func testTabBarHidesOnDetailAndReturnsOnPop() throws {
         let app = launchApp()
         XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["tab.today"].isHittable, "La barra debe estar visible en la raiz")
@@ -895,19 +872,10 @@ final class RecvelUITests: XCTestCase {
             "El modo compacto tampoco debe estar presente en detalle"
         )
         keepScreenshot(app, name: "tabbar-hidden-on-detail")
-    }
 
-    @MainActor
-    func testTabBarReturnsAfterPoppingDetail() throws {
-        let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
-
-        app.buttons["dashboard.recoveryHero"].tap()
-        XCTAssertTrue(app.buttons["Atras"].waitForExistence(timeout: 8))
-
+        // Y al volver del detalle la barra reaparece.
         app.buttons["Atras"].tap()
         XCTAssertTrue(app.staticTexts["Resumen de la mañana"].waitForExistence(timeout: 8))
-
         XCTAssertTrue(
             waitForHittable(app.buttons["tab.today"], true),
             "Al volver de un detalle la barra debe reaparecer"
@@ -975,7 +943,7 @@ final class RecvelUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["metric.detail"].waitForExistence(timeout: 6))
         XCTAssertTrue(app.descendants(matching: .any)["metric.detail.header"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["metric.detail.trends"].exists)
-        XCTAssertTrue(app.staticTexts["Analisis de tendencia"].exists)
+        XCTAssertTrue(app.staticTexts["Análisis de tendencia"].exists)
         keepScreenshot(app, name: "metric-detail-sleep-score")
 
         // Los chips permiten saltar a una metrica hermana sin volver atras.
@@ -1114,7 +1082,7 @@ final class RecvelUITests: XCTestCase {
             card.waitForExistence(timeout: 5) || empty.waitForExistence(timeout: 2),
             "La seccion de tipo de entrenamiento debe existir, con datos o explicando que falta"
         )
-        XCTAssertTrue(app.staticTexts["TIPO DE ENTRENAMIENTO"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", "Tipo de entrenamiento")).firstMatch.exists)
 
         // Con datos: el detalle explica POR QUE caes en esa categoria.
         guard card.exists else {
@@ -1191,7 +1159,7 @@ final class RecvelUITests: XCTestCase {
     func testWeeklyRoutineOnboardingAsksSplitAndSport() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         // Abrir la agenda semanal. UserDefaults persiste en el simulador, así
         // que la rutina puede estar ya creada (botón editar) o no (botón crear).
@@ -1272,7 +1240,7 @@ final class RecvelUITests: XCTestCase {
     func testQuickPlanWizardSavesAndOpensLibrary() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]
         for _ in 0..<12 where !section.exists { app.swipeUp() }
@@ -1323,27 +1291,13 @@ final class RecvelUITests: XCTestCase {
                       "La biblioteca debe permitir eliminar todos los planes")
     }
 
-    /// La progresión por ejercicio existe (con dato o con estado vacío honesto).
-    @MainActor
-    func testFitnessShowsExerciseProgressionSection() throws {
-        let app = launchApp()
-        app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
-
-        let card = app.descendants(matching: .any)["fitness.exerciseProgressionCard"]
-        for _ in 0..<12 where !card.isHittable { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "Debe existir la sección de progresión por ejercicio")
-        XCTAssertTrue(app.staticTexts["Progresión por ejercicio"].exists)
-        keepScreenshot(app, name: "exercise-progression-section")
-    }
-
     /// Flujo completo: terminar una sesión activa pregunta cómo se sintió con
     /// emojis y guarda con ese esfuerzo (antes había un 6 hardcodeado).
     @MainActor
     func testActiveSessionAsksFeelingOnFinish() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         // Crear una plantilla mínima para poder iniciar sesión.
         openCreateTemplate(app)
@@ -1354,7 +1308,7 @@ final class RecvelUITests: XCTestCase {
         let save = app.buttons["fitness.templateEditor.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 3))
         save.tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         // Abrir preview de la plantilla y empezar la sesión.
         let card = app.buttons.matching(NSPredicate(format: "label CONTAINS 'UITest Feeling'")).firstMatch
@@ -1369,7 +1323,7 @@ final class RecvelUITests: XCTestCase {
 
         // Terminar => diálogo => hoja de feeling.
         app.buttons["fitness.activeSession.finish"].tap()
-        let confirm = app.buttons["Guardar sesion"]
+        let confirm = app.buttons["Guardar sesión"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 4))
         confirm.tap()
 
@@ -1387,7 +1341,7 @@ final class RecvelUITests: XCTestCase {
         feelingSave.tap()
 
         // Vuelve al listado de Entrenamiento (sesión guardada).
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 6))
         keepScreenshot(app, name: "workout-feeling-saved")
     }
 
@@ -1398,7 +1352,7 @@ final class RecvelUITests: XCTestCase {
     func testRoutinePresetPreviewDaysAndCoachFlow() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         // Abrir el wizard (crear o editar según el estado persistido).
         let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]
@@ -1462,7 +1416,7 @@ final class RecvelUITests: XCTestCase {
         next.tap()
 
         // De vuelta en la agenda: banner del coach siempre visible.
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 6))
         let banner = app.descendants(matching: .any)["fitness.weeklyRoutine.coach"]
         for _ in 0..<10 where !banner.exists { app.swipeUp() }
         XCTAssertTrue(banner.waitForExistence(timeout: 5), "La agenda debe mostrar el veredicto del coach")
@@ -1476,7 +1430,7 @@ final class RecvelUITests: XCTestCase {
     func testRoutinePreviewShowsCardioMobilityAndChallenge() throws {
         let app = launchApp()
         app.buttons["tab.fitness"].tap()
-        XCTAssertTrue(app.navigationBars["Entrenamiento"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["fitness.add"].waitForExistence(timeout: 5))
 
         // Abrir el wizard (crear o editar según estado persistido).
         let section = app.descendants(matching: .any)["fitness.weeklyRoutine"]

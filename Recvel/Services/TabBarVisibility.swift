@@ -181,6 +181,18 @@ final class TabBarVisibility {
 }
 
 extension EnvironmentValues {
+    private struct IsTabActiveKey: EnvironmentKey {
+        static let defaultValue = true
+    }
+
+    /// false mientras la pestaña que contiene la vista esta montada pero
+    /// oculta. Las animaciones continuas (`TimelineView`, `repeatForever`) y
+    /// los timers deben pausarse con esto.
+    var isTabActive: Bool {
+        get { self[IsTabActiveKey.self] }
+        set { self[IsTabActiveKey.self] = newValue }
+    }
+
     private struct TabBarVisibilityKey: EnvironmentKey {
         static let defaultValue = TabBarVisibility()
     }

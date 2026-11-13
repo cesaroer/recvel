@@ -9,7 +9,7 @@ struct OnboardingView: View {
     @AppStorage("sleepGoalHours") private var sleepGoalHours = 8.0
     @AppStorage("userName") private var savedName = ""
 
-    @StateObject private var health = HealthDataProvider()
+    @EnvironmentObject private var health: HealthDataProvider
     @State private var step = 0
     @State private var goal = ""
     @State private var priorities: Set<String> = []
@@ -639,4 +639,5 @@ private enum OnboardingPriority: String, CaseIterable, Identifiable {
 
 #Preview {
     OnboardingView()
+        .environmentObject(HealthDataProvider())
 }

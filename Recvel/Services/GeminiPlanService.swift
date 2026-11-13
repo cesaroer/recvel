@@ -378,6 +378,9 @@ enum PlanContextBuilder {
 struct GeminiPlanService {
     private let session: URLSession
     private static let base = "https://generativelanguage.googleapis.com/v1beta"
+    /// La clave viaja en header y no como `?key=` en la URL: las URLs acaban
+    /// en logs de red, proxies y trazas de error.
+    private static let apiKeyHeader = "x-goog-api-key"
 
     init(session: URLSession = .shared) {
         self.session = session
@@ -390,10 +393,7 @@ struct GeminiPlanService {
         var collected: [GeminiModelList.ModelEntry] = []
         var pageToken: String?
         repeat {
-            var items = [
-                URLQueryItem(name: "key", value: apiKey),
-                URLQueryItem(name: "pageSize", value: "100")
-            ]
+            var items = [URLQueryItem(name: "pageSize", value: "100")]
             if let pageToken {
                 items.append(URLQueryItem(name: "pageToken", value: pageToken))
             }
@@ -401,7 +401,9 @@ struct GeminiPlanService {
             components?.queryItems = items
             guard let url = components?.url else { throw GeminiPlanError.invalidResponse }
 
-            let (data, response) = try await session.data(from: url)
+            var request = URLRequest(url: url)
+            request.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeader)
+            let (data, response) = try await session.data(for: request)
             try validate(response)
             let payload = try JSONDecoder().decode(GeminiModelList.self, from: data)
             collected.append(contentsOf: payload.models)
@@ -517,12 +519,13 @@ struct GeminiPlanService {
 
     private func generate(apiKey: String, model: String, body: [String: Any]) async throws -> String {
         guard !apiKey.isEmpty else { throw GeminiPlanError.missingAPIKey }
-        var components = URLComponents(string: "\(Self.base)/models/\(model):generateContent")
-        components?.queryItems = [URLQueryItem(name: "key", value: apiKey)]
-        guard let url = components?.url else { throw GeminiPlanError.invalidResponse }
+        guard let url = URL(string: "\(Self.base)/models/\(model):generateContent") else {
+            throw GeminiPlanError.invalidResponse
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeader)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 90
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

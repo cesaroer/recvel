@@ -4,8 +4,11 @@ import HealthKit
 
 @MainActor
 final class HealthDataProvider: ObservableObject {
-    @Published private(set) var snapshot: DailyHealthSnapshot
-    @Published private(set) var history: [DailyHealthSnapshot]
+    @Published private(set) var snapshot: DailyHealthSnapshot { didSet { revision &+= 1 } }
+    @Published private(set) var history: [DailyHealthSnapshot] { didSet { revision &+= 1 } }
+    /// Sube cada vez que cambian `snapshot` o `history`. Es la clave barata
+    /// con la que las vistas cachean lo que derivan de ellos (`DerivedCache`).
+    private(set) var revision = 0
     @Published private(set) var activation: [ActivationPoint]
     @Published private(set) var dataMode: HealthDataMode
     @Published private(set) var permissionState: HealthPermissionState
@@ -47,10 +50,31 @@ final class HealthDataProvider: ObservableObject {
 
     private let healthStore = HKHealthStore()
     private let calendar = Calendar.autoupdatingCurrent
-    private let useDemoData: Bool
+    /// Modo demo APLICADO a los datos publicados. Ya no es un `let` leido una
+    /// vez: el proveedor es unico para toda la app, asi que tiene que poder
+    /// cambiar de modo cuando Laboratorio alterna `useDemoData`.
+    private var useDemoData: Bool
+    /// nil = seguir a UserDefaults; un valor fija el modo (tests).
+    private let demoOverride: Bool?
     private let trainingLoadEngine = TrainingLoadEngine()
 
-    init(useDemoData: Bool = UserDefaults.standard.bool(forKey: "useDemoData")) {
+    /// Refresco en curso. Quien pida otro mientras tanto ESPERA a este en vez
+    /// de volver con las manos vacias: con un proveedor compartido, varias
+    /// pantallas piden refresco a la vez al aparecer.
+    private var refreshTask: Task<Void, Never>?
+    private var lastHealthKitRefresh: Date?
+    /// Un refresco automatico (aparecer, cambiar de pestaña) no relee Apple
+    /// Health si los datos tienen menos de esto. El gesto del usuario siempre
+    /// relee.
+    static let automaticRefreshInterval: TimeInterval = 60
+
+    private var wantsDemoData: Bool {
+        demoOverride ?? UserDefaults.standard.bool(forKey: "useDemoData")
+    }
+
+    init(useDemoData demoOverride: Bool? = nil) {
+        self.demoOverride = demoOverride
+        let useDemoData = demoOverride ?? UserDefaults.standard.bool(forKey: "useDemoData")
         self.useDemoData = useDemoData
         if useDemoData {
             snapshot = .demo
@@ -105,7 +129,25 @@ final class HealthDataProvider: ObservableObject {
     }
 
     func refresh(trigger: RefreshTrigger = .automatic, forceHealthKit: Bool = false) async {
-        guard !isLoading else { return }
+        if let inFlight = refreshTask {
+            await inFlight.value
+            return
+        }
+        if trigger == .automatic, !forceHealthKit, wantsDemoData == useDemoData, !history.isEmpty,
+           let last = lastHealthKitRefresh,
+           Date.now.timeIntervalSince(last) < Self.automaticRefreshInterval {
+            return
+        }
+        // Task propia: el `.task` de una vista que desaparece no debe cancelar
+        // a medias la carga que las demas pantallas estan esperando.
+        let task = Task { await performRefresh(trigger: trigger, forceHealthKit: forceHealthKit) }
+        refreshTask = task
+        await task.value
+        refreshTask = nil
+    }
+
+    private func performRefresh(trigger: RefreshTrigger, forceHealthKit: Bool) async {
+        applyDemoModeChangeIfNeeded()
         // La rama demo va ANTES de comprobar HealthKit: demo no consulta nada,
         // asi que no puede depender de que HealthKit este disponible. Con el
         // guard delante, en un dispositivo sin HealthKit el modo demo se quedaba
@@ -124,7 +166,13 @@ final class HealthDataProvider: ObservableObject {
             return
         }
 
-        guard isHealthDataAvailable else { return }
+        guard isHealthDataAvailable else {
+            if history.isEmpty {
+                corePhase = .empty
+                activationPhase = .empty
+            }
+            return
+        }
         isLoading = true
         if Self.showsSkeleton(trigger: trigger, hasData: !history.isEmpty) {
             corePhase = .loading
@@ -133,12 +181,26 @@ final class HealthDataProvider: ObservableObject {
         defer { isLoading = false }
         await updatePermissionRequestState()
 
-        var days: [DailyHealthSnapshot] = []
-        for offset in stride(from: -29, through: 0, by: 1) {
-            guard let date = calendar.date(byAdding: .day, value: offset, to: .now) else { continue }
-            let day = await loadSnapshot(for: date, detailedWorkouts: true)
-            if day.availableSignalCount > 0 { days.append(day) }
+        // `loadSnapshot` y todo lo que cuelga de el son `nonisolated`: las ~650
+        // consultas y el procesado de muestras (FC de cada entreno incluida)
+        // corren FUERA del hilo principal. Antes todo eso se ejecutaba en el
+        // MainActor y trababa el arranque y el scroll mientras cargaba.
+        // Los 30 dias se piden a la vez. En serie, cada dia esperaba al
+        // anterior y la primera carga tardaba la suma de todos.
+        let offsets = Array(stride(from: -29, through: 0, by: 1))
+        var loaded: [Int: DailyHealthSnapshot] = [:]
+        await withTaskGroup(of: (Int, DailyHealthSnapshot)?.self) { group in
+            for offset in offsets {
+                group.addTask {
+                    guard let date = self.calendar.date(byAdding: .day, value: offset, to: .now) else { return nil }
+                    return (offset, await self.loadSnapshot(for: date, detailedWorkouts: true))
+                }
+            }
+            for await result in group {
+                if let result { loaded[result.0] = result.1 }
+            }
         }
+        var days = offsets.compactMap { loaded[$0] }.filter { $0.availableSignalCount > 0 }
 
         guard let latest = days.last else {
             snapshot = .empty
@@ -196,7 +258,35 @@ final class HealthDataProvider: ObservableObject {
             dataMode = .healthKit
             authorizationMessage = "Apple Health · \(snapshot.sourceNames.count) fuente(s)"
         }
+        lastHealthKitRefresh = .now
         SharedSnapshotPublisher.publish(snapshot: snapshot, history: history, dataMode: dataMode)
+    }
+
+    /// Laboratorio alterna `useDemoData` en caliente. Con un proveedor por
+    /// pantalla bastaba crear otro; con uno compartido hay que cambiar de modo
+    /// aqui.
+    private func applyDemoModeChangeIfNeeded() {
+        let wants = wantsDemoData
+        guard wants != useDemoData else { return }
+        useDemoData = wants
+        lastHealthKitRefresh = nil
+        if wants {
+            snapshot = .demo
+            history = DailyHealthSnapshot.demoWeek
+            activation = Self.demoActivation
+            dataMode = .demo
+            permissionState = .requested
+            authorizationMessage = "Modo demo"
+            corePhase = .ready
+            activationPhase = .ready
+        } else {
+            snapshot = .empty
+            history = []
+            activation = []
+            dataMode = .empty
+            corePhase = .loading
+            activationPhase = .loading
+        }
     }
 
     private var readTypes: Set<HKObjectType> {
@@ -242,7 +332,7 @@ final class HealthDataProvider: ObservableObject {
         }
     }
 
-    private func loadSnapshot(for date: Date, detailedWorkouts: Bool) async -> DailyHealthSnapshot {
+    nonisolated private func loadSnapshot(for date: Date, detailedWorkouts: Bool) async -> DailyHealthSnapshot {
         let start = calendar.startOfDay(for: date)
         let end = calendar.isDateInToday(date)
             ? Date.now
@@ -356,7 +446,7 @@ final class HealthDataProvider: ObservableObject {
         )
     }
 
-    private func cumulativeQuantity(
+    nonisolated private func cumulativeQuantity(
         _ identifier: HKQuantityTypeIdentifier,
         unit: HKUnit,
         start: Date,
@@ -372,7 +462,7 @@ final class HealthDataProvider: ObservableObject {
         }
     }
 
-    private func averagedQuantity(
+    nonisolated private func averagedQuantity(
         _ identifier: HKQuantityTypeIdentifier,
         unit: HKUnit,
         start: Date,
@@ -387,7 +477,7 @@ final class HealthDataProvider: ObservableObject {
         return (value, preferred.first?.sourceRevision.source.name)
     }
 
-    private func categoryDuration(
+    nonisolated private func categoryDuration(
         _ identifier: HKCategoryTypeIdentifier,
         start: Date,
         end: Date
@@ -399,7 +489,7 @@ final class HealthDataProvider: ObservableObject {
         return samples.reduce(0) { $0 + $1.endDate.timeIntervalSince($1.startDate) } / 60
     }
 
-    private func latestQuantity(
+    nonisolated private func latestQuantity(
         _ identifier: HKQuantityTypeIdentifier,
         unit: HKUnit,
         start: Date,
@@ -420,7 +510,7 @@ final class HealthDataProvider: ObservableObject {
         )
     }
 
-    private func sleepSummary(start: Date, end: Date) async -> SleepSummary? {
+    nonisolated private func sleepSummary(start: Date, end: Date) async -> SleepSummary? {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis), start < end else { return nil }
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
         let samples: [HKCategorySample] = await sampleQuery(type: type, predicate: predicate)
@@ -470,7 +560,7 @@ final class HealthDataProvider: ObservableObject {
         )
     }
 
-    private func loadWorkouts(
+    nonisolated private func loadWorkouts(
         start: Date,
         end: Date,
         restingHeartRate: Double?,
@@ -552,7 +642,7 @@ final class HealthDataProvider: ObservableObject {
     /// Lee el esfuerzo (HKWorkoutEffortScore, iOS 18) asociado a un workout.
     /// Prefiere el manual del usuario sobre el estimado por Apple. Devuelve
     /// `nil` en iOS<18 o cuando no hay muestra.
-    private func workoutEffort(for workout: HKWorkout) async -> (score: Double, isEstimated: Bool)? {
+    nonisolated private func workoutEffort(for workout: HKWorkout) async -> (score: Double, isEstimated: Bool)? {
         guard #available(iOS 18.0, *) else { return nil }
         let manual = await effortSample(for: workout, identifier: .workoutEffortScore)
         if let manual { return (manual, false) }
@@ -563,7 +653,7 @@ final class HealthDataProvider: ObservableObject {
     }
 
     @available(iOS 18.0, *)
-    private func effortSample(for workout: HKWorkout, identifier: HKQuantityTypeIdentifier) async -> Double? {
+    nonisolated private func effortSample(for workout: HKWorkout, identifier: HKQuantityTypeIdentifier) async -> Double? {
         guard let type = HKObjectType.quantityType(forIdentifier: identifier) else { return nil }
         let predicate = HKQuery.predicateForWorkoutEffortSamplesRelated(workout: workout, activity: nil)
         let samples: [HKQuantitySample] = await sampleQuery(type: type, predicate: predicate)
@@ -571,7 +661,7 @@ final class HealthDataProvider: ObservableObject {
         return samples.last?.quantity.doubleValue(for: .appleEffortScore())
     }
 
-    private func loadActivation(restingHeartRate: Double?) async -> [ActivationPoint] {
+    nonisolated private func loadActivation(restingHeartRate: Double?) async -> [ActivationPoint] {
         guard let type = HKObjectType.quantityType(forIdentifier: .heartRate) else { return [] }
         let start = Date.now.addingTimeInterval(-24 * 3600)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: .now, options: .strictStartDate)
@@ -591,7 +681,7 @@ final class HealthDataProvider: ObservableObject {
         }
     }
 
-    private func sampleQuery<T: HKSample>(type: HKSampleType, predicate: NSPredicate) async -> [T] {
+    nonisolated private func sampleQuery<T: HKSample>(type: HKSampleType, predicate: NSPredicate) async -> [T] {
         await withCheckedContinuation { continuation in
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
             let query = HKSampleQuery(
@@ -606,15 +696,15 @@ final class HealthDataProvider: ObservableObject {
         }
     }
 
-    private func preferredQuantitySamples(_ samples: [HKQuantitySample]) -> [HKQuantitySample] {
+    nonisolated private func preferredQuantitySamples(_ samples: [HKQuantitySample]) -> [HKQuantitySample] {
         preferredSamples(samples)
     }
 
-    private func preferredCategorySamples(_ samples: [HKCategorySample]) -> [HKCategorySample] {
+    nonisolated private func preferredCategorySamples(_ samples: [HKCategorySample]) -> [HKCategorySample] {
         preferredSamples(samples)
     }
 
-    private func preferredSamples<T: HKSample>(_ samples: [T]) -> [T] {
+    nonisolated private func preferredSamples<T: HKSample>(_ samples: [T]) -> [T] {
         guard !samples.isEmpty else { return [] }
         let groups = Dictionary(grouping: samples) { $0.sourceRevision.source.bundleIdentifier }
         let best = groups.max { lhs, rhs in
@@ -623,7 +713,7 @@ final class HealthDataProvider: ObservableObject {
         return best?.value ?? samples
     }
 
-    private func sourcePriority<T: HKSample>(_ samples: [T]) -> Int {
+    nonisolated private func sourcePriority<T: HKSample>(_ samples: [T]) -> Int {
         guard let sample = samples.first else { return 0 }
         let product = sample.sourceRevision.productType?.lowercased() ?? ""
         let name = sample.sourceRevision.source.name.lowercased()
@@ -631,7 +721,7 @@ final class HealthDataProvider: ObservableObject {
         return deviceScore + samples.count
     }
 
-    private func unionHours<T: HKSample>(_ samples: [T]) -> Double {
+    nonisolated private func unionHours<T: HKSample>(_ samples: [T]) -> Double {
         let intervals = samples
             .map { DateInterval(start: $0.startDate, end: $0.endDate) }
             .sorted { $0.start < $1.start }
@@ -649,7 +739,7 @@ final class HealthDataProvider: ObservableObject {
         return seconds / 3600
     }
 
-    private func isAsleep(_ value: Int) -> Bool {
+    nonisolated private func isAsleep(_ value: Int) -> Bool {
         [
             HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
             HKCategoryValueSleepAnalysis.asleepCore.rawValue,
@@ -674,7 +764,7 @@ final class HealthDataProvider: ObservableObject {
         }
     }
 
-    private func normalizedMinutes(_ date: Date) -> Double {
+    nonisolated private func normalizedMinutes(_ date: Date) -> Double {
         let hour = calendar.component(.hour, from: date)
         let minute = calendar.component(.minute, from: date)
         let value = Double(hour * 60 + minute)
@@ -683,7 +773,7 @@ final class HealthDataProvider: ObservableObject {
 
     /// Nombre visible del tipo de entrenamiento, en el idioma de la app.
     /// Estaba escrito solo en español y se colaba tal cual en la UI inglesa.
-    private func workoutName(_ type: HKWorkoutActivityType) -> String {
+    nonisolated private func workoutName(_ type: HKWorkoutActivityType) -> String {
         let key = switch type {
         case .running: "workout.type.running"
         case .walking: "workout.type.walking"
